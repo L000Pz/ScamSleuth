@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="25%" src="https://github.com/L000Pz/ScamSleuth/blob/main/img/logo.PNG" />
+  <img width="25%" src="Front-end/scam_sleuth/src/assets/images/hero.png" />
 </p>
 
 # ScamSleuth
