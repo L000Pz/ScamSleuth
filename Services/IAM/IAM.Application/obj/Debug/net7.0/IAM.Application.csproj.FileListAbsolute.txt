@@ -1,0 +1,15 @@
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\bin\Debug\net7.0\IAM.Application.deps.json
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\bin\Debug\net7.0\IAM.Application.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\bin\Debug\net7.0\IAM.Application.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\bin\Debug\net7.0\IAM.Domain.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\bin\Debug\net7.0\IAM.Domain.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.csproj.AssemblyReference.cache
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.AssemblyInfoInputs.cache
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.AssemblyInfo.cs
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.csproj.CoreCompileInputs.cache
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.csproj.CopyComplete
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\refint\IAM.Application.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\IAM.Application.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Application\obj\Debug\net7.0\ref\IAM.Application.dll
