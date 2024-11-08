@@ -1,13 +1,95 @@
 ﻿# Default ignored files
 /shelf/
 /workspace.xml
-# Rider ignored files
+
+# Rider-specific ignored files
 /.idea.IAM.iml
 /projectSettingsUpdater.xml
 /modules.xml
 /contentModel.xml
+
 # Editor-based HTTP Client requests
 /httpRequests/
+
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# Ignore build output and intermediate files
+bin/
+obj/
+out/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider IDE files
+.idea/
+.idea/*
+
+# Rider caches and logs
+.idea/caches/
+.idea/logs/
+.idea/other.xml
+.idea/runConfigurations/
+.idea/scope_settings.xml
+.idea/workspace.xml
+.idea/keymaps/
+.idea/tasks/
+.idea/sandbox/
+.idea/codeStyles/
+.idea/inspectionProfiles/
+.idea/dataSources/
+.idea/fileTemplates/
+.idea/bookmarks.xml
+
+# Visual Studio Code settings
+.vscode/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Local environment files
+*.env
+.env.local
+.env.*.local
+
+# Log files
+*.log
+
+# NuGet packages
+*.nupkg
+*.snupkg
+
+# Auto-generated files and other
+*.cache
+*.pdb
+*.mdb
+*.pidb
+*.log
+*.svclog
+*.sln.docstates
+*.ilk
+*.meta
+*.obj
+*.tlog
+*.tmp
+
+# Package manager directories
+node_modules/
+jspm_packages/
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
