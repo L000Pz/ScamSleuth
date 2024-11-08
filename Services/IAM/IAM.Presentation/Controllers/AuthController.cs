@@ -6,10 +6,12 @@ namespace IAM.Presentation.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IRegisterService _registerService;
+    private readonly ILoginService _loginService;
 
-    public AuthController(IRegisterService registerService)
+    public AuthController(IRegisterService registerService, ILoginService loginService)
     {
         _registerService = registerService;
+        _loginService = loginService;
     }
 
 
@@ -20,8 +22,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     [HttpPost("login")]
-    public ActionResult Login()
+    public ActionResult Login(string firstName, int code)
     {
-        return Ok();
+        var result = _loginService.Handle(firstName, code);
+        return Ok(result);
     }
 }
