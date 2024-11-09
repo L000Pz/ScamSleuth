@@ -3,6 +3,6 @@ namespace IAM.Application.Common;
 
 public interface IUserRepository
 {
-    void Add(User user);
-    User? GetByName(string firstName);
+    void Add(Users users);
+    Task<Users?> GetByEmail(string email);
 }

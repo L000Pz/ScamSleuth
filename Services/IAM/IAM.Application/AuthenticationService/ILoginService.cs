@@ -2,5 +2,5 @@
 
 public interface ILoginService
 {
-    AuthenticationResult Handle(string firstName, int code);
+    Task <AuthenticationResult?> Handle(string email, string password);
 }

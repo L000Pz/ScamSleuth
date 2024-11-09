@@ -37,3 +37,16 @@ C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presenta
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\IAM.Application.pdb
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\IAM.Infrastructure.pdb
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\IAM.Domain.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Npgsql.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll

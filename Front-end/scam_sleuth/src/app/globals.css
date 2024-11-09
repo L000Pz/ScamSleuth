@@ -6,7 +6,7 @@ body {
   @apply font-sans;
 }
 @font-face {
-  font-family: 'MyCustomFont';
+  font-family: 'MCF';
   src: url('/fonts/montserrat-v26-latin-700.woff2') format('woff2'),
         url('/fonts/montserrat-v26-latin-regular.woff') format('woff'),
         url('/fonts/montserrat-v26-latin-600.woff') format('woff');
@@ -25,4 +25,5 @@ body {
 }
 body {
   background-color: #BBB8AF; /* Your global background color */
+  font-family: 'MCF', sans-serif;
 }

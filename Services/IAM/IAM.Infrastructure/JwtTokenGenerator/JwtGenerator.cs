@@ -1,0 +1,58 @@
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using IAM.Application.Common;
+using IAM.Domain;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+namespace IAM.Infrastructure.JwtTokenGenerator;
+
+public class JwtGenerator : IJwtTokenGenerator
+{
+    public string GenerateToken(Users user)
+    {
+        var claims = new Claim[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sid,user.user_id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Name,user.username),
+           // new Claim(JwtRegisteredClaimNames.UniqueName,user.phone_number.ToString())
+
+        };
+
+        var signing = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("HiBuddy_users_top_secret_key_ggs"))
+            ,SecurityAlgorithms.HmacSha256);
+        
+        var token = new JwtSecurityToken(
+            issuer:"http://localhost:5000",
+            audience:"http://localhost:5000",
+            claims:claims,
+            null,
+            DateTime.Now.AddMinutes(60*24*15),
+            signingCredentials:signing);
+
+        String tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
+        return tokenValue;
+    }
+
+    public string? GetUsername(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        try
+        {
+            var tokens = handler.ReadJwtToken(token);
+            if (tokens is null)
+            {
+                return null;
+            }
+
+            var res = tokens.Claims.First(c => c.Type.Equals("name")).Value;
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
+}

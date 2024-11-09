@@ -1,10 +1,12 @@
 using IAM.Application;
 using IAM.Infrastructure;
+using IAM.Infrastructure.UserRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddApplication().AddInfrastructure();
+builder.Services.AddDbContext<PostgreSqlContext>();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
