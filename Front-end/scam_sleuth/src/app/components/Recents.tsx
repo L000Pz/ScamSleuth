@@ -1,4 +1,3 @@
-// src/components/RecentScams.tsx
 "use client"
 import { useEffect, useState } from 'react';
 import ScamCard from './card';

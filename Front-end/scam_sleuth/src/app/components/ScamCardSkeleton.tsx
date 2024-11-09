@@ -1,5 +1,3 @@
-// src/components/ScamCardSkeleton.tsx
-
 export default function ScamCardSkeleton() {
     return (
       <div className="bg-grey rounded-xl shadow-lg overflow-hidden w-[280px] h-[337px] animate-pulse relative">

@@ -27,7 +27,6 @@ const HeroSection = () => {
           <p className="text-base md:text-lg">
             Scam Sleuth empowers you to stay informed by uncovering fraudulent activities in your area and beyond. Our community-driven reports help you navigate online and offline scams with confidence. Browse through existing reports or add your own to keep others safe.
           </p>
-          {/* Buttons in a Row on All Screen Sizes */}
           <div className="flex space-x-4 justify-center md:justify-start">
             <Button size='md' variant="outlineW" className='text-[16px]'>View all scams</Button>
             <Button size='md' variant="outline" className='text-[16px] font-medium'>Report a scam</Button>
