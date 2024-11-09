@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "MV+HO8/mj/1P9Qr7xKxQ4meh2pVVHLA/ydWgFzyD66cQDhl939Lox10iXZ5GlLtWRVPKBDx35CHaUjyIwfMCMA==",
+  "dgSpecHash": "VdVXn7JUvZVIIbZ3FS1TRo8xw0yjwjZ6vIDR/7bHDbKaBOXZl6zc8DOrc1+zRR7ofDYp9mU1MSoKfAhWf5UVTQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\arian\\Desktop\\university\\4031\\SSAD\\ScamSleuth\\Services\\IAM\\IAM.Domain\\IAM.Domain.csproj",
   "expectedPackageFiles": [
@@ -8,6 +8,7 @@
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.aspnetcore.http.abstractions\\2.2.0\\microsoft.aspnetcore.http.abstractions.2.2.0.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.aspnetcore.http.features\\6.0.0-preview.4.21253.5\\microsoft.aspnetcore.http.features.6.0.0-preview.4.21253.5.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.aspnetcore.webutilities\\2.2.0\\microsoft.aspnetcore.webutilities.2.2.0.nupkg.sha512",
+    "C:\\Users\\arian\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\7.0.20\\microsoft.entityframeworkcore.abstractions.7.0.20.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\2.2.0\\microsoft.extensions.dependencyinjection.abstractions.2.2.0.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.extensions.objectpool\\2.2.0\\microsoft.extensions.objectpool.2.2.0.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\microsoft.extensions.options\\2.2.0\\microsoft.extensions.options.2.2.0.nupkg.sha512",

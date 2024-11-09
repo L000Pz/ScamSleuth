@@ -4,5 +4,7 @@ namespace IAM.Application.Common;
 
 public interface IJwtTokenGenerator
 {
-    string GenerateToken(User user);
+    string GenerateToken(Users user);
+    String? GetUsername(String token);
+    
 }

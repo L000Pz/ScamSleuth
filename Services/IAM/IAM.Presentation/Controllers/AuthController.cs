@@ -22,9 +22,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     [HttpPost("login")]
-    public ActionResult Login(string firstName, int code)
+    public ActionResult Login(string email, string password)
     {
-        var result = _loginService.Handle(firstName, code);
+        var result = _loginService.Handle(email, password);
         return Ok(result);
     }
 }

@@ -3,5 +3,5 @@
 namespace IAM.Application.AuthenticationService;
 
 public record AuthenticationResult(
-    User User,
+    Users users,
     string token);

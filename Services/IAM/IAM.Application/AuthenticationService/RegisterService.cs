@@ -14,21 +14,21 @@ public class RegisterService : IRegisterService
         _jwtTokenGenerator = jwtTokenGenerator;
     }
 
-    public AuthenticationResult Handle(string firstName, string lastName)
+    public AuthenticationResult Handle(string email, string lastName)
     {
-        if (_userRepository.GetByName(firstName) is not null)
+        if (_userRepository.GetByEmail(email) is not null)
         {
             throw new Exception("User already exists!");
         }
-        var user = new User
+        var users = new Users
         {
-            FirstName = firstName,
-            LastName = lastName
+            email = email
+                
         };
-        _userRepository.Add(user);
+        _userRepository.Add(users);
 
-        var token = _jwtTokenGenerator.GenerateToken(user);
+        var token = _jwtTokenGenerator.GenerateToken(users);
 
-        return new AuthenticationResult(user, token);
+        return new AuthenticationResult(users, token);
     }
 }
