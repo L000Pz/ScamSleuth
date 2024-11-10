@@ -5,4 +5,5 @@ public interface IUserRepository
 {
     void Add(Users users);
     Task<Users?> GetByEmail(string email);
+    Task<Users?> GetByUsername(String username);
 }

@@ -2,5 +2,5 @@
 
 public interface IRegisterService
 {
-    AuthenticationResult Handle(string firstName, string lastName);
+    Task<AuthenticationResult?> Handle(string email, string username, string password, string name);
 }

@@ -15,13 +15,21 @@ public class AuthController : ControllerBase
     }
 
 
-    [HttpPost("register")]
-    public ActionResult Register(string firstName, string lastName)
+    [HttpPost("Register")]
+    public async Task<ActionResult> Register(string email, string username, string password, string name)
     {
-        var result = _registerService.Handle(firstName,lastName);
+        var result = await _registerService.Handle(email, username, password, name);
+        if (result.token.Equals("email"))
+        {
+            return BadRequest("Email already exists!");
+        }
+        if (result.token.Equals("username"))
+        {
+            return BadRequest("Username already exists!");
+        }
         return Ok(result);
     }
-    [HttpPost("login")]
+    [HttpPost("Login")]
     public async Task<ActionResult> Login(string email, string password)
     {
         var result = await _loginService.Handle(email, password);
