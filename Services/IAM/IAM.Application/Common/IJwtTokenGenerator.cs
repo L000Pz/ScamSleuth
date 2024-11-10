@@ -5,6 +5,5 @@ namespace IAM.Application.Common;
 public interface IJwtTokenGenerator
 {
     string GenerateToken(Users user);
-    String? GetUsername(String token);
     
 }

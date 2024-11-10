@@ -15,5 +15,20 @@ public class Users
     [Required]
     public string name { get; set; }
     public string password { get; set; }
-
+    [Required]
+    public bool is_verified { get; set; }
+    
+    
+    public static Users Create(String username,String name,String email, String password)
+    {
+        return new Users
+        {
+            username = username,
+            name = name,
+            email = email,
+            password = password,
+            is_verified = false
+        };
+    }
 }
+

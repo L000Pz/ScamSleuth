@@ -6,29 +6,40 @@ namespace IAM.Application.AuthenticationService;
 public class RegisterService : IRegisterService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IJwtTokenGenerator _jwtGenerator;
+    private readonly IHasher _hasher;
 
-    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtTokenGenerator)
+    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtGenerator, IHasher hasher)
     {
         _userRepository = userRepository;
-        _jwtTokenGenerator = jwtTokenGenerator;
+        _jwtGenerator = jwtGenerator;
+        _hasher = hasher;
     }
 
-    public AuthenticationResult Handle(string email, string lastName)
+    public async Task<AuthenticationResult?> Handle(string email, string username, string password, string name)
     {
-        if (_userRepository.GetByEmail(email) is not null)
+        // check if user exists
+        // check with username
+        if (await _userRepository.GetByUsername(username) is not null)
         {
-            throw new Exception("User already exists!");
+            return new AuthenticationResult(new Users(), "username");
+            //throw new Exception("user with this username already exists");
         }
-        var users = new Users
+        // check with email
+        if (await _userRepository.GetByEmail(email) is not null)
         {
-            email = email
-                
-        };
-        _userRepository.Add(users);
-
-        var token = _jwtTokenGenerator.GenerateToken(users);
-
-        return new AuthenticationResult(users, token);
+            return new AuthenticationResult(new Users(), "email");
+            //throw new Exception("user with this email address already exists");
+        }
+        
+        var user = Users.Create(username, name, email, _hasher.Hash(password));
+        // add user to database
+         _userRepository.Add(user);
+        // create token
+        String token = _jwtGenerator.GenerateToken(user);
+        // return newly created user
+        return new AuthenticationResult(user, token);
     }
+
+    
 }

@@ -25,6 +25,12 @@ public class UserRepository : IUserRepository
         return _context.users.SingleOrDefault(user => user.email == email);
 
     }
+    
+    public async Task<Users?> GetByUsername(string username)
+    {
+        return _context.users.SingleOrDefault(user => user.username == username);
+
+    }
 
     public async Task Update(Users users)
     { 
