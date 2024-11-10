@@ -93,3 +93,6 @@ $RECYCLE.BIN/
 .DS_Store
 .AppleDouble
 .LSOverride
+
+
+appsettings.Development.json

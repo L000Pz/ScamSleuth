@@ -10,7 +10,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository.UserRepository>();
-        services.AddSingleton<IJwtTokenGenerator, JwtGenerator>();
+        services.AddScoped<IJwtTokenGenerator, JwtGenerator>();
         services.AddScoped<IHasher,Hasher>();
         services.AddDbContext<PostgreSqlContext>();
         return services;
