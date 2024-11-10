@@ -4,7 +4,7 @@ import RecentScams from './components/Recents';
 
 export default function Home() {
   return (
-    <div className=" bg-background">
+    <div className="">
       <HeroSection />
       <RecentScams />
     </div>
