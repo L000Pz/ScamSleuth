@@ -22,9 +22,17 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     [HttpPost("login")]
-    public ActionResult Login(string email, string password)
+    public async Task<ActionResult> Login(string email, string password)
     {
-        var result = _loginService.Handle(email, password);
+        var result = await _loginService.Handle(email, password);
+        if (result is null)
+        {
+            return BadRequest("User doesn't exist!");
+        }
+        if (result.token.Equals("incorrect"))
+        {
+            return BadRequest("Incorrect password!");
+        }
         return Ok(result);
     }
 }
