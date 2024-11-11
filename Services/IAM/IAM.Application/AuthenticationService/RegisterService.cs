@@ -37,6 +37,7 @@ public class RegisterService : IRegisterService
          _userRepository.Add(user);
         // create token
         String token = _jwtGenerator.GenerateToken(user);
+
         // return newly created user
         return new AuthenticationResult(user, token);
     }

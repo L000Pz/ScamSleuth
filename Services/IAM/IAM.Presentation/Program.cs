@@ -33,6 +33,7 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
+
 // Existing service registrations
 builder.Services.AddApplication().AddInfrastructure();
 builder.Services.AddDbContext<PostgreSqlContext>();

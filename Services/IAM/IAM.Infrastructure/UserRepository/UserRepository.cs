@@ -31,17 +31,11 @@ public class UserRepository : IUserRepository
         return _context.users.SingleOrDefault(user => user.username == username);
 
     }
-
-    public async Task Update(Users users)
-    { 
-        _context.users.Update(users);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DelUser(Users users)
+    
+    public async Task<Users?> GetByUserId(int user_id)
     {
-        _context.users.Remove(users);
-        await _context.SaveChangesAsync();
-    }
+        return _context.users.SingleOrDefault(user => user.user_id == user_id);
 
+    }
+    
 }
