@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "44Rt8ZsylNGBPvjF3HIO2eP2+FfB4WDcuqfqSJJrrfs1cht8QyQvUNfsRb4dI/FbUbPssyTCRvu8+2WVBm0oLQ==",
+  "dgSpecHash": "uPY83Nk4W7ejplvksJ7ZgpplbZfaLhKaRV43CW3KypmKLafe04mlYRD1pXw4GgqtpdWJqUXvsHpPy0Hol1fpCw==",
   "success": true,
   "projectFilePath": "C:\\Users\\arian\\Desktop\\university\\4031\\SSAD\\ScamSleuth\\Services\\IAM\\IAM.Presentation\\IAM.Presentation.csproj",
   "expectedPackageFiles": [
@@ -55,7 +55,9 @@
     "C:\\Users\\arian\\.nuget\\packages\\newtonsoft.json\\9.0.1\\newtonsoft.json.9.0.1.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\npgsql\\7.0.7\\npgsql.7.0.7.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\npgsql.entityframeworkcore.postgresql\\7.0.18\\npgsql.entityframeworkcore.postgresql.7.0.18.nupkg.sha512",
+    "C:\\Users\\arian\\.nuget\\packages\\pipelines.sockets.unofficial\\2.2.8\\pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\runtime.native.system\\4.0.0\\runtime.native.system.4.0.0.nupkg.sha512",
+    "C:\\Users\\arian\\.nuget\\packages\\stackexchange.redis\\2.8.16\\stackexchange.redis.2.8.16.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\swashbuckle.aspnetcore\\6.5.0\\swashbuckle.aspnetcore.6.5.0.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\6.5.0\\swashbuckle.aspnetcore.swagger.6.5.0.nupkg.sha512",
     "C:\\Users\\arian\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\6.5.0\\swashbuckle.aspnetcore.swaggergen.6.5.0.nupkg.sha512",

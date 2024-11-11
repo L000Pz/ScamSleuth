@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository.UserRepository>();
         services.AddScoped<IJwtTokenGenerator, JwtGenerator>();
         services.AddScoped<IHasher,Hasher>();
+        services.AddScoped<ICodeGenerator, CodeGenerator>();
         services.AddDbContext<PostgreSqlContext>();
         return services;
     }
