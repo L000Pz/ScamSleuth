@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button'; // Assuming Button is defined in your components
+import { Button } from '@/components/ui/button';
 
 export default function SignupPage() {
   return (
@@ -15,7 +15,7 @@ export default function SignupPage() {
           
           <form className="space-y-4">
             <div>
-              <label className="block text-md font-medium mb-1">Email</label>
+              <label className="block text-[25px] font-bold mb-1">Email</label>
               <input
                 type="email"
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
@@ -24,24 +24,24 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Name</label>
+              <label className="block text-[25px] font-bold mb-1">Name</label>
               <input
                 type="text"
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Password</label>
+              <label className="block text-[25px] font-bold mb-1">Password</label>
               <input
                 type="password"
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full bg-red-500 text-white py-2 mt-4 rounded-full hover:bg-red-600">
+            <Button variant="outline" className="block mx-auto w-[250px] h-[40px] py-2 mt-4 mt-6 text-[20px] leading-none font-bold">
               Sign up
             </Button>
           </form>
