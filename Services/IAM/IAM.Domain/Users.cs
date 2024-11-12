@@ -30,5 +30,9 @@ public class Users
             is_verified = false
         };
     }
+    public void verify()
+    {
+        is_verified = true;
+    } 
 }
 

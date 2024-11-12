@@ -8,37 +8,35 @@ public class RegisterService : IRegisterService
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenGenerator _jwtGenerator;
     private readonly IHasher _hasher;
+    private readonly ICodeGenerator _codeGenerator;
+    private readonly IInMemoryRepository _inMemoryRepository;
 
-    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtGenerator, IHasher hasher)
+    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtGenerator, IHasher hasher,ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository)
     {
         _userRepository = userRepository;
         _jwtGenerator = jwtGenerator;
         _hasher = hasher;
+        _codeGenerator = codeGenerator;
+        _inMemoryRepository = inMemoryRepository;
     }
 
     public async Task<AuthenticationResult?> Handle(string email, string username, string password, string name)
     {
-        // check if user exists
-        // check with username
+
         if (await _userRepository.GetByUsername(username) is not null)
         {
             return new AuthenticationResult(new Users(), "username");
-            //throw new Exception("user with this username already exists");
         }
-        // check with email
         if (await _userRepository.GetByEmail(email) is not null)
         {
             return new AuthenticationResult(new Users(), "email");
-            //throw new Exception("user with this email address already exists");
         }
         
+        String code = _codeGenerator.GenerateCode();
+        await _inMemoryRepository.Add(username,code);
         var user = Users.Create(username, name, email, _hasher.Hash(password));
-        // add user to database
-         _userRepository.Add(user);
-        // create token
+        _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
-
-        // return newly created user
         return new AuthenticationResult(user, token);
     }
 

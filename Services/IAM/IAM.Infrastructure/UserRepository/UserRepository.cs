@@ -37,5 +37,10 @@ public class UserRepository : IUserRepository
         return _context.users.SingleOrDefault(user => user.user_id == user_id);
 
     }
-    
+
+    public async Task Update(Users user)
+    {
+        _context.users.Update(user);
+        await _context.SaveChangesAsync();
+    }
 }

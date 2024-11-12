@@ -8,4 +8,6 @@ public interface IUserRepository
     Task<Users?> GetByUsername(String username);
 
     Task<Users?> GetByUserId(int userId);
+    Task Update(Users user);
+
 }
