@@ -10,7 +10,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IRegisterService, RegisterService>();
         services.AddScoped<ILoginService, LoginService>();
-
+        services.AddScoped<IVerificationService, VerificationService>();
         return services;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using IAM.Application.Common;
 using IAM.Infrastructure.JwtTokenGenerator;
+using IAM.Infrastructure.RedisRepository;
 using IAM.Infrastructure.UserRepository;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +14,8 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenGenerator, JwtGenerator>();
         services.AddScoped<IHasher,Hasher>();
         services.AddScoped<ICodeGenerator, CodeGenerator>();
+        services.AddScoped<IRedisCache, RedisCache>();
+        services.AddScoped<IInMemoryRepository, InMemoryRepository>();
         services.AddDbContext<PostgreSqlContext>();
         return services;
     }
