@@ -6,66 +6,63 @@ import heroImage from '@/assets/images/hero.png';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function OtpPage() {
-    const router = useRouter();
-    const [otp, setOtp] = useState('');
-    const [message, setMessage] = useState(''); // State to store feedback messages
+export default function CodeVerificationPage() {
+  const router = useRouter();
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState(''); // State to store feedback messages
 
-  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setOtp(e.target.value);
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCode(e.target.value);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      // Send OTP to backend for verification
+      // Send code to backend for verification
       const response = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp }),
+        body: JSON.stringify({ otp: code }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // If verification is successful
         if (data.success) {
           // Handle automatic login (if token provided) or redirect
-          // Option 1: Store token and redirect
           if (data.token) {
-            localStorage.setItem('token', data.token); // or use cookies
-            router.push('/dashboard'); // Redirect to the main user area
+            localStorage.setItem('token', data.token);
+            router.push('/dashboard');
           } else {
-            // Option 2: Redirect to welcome or setup page
             router.push('/welcome');
           }
         } else {
-          setMessage('Invalid OTP. Please try again.');
+          setMessage('Invalid code. Please try again.');
         }
       } else {
-        setMessage('Failed to verify OTP. Please try again.');
+        setMessage('Failed to verify the code. Please try again.');
       }
     } catch (error) {
       setMessage('An error occurred. Please try again.');
-      console.error('OTP verification error:', error);
+      console.error('Code verification error:', error);
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleResendCode = async () => {
     try {
-      // Call the backend endpoint to resend the OTP
       const response = await fetch('/api/resend-otp', {
         method: 'POST',
       });
       if (response.ok) {
-        setMessage('OTP resent! Please check your email.');
+        setMessage('Code resent! Please check your email.');
       } else {
-        setMessage('Failed to resend OTP. Please try again.');
+        setMessage('Failed to resend the code. Please try again.');
       }
     } catch (error) {
-      setMessage('Error resending OTP. Please try again.');
-      console.error('Resend OTP error:', error);
+      setMessage('Error resending the code. Please try again.');
+      console.error('Resend code error:', error);
     }
   };
 
@@ -73,25 +70,25 @@ export default function OtpPage() {
     <div className="flex items-center justify-center p-[76px]">
       <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
         
-        {/* Left Column - OTP Form */}
+        {/* Left Column - Code Verification Form */}
         <div className="w-3/5 p-8">
-          <h2 className="text-[40px] text-center font-bold mb-6">Enter OTP</h2>
+          <h2 className="text-[40px] text-center font-bold mb-6">Enter Code</h2>
           <p className="text-center text-lg mb-4 text-gray-600">
-            We’ve sent a one-time passcode to your email. Please enter it below to continue.
+            We’ve sent a one-time code to your email. Please enter it below to continue.
           </p>
           
           <form className="space-y-4 mx-[90px]" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-[20px] font-bold mb-1">OTP Code</label>
+              <label className="block text-[20px] font-bold mb-1">Verification Code</label>
               <input
                 type="text"
-                name="otp"
-                value={otp}
-                onChange={handleOtpChange}
+                name="code"
+                value={code}
+                onChange={handleCodeChange}
                 className="w-full p-2 border border-gray-300 rounded-full text-center focus:outline-none focus:border-blue-500"
                 required
                 maxLength={6}
-                placeholder="Enter OTP"
+                placeholder="Enter code"
               />
             </div>
 
@@ -104,8 +101,8 @@ export default function OtpPage() {
 
           <p className="text-center text-sm mt-4">
             Didn’t receive the code?{' '}
-            <button type="button" onClick={handleResendOtp} className="text-blue-600 hover:underline">
-              Resend OTP
+            <button type="button" onClick={handleResendCode} className="text-blue-600 hover:underline">
+              Resend Code
             </button>
           </p>
 
@@ -120,7 +117,6 @@ export default function OtpPage() {
           </p>
           <p className="text-[40px] font-bold text-white text-left">Your journey starts here.</p>
         </div>
-
       </div>
     </div>
   );
