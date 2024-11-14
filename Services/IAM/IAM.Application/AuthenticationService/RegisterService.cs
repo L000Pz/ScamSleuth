@@ -1,4 +1,5 @@
 ﻿using IAM.Application.Common;
+using IAM.Contracts;
 using IAM.Domain;
 
 namespace IAM.Application.AuthenticationService;
@@ -20,21 +21,26 @@ public class RegisterService : IRegisterService
         _inMemoryRepository = inMemoryRepository;
     }
 
-    public async Task<AuthenticationResult?> Handle(string email, string username, string password, string name)
+    public async Task<AuthenticationResult?> Handle(RegisterDetails registerDetails)
     {
 
-        if (await _userRepository.GetByUsername(username) is not null)
+        if (await _userRepository.GetUserByUsername(registerDetails.username) is not null)
         {
-            return new AuthenticationResult(new Users(), "username");
+            if (await _userRepository.GetAdminByUsername(registerDetails.username) is not null)
+            {
+                return new AuthenticationResult(null, "username");
+            }
         }
-        if (await _userRepository.GetByEmail(email) is not null)
+        if (await _userRepository.GetUserByEmail(registerDetails.email) is not null)
         {
-            return new AuthenticationResult(new Users(), "email");
+            if (await _userRepository.GetAdminByEmail(registerDetails.email) is not null)
+            {
+                return new AuthenticationResult(null, "email");
+            }        
         }
-        
         String code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(username,code);
-        var user = Users.Create(username, name, email, _hasher.Hash(password));
+        await _inMemoryRepository.Add(registerDetails.username,code);
+        var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
         _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
         return new AuthenticationResult(user, token);

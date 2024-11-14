@@ -1,4 +1,5 @@
 ﻿using IAM.Application.Common;
+using IAM.Contracts;
 using IAM.Domain;
 
 namespace IAM.Application.AuthenticationService;
@@ -16,23 +17,43 @@ public class LoginService : ILoginService
         _hasher = hasher;
     }
 
-    public async Task<AuthenticationResult?> Handle(string email, string password)
+    public async Task<AuthenticationResult?> Handle(LoginDetails loginDetails)
     {
-        Users? existingUser = await _userRepository.GetByEmail(email);
+        Users? existingUser = await _userRepository.GetUserByEmail(loginDetails.email);
 
         if (existingUser is null)
         {
             return null;
         }
-
+        
         // Verify password
-        if (!existingUser.password.Equals(_hasher.Hash(password)))
+        if (!existingUser.password.Equals(_hasher.Hash(loginDetails.password)))
         {
-            return new AuthenticationResult(new Users(), "incorrect");
+            return new AuthenticationResult(null, "incorrect");
         }
 
         // Generate token
         string token = _jwtTokenGenerator.GenerateToken(existingUser);
         return new AuthenticationResult(existingUser, token);
+    }
+    
+    public async Task<AdminAuthenticationResult?> HandleAdmin(LoginDetails loginDetails)
+    {
+        Admins? existingAdmin = await _userRepository.GetAdminByEmail(loginDetails.email);
+
+        if (existingAdmin is null)
+        {
+            return null;
+        }
+        
+        // Verify password
+        if (!existingAdmin.password.Equals(_hasher.Hash(loginDetails.password)))
+        {
+            return new AdminAuthenticationResult(null, "incorrect");
+        }
+
+        // Generate token
+        string token = _jwtTokenGenerator.GenerateToken(existingAdmin);
+        return new AdminAuthenticationResult(existingAdmin, token);
     }
 }

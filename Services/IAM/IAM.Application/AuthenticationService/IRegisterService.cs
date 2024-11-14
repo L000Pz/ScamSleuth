@@ -1,6 +1,8 @@
-﻿namespace IAM.Application.AuthenticationService;
+﻿using IAM.Contracts;
+
+namespace IAM.Application.AuthenticationService;
 
 public interface IRegisterService
 {
-    Task<AuthenticationResult?> Handle(string email, string username, string password, string name);
+    Task<AuthenticationResult?> Handle(RegisterDetails registerDetails);
 }

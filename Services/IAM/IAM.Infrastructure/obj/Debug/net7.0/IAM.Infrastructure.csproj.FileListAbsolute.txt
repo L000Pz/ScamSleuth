@@ -15,3 +15,5 @@ C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastr
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastructure\obj\Debug\net7.0\refint\IAM.Infrastructure.dll
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastructure\obj\Debug\net7.0\IAM.Infrastructure.pdb
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastructure\obj\Debug\net7.0\ref\IAM.Infrastructure.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastructure\bin\Debug\net7.0\IAM.Contracts.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Infrastructure\bin\Debug\net7.0\IAM.Contracts.pdb

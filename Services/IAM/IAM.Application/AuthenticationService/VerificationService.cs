@@ -1,4 +1,5 @@
 ﻿using IAM.Application.Common;
+using IAM.Contracts;
 using IAM.Domain;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -17,16 +18,16 @@ public class VerificationService : IVerificationService
         _userRepository = userRepository;
     }
 
-    public async Task<AuthenticationResult> Handle(string token, string code)
+    public async Task<AuthenticationResult> Handle(VerificationDetails verificationDetails)
     {
         // extract username from token
-        String? username = _jwtGenerator.GetUsername(token);
+        String? username = _jwtGenerator.GetUsername(verificationDetails.token);
         // check if token or phone number is valid
         if (username is null)
         {
             return new AuthenticationResult(null,"invalidToken");
         }
-        Users? user = await _userRepository.GetByUsername(username);
+        Users? user = await _userRepository.GetUserByUsername(username);
         if (user is null)
         {
             return new AuthenticationResult(null, "invalidUser");
@@ -39,13 +40,13 @@ public class VerificationService : IVerificationService
             return new AuthenticationResult(null,"codeExpired");
         }
         // check if code is correct
-        if (!result.Equals(code))
+        if (!result.Equals(verificationDetails.code))
         {
             return new AuthenticationResult(null, "invalidCode");
         }
         // veify user
         user.verify();
         await _userRepository.Update(user);
-        return new AuthenticationResult(user,token);
+        return new AuthenticationResult(user,verificationDetails.token);
     }
 }

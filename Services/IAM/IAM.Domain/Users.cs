@@ -14,6 +14,7 @@ public class Users
     public string email { get; set; }
     [Required]
     public string name { get; set; }
+    [Required]
     public string password { get; set; }
     [Required]
     public bool is_verified { get; set; }

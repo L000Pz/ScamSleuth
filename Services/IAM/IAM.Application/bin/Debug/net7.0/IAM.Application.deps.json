@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v7.0": {
       "IAM.Application/1.0.0": {
         "dependencies": {
+          "IAM.Contracts": "1.0.0",
           "IAM.Domain": "1.0.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "7.0.20",
           "Microsoft.AspNetCore.Http": "2.2.2",
@@ -690,6 +691,11 @@
           "System.Xml.ReaderWriter": "4.0.11"
         }
       },
+      "IAM.Contracts/1.0.0": {
+        "runtime": {
+          "IAM.Contracts.dll": {}
+        }
+      },
       "IAM.Domain/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "7.0.20",
@@ -1314,6 +1320,11 @@
       "sha512": "sha512-Mk2mKmPi0nWaoiYeotq1dgeNK1fqWh61+EK+w4Wu8SWuTYLzpUnschb59bJtGywaPq7SmTuPf44wrXRwbIrukg==",
       "path": "system.xml.xdocument/4.0.11",
       "hashPath": "system.xml.xdocument.4.0.11.nupkg.sha512"
+    },
+    "IAM.Contracts/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "IAM.Domain/1.0.0": {
       "type": "project",
