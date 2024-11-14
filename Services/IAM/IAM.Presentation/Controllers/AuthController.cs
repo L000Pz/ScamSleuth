@@ -54,10 +54,22 @@ public class AuthController : ControllerBase
         {
             return BadRequest("Code has not been sent!");
         }
-        Boolean result =await _verificationService.Handle(token, code);
-        if (!result)
+        var result =await _verificationService.Handle(token, code);
+        if (result.token.Equals("invalidToken"))
         {
-            return BadRequest("Wrong Code!");
+            return BadRequest("Token is invalid!");
+        }
+        if (result.token.Equals("invalidUser"))
+        {
+            return BadRequest("User doesn't exist!");
+        }
+        if (result.token.Equals("codeExpired"))
+        {
+            return BadRequest("Code expired. Please request for a new code.");
+        }
+        if (result.token.Equals("invalidCode"))
+        {
+            return BadRequest("Invalid code!");
         }
         return Ok("Account verified successfully!");
     }
