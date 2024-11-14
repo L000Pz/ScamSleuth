@@ -1,5 +1,6 @@
 // src/app/signup/page.tsx
-"use client"
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,44 +9,67 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 
-// Define the Zod schema
+// Define the Zod schema for form validation
 const SignupSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
   name: z.string().min(1, { message: 'Name is required' }),
+  username: z.string().min(3, { message: 'Username must be at least 3 characters long' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
 });
 
 export default function SignupPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: '', name: '', password: '' });
-  const [errors, setErrors] = useState({ email: '', name: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', name: '', username: '', password: '' });
+  const [errors, setErrors] = useState({ email: '', name: '', username: '', password: '' });
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Validate form data
+
+    // Validate form data using Zod schema
     const result = SignupSchema.safeParse(formData);
-    
+
     if (!result.success) {
-      // Collect and display errors
       const fieldErrors = result.error.flatten().fieldErrors;
       setErrors({
         email: fieldErrors.email ? fieldErrors.email[0] : '',
         name: fieldErrors.name ? fieldErrors.name[0] : '',
+        username: fieldErrors.username ? fieldErrors.username[0] : '',
         password: fieldErrors.password ? fieldErrors.password[0] : '',
       });
       return;
     }
 
-    // Clear errors if valid
-    setErrors({ email: '', name: '', password: '' });
+    // Clear errors if validation passes
+    setErrors({ email: '', name: '', username: '', password: '' });
+    setApiError(null);
 
-    // Redirect to OTP page
-    router.push('/otp');
+    // Make the API request to mock Mirage endpoint
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setApiError(errorData.message || 'Failed to sign up');
+        return;
+      }
+
+      // Redirect to OTP page upon success
+      router.push('/otp');
+    } catch (error) {
+      console.error('Error signing up:', error);
+      setApiError('An unexpected error occurred. Please try again.');
+    }
   };
 
   return (
@@ -84,6 +108,19 @@ export default function SignupPage() {
             </div>
 
             <div>
+              <label className="block text-[20px] font-bold mb-1">Username</label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                required
+              />
+              {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
+            </div>
+
+            <div>
               <label className="block text-[20px] font-bold mb-1">Password</label>
               <input
                 type="password"
@@ -96,6 +133,8 @@ export default function SignupPage() {
               {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
             </div>
 
+            {apiError && <p className="text-red-500 text-sm text-center">{apiError}</p>}
+            
             <div className="mt-[50px]">
               <Button type="submit" variant="outline" className="block mx-auto w-[250px] h-[40px] py-2 text-[20px] leading-none font-bold">
                 Sign up
@@ -119,7 +158,6 @@ export default function SignupPage() {
           </p>
           <p className="text-[40px] font-bold text-white text-left">Sign up and make a difference.</p>
         </div>
-
       </div>
     </div>
   );

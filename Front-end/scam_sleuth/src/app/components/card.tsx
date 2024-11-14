@@ -15,7 +15,7 @@ export default function ScamCard({ id, name, description, imageUrl }: CardProps)
     <div
       className={`${
         isEven ? 'bg-cardWhite text-black' : 'bg-cardWhite text-black'
-      } rounded-xl shadow-2xl overflow-hidden w-[280px] h-[337px] transform transition-transform duration-300 hover:scale-105 hover:shadow-[0_15px_30px_rgba(0,0,0,0.3)]`}
+      } rounded-xl shadow-2xl overflow-hidden max-w-[280px] h-[337px] transform transition-transform duration-300 hover:scale-105 hover:shadow-[0_15px_30px_rgba(0,0,0,0.3)]`}
     >
       {/* Dark Header */}
       <div className={`${isEven ? "bg-black h-[152px]" : "bg-black h-[33px]"}`}></div>

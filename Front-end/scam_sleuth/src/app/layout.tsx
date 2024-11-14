@@ -1,9 +1,9 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import Footer from './components/Footer';
 import Navbar from "./components/header";
-
-
+import MirageSetup from "./components/MirageSetup";
 
 export const metadata: Metadata = {
   title: "‌Scam Sleuth",
@@ -12,12 +12,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className="bg-background flex flex-col " >
+      <body className="bg-background flex flex-col">
+        <MirageSetup /> {/* Only runs on the client side */}
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />
