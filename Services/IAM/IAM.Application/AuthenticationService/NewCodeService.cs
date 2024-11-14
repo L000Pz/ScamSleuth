@@ -28,7 +28,7 @@ public class NewCodeService : INewCodeService
         {
             return new AuthenticationResult(null,"invalidToken");
         }
-        Users? user = await _userRepository.GetByUsername(username);
+        Users? user = await _userRepository.GetUserByUsername(username);
         if (user is null)
         {
             return new AuthenticationResult(null, "invalidUser");

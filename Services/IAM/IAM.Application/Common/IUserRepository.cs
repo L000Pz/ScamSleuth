@@ -4,10 +4,12 @@ namespace IAM.Application.Common;
 public interface IUserRepository
 {
     void Add(Users users);
-    Task<Users?> GetByEmail(string email);
-    Task<Users?> GetByUsername(String username);
+    Task<Users?> GetUserByEmail(string email);
+    Task<Admins?> GetAdminByEmail(string email);
 
-    Task<Users?> GetByUserId(int userId);
+    Task<Users?> GetUserByUsername(String username);
+    Task<Admins?> GetAdminByUsername(String username);
+
     Task Update(Users user);
 
 }

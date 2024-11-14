@@ -20,18 +20,24 @@ public class UserRepository : IUserRepository
     }
 
 
-    public async Task<Users?> GetByEmail(string email)
+    public async Task<Users?> GetUserByEmail(string email)
     {
         return _context.users.SingleOrDefault(user => user.email == email);
-
     }
-    
-    public async Task<Users?> GetByUsername(string username)
+    public async Task<Admins?> GetAdminByEmail(string email)
+    {
+        return _context.admins.SingleOrDefault(admin => admin.email == email);
+    }
+    public async Task<Users?> GetUserByUsername(string username)
     {
         return _context.users.SingleOrDefault(user => user.username == username);
 
     }
-    
+    public async Task<Admins?> GetAdminByUsername(string username)
+    {
+        return _context.admins.SingleOrDefault(admin => admin.username == username);
+
+    }
     public async Task<Users?> GetByUserId(int user_id)
     {
         return _context.users.SingleOrDefault(user => user.user_id == user_id);

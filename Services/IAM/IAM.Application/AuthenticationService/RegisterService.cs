@@ -24,15 +24,20 @@ public class RegisterService : IRegisterService
     public async Task<AuthenticationResult?> Handle(RegisterDetails registerDetails)
     {
 
-        if (await _userRepository.GetByUsername(registerDetails.username) is not null)
+        if (await _userRepository.GetUserByUsername(registerDetails.username) is not null)
         {
-            return new AuthenticationResult(new Users(), "username");
+            if (await _userRepository.GetAdminByUsername(registerDetails.username) is not null)
+            {
+                return new AuthenticationResult(null, "username");
+            }
         }
-        if (await _userRepository.GetByEmail(registerDetails.email) is not null)
+        if (await _userRepository.GetUserByEmail(registerDetails.email) is not null)
         {
-            return new AuthenticationResult(new Users(), "email");
+            if (await _userRepository.GetAdminByEmail(registerDetails.email) is not null)
+            {
+                return new AuthenticationResult(null, "email");
+            }        
         }
-        
         String code = _codeGenerator.GenerateCode();
         await _inMemoryRepository.Add(registerDetails.username,code);
         var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
