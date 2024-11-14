@@ -1,6 +1,8 @@
-﻿namespace IAM.Application.AuthenticationService;
+﻿using IAM.Contracts;
+
+namespace IAM.Application.AuthenticationService;
 
 public interface ILoginService
 {
-    Task <AuthenticationResult?> Handle(string email, string password);
+    Task <AuthenticationResult?> Handle(LoginDetails loginDetails);
 }

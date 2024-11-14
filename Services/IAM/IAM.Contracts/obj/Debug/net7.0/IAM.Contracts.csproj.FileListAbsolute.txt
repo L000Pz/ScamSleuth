@@ -1,0 +1,11 @@
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\bin\Debug\net7.0\IAM.Contracts.deps.json
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\bin\Debug\net7.0\IAM.Contracts.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\bin\Debug\net7.0\IAM.Contracts.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.AssemblyInfoInputs.cache
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.AssemblyInfo.cs
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.csproj.CoreCompileInputs.cache
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\refint\IAM.Contracts.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\IAM.Contracts.pdb
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Contracts\obj\Debug\net7.0\ref\IAM.Contracts.dll

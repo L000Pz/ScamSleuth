@@ -1,8 +1,9 @@
 ﻿using IAM.Application.Common;
+using IAM.Contracts;
 
 namespace IAM.Application.AuthenticationService;
 
 public interface IVerificationService
 {
-    Task<AuthenticationResult> Handle(string token, string code);
+    Task<AuthenticationResult> Handle(VerificationDetails verificationDetails);
 }
