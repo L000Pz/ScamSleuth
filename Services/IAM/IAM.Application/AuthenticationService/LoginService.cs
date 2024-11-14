@@ -1,4 +1,5 @@
 ﻿using IAM.Application.Common;
+using IAM.Contracts;
 using IAM.Domain;
 
 namespace IAM.Application.AuthenticationService;
@@ -16,9 +17,9 @@ public class LoginService : ILoginService
         _hasher = hasher;
     }
 
-    public async Task<AuthenticationResult?> Handle(string email, string password)
+    public async Task<AuthenticationResult?> Handle(LoginDetails loginDetails)
     {
-        Users? existingUser = await _userRepository.GetByEmail(email);
+        Users? existingUser = await _userRepository.GetByEmail(loginDetails.email);
 
         if (existingUser is null)
         {
@@ -26,7 +27,7 @@ public class LoginService : ILoginService
         }
 
         // Verify password
-        if (!existingUser.password.Equals(_hasher.Hash(password)))
+        if (!existingUser.password.Equals(_hasher.Hash(loginDetails.password)))
         {
             return new AuthenticationResult(new Users(), "incorrect");
         }

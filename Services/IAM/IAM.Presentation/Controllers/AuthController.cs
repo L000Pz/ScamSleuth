@@ -1,5 +1,6 @@
 ﻿using IAM.Application.AuthenticationService;
 using IAM.Application.Common;
+using IAM.Contracts;
 using Microsoft.AspNetCore.Mvc;
 namespace IAM.Presentation.Controllers;
 
@@ -9,19 +10,25 @@ public class AuthController : ControllerBase
     private readonly IRegisterService _registerService;
     private readonly ILoginService _loginService;
     private readonly IVerificationService _verificationService;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly ICodeGenerator _codeGenerator;
+    private readonly IInMemoryRepository _inMemoryRepository;
 
-    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService)
+    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, IJwtTokenGenerator jwtTokenGenerator, ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository)
     {
         _registerService = registerService;
         _loginService = loginService;
         _verificationService = verificationService;
+        _jwtTokenGenerator = jwtTokenGenerator;
+        _codeGenerator = codeGenerator;
+        _inMemoryRepository = inMemoryRepository;
     }
 
 
     [HttpPost("Register")]
-    public async Task<ActionResult> Register(string email, string username, string password, string name)
+    public async Task<ActionResult> Register([FromBody]RegisterDetails registerDetails)
     {
-        var result = await _registerService.Handle(email, username, password, name);
+        var result = await _registerService.Handle(registerDetails);
         if (result.token.Equals("email"))
         {
             return BadRequest("Email already exists!");
@@ -33,9 +40,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     [HttpPost("Login")]
-    public async Task<ActionResult> Login(string email, string password)
+    public async Task<ActionResult> Login([FromBody]LoginDetails loginDetails)
     {
-        var result = await _loginService.Handle(email, password);
+        var result = await _loginService.Handle(loginDetails);
         if (result is null)
         {
             return BadRequest("User doesn't exist!");
@@ -47,14 +54,33 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("Verify")]
-    public async Task<ActionResult> Verify(string token, string code)
+    [HttpPost("New Code")]
+    public async Task<ActionResult> NewCode(string token)
     {
-        if (code is null)
+        string username = _jwtTokenGenerator.GetUsername(token);
+        if (token.Equals("invalidToken"))
+        {
+            return BadRequest("Token is invalid!");
+        }
+
+        if (token.Equals("invalidUser"))
+        {
+            return BadRequest("User doesn't exist!");
+        }
+
+        string code = _codeGenerator.GenerateCode();
+        await _inMemoryRepository.Add(username,code);
+
+        return Ok("New code has been generated!");
+    }
+    [HttpPost("Verify")]
+    public async Task<ActionResult> Verify([FromBody]VerificationDetails verificationDetails)
+    {
+        if (verificationDetails.code is null)
         {
             return BadRequest("Code has not been sent!");
         }
-        var result =await _verificationService.Handle(token, code);
+        var result =await _verificationService.Handle(verificationDetails);
         if (result.token.Equals("invalidToken"))
         {
             return BadRequest("Token is invalid!");
