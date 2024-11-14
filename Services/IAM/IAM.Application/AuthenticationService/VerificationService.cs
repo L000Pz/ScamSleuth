@@ -1,5 +1,6 @@
 ﻿using IAM.Application.Common;
 using IAM.Domain;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace IAM.Application.AuthenticationService;
 
@@ -16,35 +17,35 @@ public class VerificationService : IVerificationService
         _userRepository = userRepository;
     }
 
-    public async Task<bool> Handle(string token, string code)
+    public async Task<AuthenticationResult> Handle(string token, string code)
     {
         // extract username from token
         String? username = _jwtGenerator.GetUsername(token);
         // check if token or phone number is valid
         if (username is null)
         {
-            throw new Exception("Token is invalid!");
+            return new AuthenticationResult(null,"invalidToken");
         }
         Users? user = await _userRepository.GetByUsername(username);
         if (user is null)
         {
-            throw new Exception("User doesn't exist!");
+            return new AuthenticationResult(null, "invalidUser");
         }
         // get code from cache database
-        String? result = await _inMemoryRepository.Get(user.user_id.ToString());
+        String? result = await _inMemoryRepository.Get(user.username.ToString());
         // check if code exists
         if (result is null)
         {
-            throw new Exception("Code expired. Please request for a new code.");
+            return new AuthenticationResult(null,"codeExpired");
         }
         // check if code is correct
-        else if (!result.Equals(code))
+        if (!result.Equals(code))
         {
-            throw new Exception("Invalid code!");
+            return new AuthenticationResult(null, "invalidCode");
         }
         // veify user
         user.verify();
         await _userRepository.Update(user);
-        return true;
+        return new AuthenticationResult(user,token);
     }
 }
