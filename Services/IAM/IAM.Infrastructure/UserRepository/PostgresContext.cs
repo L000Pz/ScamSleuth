@@ -12,6 +12,7 @@ public class PostgreSqlContext : DbContext
         
     }
     public DbSet<Users> users { get; set; }
+    public DbSet<Admins> admins { get; set; }
 
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

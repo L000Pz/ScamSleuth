@@ -45,7 +45,18 @@ public class AuthController : ControllerBase
         var result = await _loginService.Handle(loginDetails);
         if (result is null)
         {
-            return BadRequest("User doesn't exist!");
+            var adminResult = await _loginService.HandleAdmin(loginDetails);
+            if (adminResult is null)
+            {
+                return BadRequest("User doesn't exist!");
+            }
+
+            if (adminResult.token.Equals("incorrect"))
+            {
+                return BadRequest("Incorrect password!");
+            }
+
+            return Ok(adminResult);
         }
         if (result.token.Equals("incorrect"))
         {

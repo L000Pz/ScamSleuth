@@ -54,6 +54,26 @@ public class JwtGenerator : IJwtTokenGenerator
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    public string GenerateToken(Admins admin)
+    {
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sid, admin.admin_id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Name, admin.email),
+            new Claim(JwtRegisteredClaimNames.UniqueName, admin.username)
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
+            claims: claims,
+            null,
+            expires: DateTime.UtcNow.Add(_settings.TokenLifetime),
+            signingCredentials: _signingCredentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 
     public string? GetUsername(string token)
     {
