@@ -13,6 +13,7 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "7.0.20",
           "Microsoft.AspNetCore.Mvc.Core": "2.2.5",
           "Microsoft.AspNetCore.OpenApi": "7.0.20",
+          "StackExchange.Redis": "2.8.16",
           "Swashbuckle.AspNetCore": "6.5.0"
         },
         "runtime": {
@@ -428,10 +429,33 @@
           }
         }
       },
+      "Pipelines.Sockets.Unofficial/2.2.8": {
+        "dependencies": {
+          "System.IO.Pipelines": "6.0.0-preview.4.21253.7"
+        },
+        "runtime": {
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "2.2.8.1080"
+          }
+        }
+      },
       "runtime.native.System/4.0.0": {
         "dependencies": {
           "Microsoft.NETCore.Platforms": "1.1.0",
           "Microsoft.NETCore.Targets": "1.1.0"
+        }
+      },
+      "StackExchange.Redis/2.8.16": {
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "7.0.0",
+          "Pipelines.Sockets.Unofficial": "2.2.8"
+        },
+        "runtime": {
+          "lib/net6.0/StackExchange.Redis.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.8.16.12844"
+          }
         }
       },
       "Swashbuckle.AspNetCore/6.5.0": {
@@ -799,7 +823,8 @@
           "Microsoft.AspNetCore.Http.Abstractions": "2.2.0",
           "Microsoft.AspNetCore.Http.Features": "6.0.0-preview.4.21253.5",
           "Microsoft.AspNetCore.Mvc.Core": "2.2.5",
-          "Microsoft.AspNetCore.WebUtilities": "2.2.0"
+          "Microsoft.AspNetCore.WebUtilities": "2.2.0",
+          "StackExchange.Redis": "2.8.16"
         },
         "runtime": {
           "IAM.Application.dll": {}
@@ -813,7 +838,8 @@
           "Microsoft.AspNetCore.Http.Features": "6.0.0-preview.4.21253.5",
           "Microsoft.AspNetCore.Mvc.Core": "2.2.5",
           "Microsoft.AspNetCore.WebUtilities": "2.2.0",
-          "Microsoft.EntityFrameworkCore.Abstractions": "7.0.20"
+          "Microsoft.EntityFrameworkCore.Abstractions": "7.0.20",
+          "StackExchange.Redis": "2.8.16"
         },
         "runtime": {
           "IAM.Domain.dll": {}
@@ -830,7 +856,8 @@
           "Microsoft.AspNetCore.Mvc.Core": "2.2.5",
           "Microsoft.AspNetCore.WebUtilities": "2.2.0",
           "Microsoft.EntityFrameworkCore": "7.0.20",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "7.0.18"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "7.0.18",
+          "StackExchange.Redis": "2.8.16"
         },
         "runtime": {
           "IAM.Infrastructure.dll": {}
@@ -1201,12 +1228,26 @@
       "path": "npgsql.entityframeworkcore.postgresql/7.0.18",
       "hashPath": "npgsql.entityframeworkcore.postgresql.7.0.18.nupkg.sha512"
     },
+    "Pipelines.Sockets.Unofficial/2.2.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-zG2FApP5zxSx6OcdJQLbZDk2AVlN2BNQD6MorwIfV6gVj0RRxWPEp2LXAxqDGZqeNV1Zp0BNPcNaey/GXmTdvQ==",
+      "path": "pipelines.sockets.unofficial/2.2.8",
+      "hashPath": "pipelines.sockets.unofficial.2.2.8.nupkg.sha512"
+    },
     "runtime.native.System/4.0.0": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-QfS/nQI7k/BLgmLrw7qm7YBoULEvgWnPI+cYsbfCVFTW8Aj+i8JhccxcFMu1RWms0YZzF+UHguNBK4Qn89e2Sg==",
       "path": "runtime.native.system/4.0.0",
       "hashPath": "runtime.native.system.4.0.0.nupkg.sha512"
+    },
+    "StackExchange.Redis/2.8.16": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-WaoulkOqOC9jHepca3JZKFTqndCWab5uYS7qCzmiQDlrTkFaDN7eLSlEfHycBxipRnQY9ppZM7QSsWAwUEGblw==",
+      "path": "stackexchange.redis/2.8.16",
+      "hashPath": "stackexchange.redis.2.8.16.nupkg.sha512"
     },
     "Swashbuckle.AspNetCore/6.5.0": {
       "type": "package",

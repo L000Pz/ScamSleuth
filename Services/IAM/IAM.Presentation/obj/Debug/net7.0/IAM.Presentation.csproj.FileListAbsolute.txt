@@ -53,3 +53,5 @@ C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presenta
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.DotNet.PlatformAbstractions.dll
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Microsoft.Extensions.DependencyModel.dll
 C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Newtonsoft.Json.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\Pipelines.Sockets.Unofficial.dll
+C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Services\IAM\IAM.Presentation\bin\Debug\net7.0\StackExchange.Redis.dll

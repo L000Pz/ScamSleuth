@@ -5,6 +5,7 @@ using IAM.Infrastructure.UserRepository;
 using IAM.Infrastructure.JwtTokenGenerator;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ builder.Services.AddAuthentication(options =>
     });
 
 
-// Existing service registrations
+
 builder.Services.AddApplication().AddInfrastructure();
 builder.Services.AddDbContext<PostgreSqlContext>();
 builder.Services.AddControllers();
