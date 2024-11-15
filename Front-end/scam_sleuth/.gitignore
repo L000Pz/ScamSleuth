@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+
+# Static files
+*.pem
+.DS_Store
+
+# Testing and coverage
+coverage/
+
+# Environment variables
+.env
+.env.*.local
+
+# Local editor configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*.sublime-workspace
+
+# Next.js specific
+.next/
+out/
+
+# Optional npm cache
+.npm/
+
+# Yarn state files
+.pnp/
+.pnp.js
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+# TypeScript specific
+*.tsbuildinfo
+next-env.d.ts
+
+# Local OS-specific files
+Thumbs.db
+.DS_Store
+
+# Ignore build artifacts
+*.lock
+package-lock.json
+yarn.lock
