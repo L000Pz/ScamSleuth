@@ -1,4 +1,4 @@
-// File: C:\Users\arian\Desktop\university\4031\SSAD\ScamSleuth\Front-end\scam_sleuth\src\app\signup\page.tsx
+// File: C:\Users\AmirAli Seyedzadegan\Documents\Projects\git\ScamSleuth\Front-end\scam_sleuth\src\app\signup\page.tsx
 import * as entry from '../../../../src/app/signup/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
