@@ -110,8 +110,8 @@ appsettings.Development.json
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
 /build
