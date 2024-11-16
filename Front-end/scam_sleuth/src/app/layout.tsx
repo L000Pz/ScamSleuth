@@ -4,7 +4,11 @@ import "./globals.css";
 import Footer from './components/Footer';
 import Navbar from "./components/header";
 import MirageSetup from "./components/MirageSetup";
+import { makeServer } from '../mirage';
 
+if (process.env.NODE_ENV === 'development') {
+  makeServer();
+}
 export const metadata: Metadata = {
   title: "‌Scam Sleuth",
   description: "Uncovering Scams, One Report at a Time.",
