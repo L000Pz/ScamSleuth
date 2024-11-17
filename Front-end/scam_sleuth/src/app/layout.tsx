@@ -1,10 +1,56 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
+import localFont from 'next/font/local';
 import Footer from './components/Footer';
 import Navbar from "./components/header";
 import MirageSetup from "./components/MirageSetup";
 import { makeServer } from '../mirage';
+
+const Montserrat = localFont({
+  src: [
+    {
+      path: './fonts/montserrat-v26-latin-300.woff2',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-300italic.woff2',
+      weight: '300',
+      style: 'italic',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-500.woff2',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-500italic.woff2',
+      weight: '500',
+      style: 'italic',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-700.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-700italic.woff2',
+      weight: '700',
+      style: 'italic',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: './fonts/montserrat-v26-latin-italic.woff2',
+      weight: '400',
+      style: 'italic',
+    },
+  ],
+});
 
 if (process.env.NODE_ENV === 'development') {
   makeServer();
@@ -20,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={Montserrat.className}>
       <body className="bg-background flex flex-col">
         <MirageSetup /> {/* Only runs on the client side */}
         <Navbar />
