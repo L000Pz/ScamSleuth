@@ -1,0 +1,9 @@
+{
+    "succeed-verify-otp": {
+        "success": true,
+        "token": "mybeatifulverystrongtoken"
+    },
+    "failed-verify-otp": {
+        "success": false
+    }
+}

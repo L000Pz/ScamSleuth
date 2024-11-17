@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authorize } from './actions';
 
 export default function CodeVerificationPage() {
   const router = useRouter();
@@ -17,37 +18,14 @@ export default function CodeVerificationPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const response = await authorize(code);
 
-    try {
-      // Send code to backend for verification
-      const response = await fetch('/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp: code }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // If verification is successful
-        if (data.success) {
-          // Handle automatic login (if token provided) or redirect
-          if (data.token) {
-            localStorage.setItem('token', data.token);
-            router.push('/dashboard');
-          } else {
-            router.push('/welcome');
-          }
-        } else {
-          setMessage('Invalid code. Please try again.');
-        }
-      } else {
-        setMessage('Failed to verify the code. Please try again.');
-      }
-    } catch (error) {
-      setMessage('An error occurred. Please try again.');
-      console.error('Code verification error:', error);
+    if (!response.success) {
+      setMessage(response.message);
+      return;
     }
+    setMessage('Code verified! Redirecting to dashboard...');
+    router.push('/dashboard');
   };
 
   const handleResendCode = async () => {

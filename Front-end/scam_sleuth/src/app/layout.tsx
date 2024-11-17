@@ -4,8 +4,6 @@ import "./globals.css";
 import localFont from 'next/font/local';
 import Footer from './components/Footer';
 import Navbar from "./components/header";
-import MirageSetup from "./components/MirageSetup";
-import { makeServer } from '../mirage';
 
 const Montserrat = localFont({
   src: [
@@ -52,9 +50,6 @@ const Montserrat = localFont({
   ],
 });
 
-if (process.env.NODE_ENV === 'development') {
-  makeServer();
-}
 export const metadata: Metadata = {
   title: "‌Scam Sleuth",
   description: "Uncovering Scams, One Report at a Time.",
@@ -68,7 +63,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={Montserrat.className}>
       <body className="bg-background flex flex-col">
-        <MirageSetup /> {/* Only runs on the client side */}
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />

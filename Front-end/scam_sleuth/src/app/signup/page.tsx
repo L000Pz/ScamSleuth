@@ -30,46 +30,47 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validate form data using Zod schema
-    const result = SignupSchema.safeParse(formData);
+    // // Validate form data using Zod schema
+    // const result = SignupSchema.safeParse(formData);
 
-    if (!result.success) {
-      const fieldErrors = result.error.flatten().fieldErrors;
-      setErrors({
-        email: fieldErrors.email ? fieldErrors.email[0] : '',
-        name: fieldErrors.name ? fieldErrors.name[0] : '',
-        username: fieldErrors.username ? fieldErrors.username[0] : '',
-        password: fieldErrors.password ? fieldErrors.password[0] : '',
-      });
-      return;
-    }
+    // if (!result.success) {
+    //   const fieldErrors = result.error.flatten().fieldErrors;
+    //   setErrors({
+    //     email: fieldErrors.email ? fieldErrors.email[0] : '',
+    //     name: fieldErrors.name ? fieldErrors.name[0] : '',
+    //     username: fieldErrors.username ? fieldErrors.username[0] : '',
+    //     password: fieldErrors.password ? fieldErrors.password[0] : '',
+    //   });
+    //   return;
+    // }
 
-    // Clear errors if validation passes
-    setErrors({ email: '', name: '', username: '', password: '' });
-    setApiError(null);
+    // // Clear errors if validation passes
+    // setErrors({ email: '', name: '', username: '', password: '' });
+    // setApiError(null);
 
-    // Make the API request to mock Mirage endpoint
-    try {
-      const response = await fetch('/api/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+    // // Make the API request to mock Mirage endpoint
+    // try {
+    //   const response = await fetch('/api/signup', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(formData),
+    //   });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        setApiError(errorData.message || 'Failed to sign up');
-        return;
-      }
+    //   if (!response.ok) {
+    //     const errorData = await response.json();
+    //     setApiError(errorData.message || 'Failed to sign up');
+    //     return;
+    //   }
 
-      // Redirect to OTP page upon success
-      router.push('/otp');
-    } catch (error) {
-      console.error('Error signing up:', error);
-      setApiError('An unexpected error occurred. Please try again.');
-    }
+    //   // Redirect to OTP page upon success
+    //   router.push('/otp');
+    // } catch (error) {
+    //   console.error('Error signing up:', error);
+    //   setApiError('An unexpected error occurred. Please try again.');
+    // }
+    router.push("/otp")
   };
 
   return (
