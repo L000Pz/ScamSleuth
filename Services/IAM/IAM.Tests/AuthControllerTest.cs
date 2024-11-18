@@ -2,12 +2,9 @@ using IAM.Application.AuthenticationService;
 using IAM.Application.Common;
 using IAM.Contracts;
 using IAM.Domain;
-using IAM.Infrastructure.UserRepository;
 using IAM.Presentation.Controllers;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Moq;
-using Xunit.Sdk;
 
 namespace IAM.Tests;
 
@@ -102,6 +99,37 @@ public class AuthControllerTests
 
         var actualResult = Assert.IsType<String>(badResult.Value);
         Assert.Equal("User doesn't exist!", actualResult);
+        
+    }
+    [Fact]
+    public async Task Login_ReturnIncorrectPassword()
+    {
+        //Arange
+        var loginDetails = new LoginDetails("test", "test2");
+        var generatedToken = "generated_jwt_token";
+        var mockUser = new Users { email = "test", password = "test" };
+
+        _mockUserRepository
+            .Setup(repo => repo.GetUserByEmail("test"))
+            .ReturnsAsync(mockUser);
+
+        _mockLoginService
+            .Setup(service => service.Handle(loginDetails))
+            .ReturnsAsync(new AuthenticationResult(null,"incorrect"));
+
+        _mockJwtTokenGenerator
+            .Setup(generator => generator.GenerateToken(mockUser))
+            .Returns(generatedToken);
+
+        // Act
+        var result = await _controller.Login(loginDetails);
+
+        // Assert
+        var badResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badResult.Value);
+
+        var actualResult = Assert.IsType<String>(badResult.Value);
+        Assert.Equal("Incorrect password!", actualResult);
         
     }
     
