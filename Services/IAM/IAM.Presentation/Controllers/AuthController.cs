@@ -23,7 +23,7 @@ public class AuthController : ControllerBase
         _codeGenerator = codeGenerator;
         _inMemoryRepository = inMemoryRepository;
     }
-
+    public AuthController(){}
 
     [HttpPost("Register")]
     public async Task<ActionResult> Register([FromBody]RegisterDetails registerDetails)
