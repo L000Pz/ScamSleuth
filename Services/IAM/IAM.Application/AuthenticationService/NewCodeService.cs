@@ -19,20 +19,22 @@ public class NewCodeService : INewCodeService
         _userRepository = userRepository;
     }
 
-    public async Task<AuthenticationResult> Generate(string token)
+    public async Task<String> Generate(string token)
     {
         // extract username from token
         String? username = _jwtGenerator.GetUsername(token);
         // check if token or phone number is valid
         if (username is null)
         {
-            return new AuthenticationResult(null,"invalidToken");
+            return "invalidToken";
         }
         Users? user = await _userRepository.GetUserByUsername(username);
         if (user is null)
         {
-            return new AuthenticationResult(null, "invalidUser");
+            return "invalidUser";
         }
-        return new AuthenticationResult(user,token);
+        string code = _codeGenerator.GenerateCode();
+        await _inMemoryRepository.Add(username,code);
+        return "ok";
     }
 }

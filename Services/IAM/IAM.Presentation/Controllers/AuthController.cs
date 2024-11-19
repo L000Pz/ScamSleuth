@@ -13,8 +13,9 @@ public class AuthController : ControllerBase
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly ICodeGenerator _codeGenerator;
     private readonly IInMemoryRepository _inMemoryRepository;
+    private readonly INewCodeService _newCodeService;
 
-    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, IJwtTokenGenerator jwtTokenGenerator, ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository)
+    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, IJwtTokenGenerator jwtTokenGenerator, ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository, INewCodeService newCodeService)
     {
         _registerService = registerService;
         _loginService = loginService;
@@ -22,6 +23,7 @@ public class AuthController : ControllerBase
         _jwtTokenGenerator = jwtTokenGenerator;
         _codeGenerator = codeGenerator;
         _inMemoryRepository = inMemoryRepository;
+        _newCodeService = newCodeService;
     }
     public AuthController(){}
 
@@ -68,19 +70,16 @@ public class AuthController : ControllerBase
     [HttpPost("New Code")]
     public async Task<ActionResult> NewCode(string token)
     {
-        string username = _jwtTokenGenerator.GetUsername(token);
-        if (token.Equals("invalidToken"))
+        var result = await _newCodeService.Generate(token);
+        if (result.Equals("invalidToken"))
         {
             return BadRequest("Token is invalid!");
         }
 
-        if (token.Equals("invalidUser"))
+        if (result.Equals("invalidUser"))
         {
             return BadRequest("User doesn't exist!");
         }
-
-        string code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(username,code);
 
         return Ok("New code has been generated!");
     }

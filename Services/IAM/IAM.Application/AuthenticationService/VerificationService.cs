@@ -20,9 +20,7 @@ public class VerificationService : IVerificationService
 
     public async Task<AuthenticationResult> Handle(VerificationDetails verificationDetails)
     {
-        // extract username from token
         String? username = _jwtGenerator.GetUsername(verificationDetails.token);
-        // check if token or phone number is valid
         if (username is null)
         {
             return new AuthenticationResult(null,"invalidToken");
@@ -32,14 +30,11 @@ public class VerificationService : IVerificationService
         {
             return new AuthenticationResult(null, "invalidUser");
         }
-        // get code from cache database
         String? result = await _inMemoryRepository.Get(user.username.ToString());
-        // check if code exists
         if (result is null)
         {
             return new AuthenticationResult(null,"codeExpired");
         }
-        // check if code is correct
         if (!result.Equals(verificationDetails.code))
         {
             return new AuthenticationResult(null, "invalidCode");
@@ -47,6 +42,6 @@ public class VerificationService : IVerificationService
         // veify user
         user.verify();
         await _userRepository.Update(user);
-        return new AuthenticationResult(user,verificationDetails.token);
+        return new AuthenticationResult(null,"ok");
     }
 }
