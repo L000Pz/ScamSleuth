@@ -304,7 +304,7 @@ public class AuthControllerTests
     public async Task Register_ReturnsOk()
     {
         // Arrange
-        var registerDetails = new RegisterDetails("test", "test", "test", "test");
+        var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var generatedCode = "123456";
         var hashedPassword = "hashedPassword123";
         var newUser = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, hashedPassword);
@@ -343,11 +343,62 @@ public class AuthControllerTests
         var actualResult = Assert.IsType<AuthenticationResult>(okResult.Value);
         Assert.Equal(new AuthenticationResult(newUser, generatedToken), actualResult);
     }
+    
+    [Fact]
+    public async Task Register_ReturnsWrongEmailFormat()
+    {
+        // Arrange
+        var registerDetails = new RegisterDetails("test", "test", "testPassword", "test");
+        var existingUser = new Users { username = "test" };
+
+        _mockUserRepository
+            .Setup(repo => repo.GetUserByUsername(registerDetails.username))
+            .ReturnsAsync(existingUser);
+        
+        _mockRegisterService
+            .Setup(service => service.Handle(registerDetails))
+            .ReturnsAsync(new AuthenticationResult(null,"emailFormat"));
+        // Act
+        var result = await _controller.Register(registerDetails);
+
+        // Assert
+        var badResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badResult.Value);
+        
+        var actualResult = Assert.IsType<String>(badResult.Value);
+        Assert.Equal("Invalid email format!", actualResult);
+    }
+    
+    [Fact]
+    public async Task Register_ReturnsWrongPasswordFormat()
+    {
+        // Arrange
+        var registerDetails = new RegisterDetails("test@example.com", "test", "test", "test");
+        var existingUser = new Users { username = "test" };
+
+        _mockUserRepository
+            .Setup(repo => repo.GetUserByUsername(registerDetails.username))
+            .ReturnsAsync(existingUser);
+        
+        _mockRegisterService
+            .Setup(service => service.Handle(registerDetails))
+            .ReturnsAsync(new AuthenticationResult(null,"passwordFormat"));
+        // Act
+        var result = await _controller.Register(registerDetails);
+
+        // Assert
+        var badResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badResult.Value);
+        
+        var actualResult = Assert.IsType<String>(badResult.Value);
+        Assert.Equal("Password must be at least 6 characters long.", actualResult);
+    }
+    
     [Fact]
     public async Task Register_ReturnsUsernameAlreadyExists_WhenUserExists()
     {
         // Arrange
-        var registerDetails = new RegisterDetails("test", "test", "test", "test");
+        var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var existingUser = new Users { username = "test" };
 
         _mockUserRepository
@@ -372,7 +423,7 @@ public class AuthControllerTests
     public async Task Register_ReturnsUsernameAlreadyExists_WhenAdminExists()
     {
         // Arrange
-        var registerDetails = new RegisterDetails("test", "test", "test", "test");
+        var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var existingAdmin = new Admins() { username = "test" };
 
         _mockUserRepository
@@ -401,7 +452,7 @@ public class AuthControllerTests
     public async Task Register_ReturnsEmailAlreadyExists_WhenUserExists()
     {
         // Arrange
-        var registerDetails = new RegisterDetails("test", "test", "test", "test");
+        var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var existingUser = new Users { email = "test" };
 
         _mockUserRepository
@@ -435,7 +486,7 @@ public class AuthControllerTests
     public async Task Register_ReturnsEmailAlreadyExists_WhenAdminExists()
     {
         // Arrange
-        var registerDetails = new RegisterDetails("test", "test", "test", "test");
+        var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var existingAdmin = new Admins { email = "test" };
 
         _mockUserRepository

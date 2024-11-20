@@ -31,6 +31,15 @@ public class AuthController : ControllerBase
     public async Task<ActionResult> Register([FromBody]RegisterDetails registerDetails)
     {
         var result = await _registerService.Handle(registerDetails);
+        if (result.token.Equals("emailFormat"))
+        {
+            return BadRequest("Invalid email format!");
+        }
+
+        if (result.token.Equals("passwordFormat"))
+        {
+            return BadRequest("Password must be at least 6 characters long.");
+        }
         if (result.token.Equals("email"))
         {
             return BadRequest("Email already exists!");

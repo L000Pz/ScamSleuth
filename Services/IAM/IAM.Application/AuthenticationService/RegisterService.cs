@@ -1,4 +1,5 @@
-﻿using IAM.Application.Common;
+﻿using System.Text.RegularExpressions;
+using IAM.Application.Common;
 using IAM.Contracts;
 using IAM.Domain;
 
@@ -23,6 +24,18 @@ public class RegisterService : IRegisterService
 
     public async Task<AuthenticationResult?> Handle(RegisterDetails registerDetails)
     {
+        if (!Regex.IsMatch(registerDetails.email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            return new AuthenticationResult(null, "emailFormat");
+        }
+
+        // Validate password length
+        if (registerDetails.password.Length < 6)
+        {
+            return new AuthenticationResult(null, "passwordFormat");
+        }
+
+
 
         if (await _userRepository.GetUserByUsername(registerDetails.username) is not null)
         {
