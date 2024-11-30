@@ -1,16 +1,34 @@
-'use client'
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authorize } from './actions';
+import { authorize, resendCode } from './actions';
 
 export default function CodeVerificationPage() {
   const router = useRouter();
   const [code, setCode] = useState('');
-  const [message, setMessage] = useState(''); // State to store feedback messages
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Generate initial code when page loads
+  useEffect(() => {
+    const generateInitialCode = async () => {
+      const response = await resendCode();
+      setIsLoading(false);
+      if (!response.success) {
+        setIsError(true);
+        setMessage("Couldn't send verification code. Please try again.");
+      } else {
+        setMessage('Verification code sent to your email!');
+      }
+    };
+
+    generateInitialCode();
+  }, []);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
@@ -18,31 +36,38 @@ export default function CodeVerificationPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsError(false);
+    
     const response = await authorize(code);
 
     if (!response.success) {
       setMessage(response.message);
+      setIsError(true);
       return;
     }
+
     setMessage('Code verified! Redirecting to dashboard...');
-    router.push('/dashboard');
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 1500);
   };
 
   const handleResendCode = async () => {
-    try {
-      const response = await fetch('/api/resend-otp', {
-        method: 'POST',
-      });
-      if (response.ok) {
-        setMessage('Code resent! Please check your email.');
-      } else {
-        setMessage('Failed to resend the code. Please try again.');
-      }
-    } catch (error) {
-      setMessage('Error resending the code. Please try again.');
-      console.error('Resend code error:', error);
-    }
+    setIsError(false);
+    setMessage('Sending new code...');
+    const response = await resendCode();
+    
+    setMessage(response.message);
+    setIsError(!response.success);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Sending verification code...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center p-[76px]">
@@ -52,7 +77,7 @@ export default function CodeVerificationPage() {
         <div className="w-3/5 p-8">
           <h2 className="text-[40px] text-center font-bold mb-6">Enter Code</h2>
           <p className="text-center text-lg mb-4 text-gray-600">
-            We’ve sent a one-time code to your email. Please enter it below to continue.
+            We've sent a one-time code to your email. Please enter it below to continue.
           </p>
           
           <form className="space-y-4 mx-[90px]" onSubmit={handleSubmit}>
@@ -78,13 +103,23 @@ export default function CodeVerificationPage() {
           </form>
 
           <p className="text-center text-sm mt-4">
-            Didn’t receive the code?{' '}
-            <button type="button" onClick={handleResendCode} className="text-blue-600 hover:underline">
+            Didn't receive the code?{' '}
+            <button 
+              type="button" 
+              onClick={handleResendCode} 
+              className="text-blue-600 hover:underline"
+            >
               Resend Code
             </button>
           </p>
 
-          {message && <p className="text-center text-green-600 mt-2">{message}</p>}
+          {message && (
+            <p className={`text-center mt-2 ${
+              isError ? 'text-red-600' : 'text-green-600'
+            }`}>
+              {message}
+            </p>
+          )}
         </div>
 
         {/* Right Column - Image and Text */}

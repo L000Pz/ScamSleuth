@@ -1,32 +1,73 @@
-// 'use server';
+'use server';
 
-// import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-// export async function loginUser({ email, password }: { email: string; password: string }) {
-//   // Mock user validation (replace this with actual database/auth logic)
-//   const users = [
-//     { email: 'admin@example.com', password: 'password123', role: 'admin' },
-//     { email: 'user@example.com', password: 'password123', role: 'user' },
-//   ];
+interface LoginResponse {
+  users: {
+    user_id: number;
+    username: string;
+    email: string;
+    name: string;
+    password: string;
+    is_verified: boolean;
+  };
+  token: string;
+}
 
-//   const user = users.find((u) => u.email === email && u.password === password);
+export async function login(formData: { email: string; password: string }): Promise<
+  | {
+      success: false;
+      message: string;
+    }
+  | {
+      success: true;
+      userData: LoginResponse['users'];
+    }
+> {
+  try {
+    const response = await fetch('http://localhost:5000/authentication/Login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password
+      }),
+    });
 
-//   if (!user) {
-//     throw new Error('Invalid credentials');
-//   }
+    if (!response.ok) {
+      return response.status === 400
+        ? {
+            success: false,
+            message: 'Invalid credentials. Please check your email and password.',
+          }
+        : {
+            success: false,
+            message: 'Server error. Please try again later.',
+          };
+    }
 
-//   // Generate token (replace this with real token generation logic)
-//   const token = `mock-token-${user.role}`;
+    const data: LoginResponse = await response.json();
 
-//   // Set cookie using NextResponse
-//   const response = NextResponse.json({ role: user.role });
-//   response.cookies.set('authToken', token, {
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV === 'production',
-//     sameSite: 'strict',
-//     path: '/',
-//     maxAge: 60 * 60 * 24 * 7, // 1 week
-//   });
+    // Use NextResponse to set cookies
+    const cookiesStore = await cookies();
+    cookiesStore.set({
+      name: 'token',
+      value: data.token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
 
-//   return response;
-// }
+    return { 
+      success: true,
+      userData: data.users
+    };
+  } catch (error) {
+    console.error('error:', error);
+    return {
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
+    };
+  }
+}

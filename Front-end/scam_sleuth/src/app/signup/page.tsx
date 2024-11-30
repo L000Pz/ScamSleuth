@@ -1,4 +1,3 @@
-// src/app/signup/page.tsx
 "use client";
 
 import Image from 'next/image';
@@ -8,6 +7,7 @@ import heroImage from '@/assets/images/hero.png';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { signup } from './actions';
 
 // Define the Zod schema for form validation
 const SignupSchema = z.object({
@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({ email: '', name: '', username: '', password: '' });
   const [errors, setErrors] = useState({ email: '', name: '', username: '', password: '' });
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,54 +30,48 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    // // Validate form data using Zod schema
-    // const result = SignupSchema.safeParse(formData);
+    // Validate form data using Zod schema
+    const result = SignupSchema.safeParse(formData);
 
-    // if (!result.success) {
-    //   const fieldErrors = result.error.flatten().fieldErrors;
-    //   setErrors({
-    //     email: fieldErrors.email ? fieldErrors.email[0] : '',
-    //     name: fieldErrors.name ? fieldErrors.name[0] : '',
-    //     username: fieldErrors.username ? fieldErrors.username[0] : '',
-    //     password: fieldErrors.password ? fieldErrors.password[0] : '',
-    //   });
-    //   return;
-    // }
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+      setErrors({
+        email: fieldErrors.email ? fieldErrors.email[0] : '',
+        name: fieldErrors.name ? fieldErrors.name[0] : '',
+        username: fieldErrors.username ? fieldErrors.username[0] : '',
+        password: fieldErrors.password ? fieldErrors.password[0] : '',
+      });
+      setIsLoading(false);
+      return;
+    }
 
-    // // Clear errors if validation passes
-    // setErrors({ email: '', name: '', username: '', password: '' });
-    // setApiError(null);
+    // Clear errors if validation passes
+    setErrors({ email: '', name: '', username: '', password: '' });
+    setApiError(null);
 
-    // // Make the API request to mock Mirage endpoint
-    // try {
-    //   const response = await fetch('/api/signup', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(formData),
-    //   });
+    try {
+      const response = await signup(formData);
 
-    //   if (!response.ok) {
-    //     const errorData = await response.json();
-    //     setApiError(errorData.message || 'Failed to sign up');
-    //     return;
-    //   }
+      if (!response.success) {
+        setApiError(response.message);
+        setIsLoading(false);
+        return;
+      }
 
-    //   // Redirect to OTP page upon success
-    //   router.push('/otp');
-    // } catch (error) {
-    //   console.error('Error signing up:', error);
-    //   setApiError('An unexpected error occurred. Please try again.');
-    // }
-    router.push("/otp")
+      // Redirect to OTP page upon success
+      router.push('/otp');
+    } catch (error) {
+      console.error('Error signing up:', error);
+      setApiError('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex items-center justify-center p-[76px]">
       <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
-        
         {/* Left Column - Form */}
         <div className="w-3/5 p-8">
           <h2 className="text-[40px] text-center font-bold mb-6">Sign up now!</h2>
@@ -91,6 +86,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
             </div>
@@ -104,6 +100,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
             </div>
@@ -117,6 +114,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
             </div>
@@ -130,6 +128,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
             </div>
@@ -137,8 +136,13 @@ export default function SignupPage() {
             {apiError && <p className="text-red-500 text-sm text-center">{apiError}</p>}
             
             <div className="mt-[50px]">
-              <Button type="submit" variant="outline" className="block mx-auto w-[250px] h-[40px] py-2 text-[20px] leading-none font-bold">
-                Sign up
+              <Button 
+                type="submit" 
+                variant="outline" 
+                className="block mx-auto w-[250px] h-[40px] py-2 text-[20px] leading-none font-bold"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing up...' : 'Sign up'}
               </Button>
             </div>
           </form>

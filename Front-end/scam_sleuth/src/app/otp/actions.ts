@@ -1,49 +1,96 @@
-//otp/actions.ts
+// src/app/otp/actions.ts
 'use server';
 
 import { cookies } from 'next/headers';
 
-export async function authorize(code: string): Promise<
-  | {
-      success: false;
-      message: string;
-    }
-  | {
-      success: true;
-    }
-> {
-  try {
-    const response = await fetch('http://localhost:1234/succeed-verify-otp', {
-      method: 'GET',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ otp: code }),
-    });
+export async function authorize(code: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
 
-    if (!response.ok)
-      return response.status === 400
-        ? {
-            success: false,
-            message: 'Unauthorized request.',
-          }
-        : {
-            success: false,
-            message:
-              'Response from server was not ok, please contact the site administrators.',
-          };
-
-    const data = await response.json();
-
-    if (!data.success)
-      return { success: false, message: 'Invalid code. Please try again.' };
-
-    const cookiesStore = await cookies();
-    cookiesStore.set('token', data.token);
-    return { success: true };
-  } catch (error) {
-    console.error('error:', error);
+  if (!token) {
     return {
       success: false,
-      message: 'An unknown error occurred. Contact the site administrators.',
+      message: 'Authentication token not found. Please login again.',
+    };
+  }
+
+  try {
+    const response = await fetch('http://localhost:5000/authentication/Verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token,
+        code,
+      }),
+    });
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: 'Invalid verification code. Please try again.',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Account verified successfully!',
+    };
+  } catch (error) {
+    console.error('Verification error:', error);
+    return {
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
+    };
+  }
+}
+
+export async function resendCode(): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) {
+    return {
+      success: false,
+      message: 'Authentication token not found. Please login again.',
+    };
+  }
+
+  try {
+    // Changed to use query parameter instead of request body
+    const response = await fetch(`http://localhost:5000/authentication/New Code?token=${token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      return {
+        success: false,
+        message: 'Failed to generate new code. Please try again.',
+      };
+    }
+
+    const data = await response.text();
+    return {
+      success: true,
+      message: data || 'New code has been generated!',
+    };
+  } catch (error) {
+    console.error('Resend code error:', error);
+    return {
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
     };
   }
 }

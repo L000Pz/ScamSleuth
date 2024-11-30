@@ -1,13 +1,25 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { FiMenu, FiX } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser } from 'react-icons/fi';
+import {checkAuth} from './actions'
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+
+  // Check authentication status on mount and when token changes
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const isAuthed = await checkAuth();
+      setIsAuthenticated(isAuthed);
+    };
+
+    verifyAuth();
+  }, []);
 
   const handleLogin = () => {
     router.push('/login');
@@ -17,9 +29,29 @@ export default function Navbar() {
     router.push('/signup');
   };
 
+  const handleDashboard = () => {
+    router.push('/dashboard');
+  };
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  const AuthButtons = () => (
+    <>
+      <Button size='md' variant="ghost" onClick={handleLogin} className='text-[20px] font-medium'>Login</Button>
+      <Button size='md' variant="outline" onClick={handleSignup} className='text-[20px] font-medium'>Sign Up</Button>
+    </>
+  );
+
+  const ProfileButton = () => (
+    <button
+      onClick={handleDashboard}
+      className="flex items-center justify-center w-10 h-10 rounded-full bg-red hover:opacity-80 transition-opacity"
+    >
+      <FiUser className="text-white text-xl" />
+    </button>
+  );
 
   return (
     <header className="relative flex items-center justify-between px-6 md:px-[100px] py-4 bg-black text-white">
@@ -45,10 +77,9 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* Desktop Buttons */}
+      {/* Desktop Buttons/Profile */}
       <div className="hidden md:flex items-center space-x-4">
-        <Button size='md' variant="ghost" onClick={handleLogin} className='text-[20px] font-medium'>Login</Button>
-        <Button size='md' variant="outline" onClick={handleSignup} className='text-[20px] font-medium'>Sign Up</Button>
+        {isAuthenticated ? <ProfileButton /> : <AuthButtons />}
       </div>
 
       {/* Mobile Menu Button */}
@@ -69,15 +100,21 @@ export default function Navbar() {
             <Link href="/about" onClick={toggleMenu} className="text-[20px] font-medium">About us</Link>
           </div>
 
-          {/* Centered Login and Sign Up Buttons */}
+          {/* Centered Login/Signup Buttons or Profile Button */}
           <div className="flex flex-col items-center justify-center h-full">
             <div className="flex space-x-4 mt-auto pb-8">
-              <Button size='lg' variant="ghost" onClick={() => { handleLogin(); toggleMenu(); }} className="text-xl font-medium">Login</Button>
-              <Button size='lg' variant="outline" onClick={() => { handleSignup(); toggleMenu(); }} className="text-xl font-medium">Sign Up</Button>
+              {isAuthenticated ? (
+                <ProfileButton />
+              ) : (
+                <>
+                  <Button size='lg' variant="ghost" onClick={() => { handleLogin(); toggleMenu(); }} className="text-xl font-medium">Login</Button>
+                  <Button size='lg' variant="outline" onClick={() => { handleSignup(); toggleMenu(); }} className="text-xl font-medium">Sign Up</Button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
     </header>
   );
-};
+}

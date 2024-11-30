@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 "use client";
 
 import Image from 'next/image';
@@ -8,12 +7,22 @@ import heroImage from '@/assets/images/hero.png';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { login } from './actions';
 
 // Define the Zod schema for form validation
 const LoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
 });
+
+interface UserData {
+  user_id: number;
+  username: string;
+  email: string;
+  name: string;
+  password: string;
+  is_verified: boolean;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,19 +53,17 @@ export default function LoginPage() {
     setErrors({ email: '', password: '' });
     setApiError(null);
 
-    // Make the API request to mock Mirage endpoint
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await login(formData);
+      
+      if (!response.success) {
+        setApiError(response.message);
+        return;
+      }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        setApiError(errorData.message || 'Failed to log in');
+      // If user is not verified, redirect to verification page
+      if (!response.userData.is_verified) {
+        router.push('/otp');
         return;
       }
 
@@ -113,7 +120,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm mt-4">
-            Don’t have an account?{' '}
+            Don't have an account?{' '}
             <Link href="/signup" className="text-blue-600 hover:underline">
               Sign up
             </Link>
