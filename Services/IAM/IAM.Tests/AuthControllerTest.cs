@@ -224,13 +224,13 @@ public class AuthControllerTests
     {
         //Arange
         var verificationDetails = new VerificationDetails("token", "code");
-        var username = "test";
+        var email = "test";
         _mockVerificationService
             .Setup(service => service.Handle(verificationDetails))
             .ReturnsAsync(new AuthenticationResult(null,"invalidToken"));
         _mockJwtTokenGenerator
-            .Setup(generator => generator.GetUsername(verificationDetails.token))
-            .Returns(username);
+            .Setup(generator => generator.GetEmail(verificationDetails.token))
+            .Returns(email);
         //Act
         var result = await _controller.Verify(verificationDetails);
         

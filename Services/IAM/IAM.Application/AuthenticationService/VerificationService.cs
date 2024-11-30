@@ -20,17 +20,17 @@ public class VerificationService : IVerificationService
 
     public async Task<AuthenticationResult> Handle(VerificationDetails verificationDetails)
     {
-        String? username = _jwtGenerator.GetUsername(verificationDetails.token);
-        if (username is null)
+        String? email = _jwtGenerator.GetEmail(verificationDetails.token);
+        if (email is null)
         {
             return new AuthenticationResult(null,"invalidToken");
         }
-        Users? user = await _userRepository.GetUserByUsername(username);
+        Users? user = await _userRepository.GetUserByEmail(email);
         if (user is null)
         {
             return new AuthenticationResult(null, "invalidUser");
         }
-        String? result = await _inMemoryRepository.Get(user.username.ToString());
+        String? result = await _inMemoryRepository.Get(user.email.ToString());
         if (result is null)
         {
             return new AuthenticationResult(null,"codeExpired");

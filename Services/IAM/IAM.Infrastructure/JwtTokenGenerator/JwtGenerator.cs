@@ -75,7 +75,7 @@ public class JwtGenerator : IJwtTokenGenerator
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public string? GetUsername(string token)
+    public string? GetEmail(string token)
     {
         var handler = new JwtSecurityTokenHandler();
         

@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
         _inMemoryRepository = inMemoryRepository;
         _newCodeService = newCodeService;
     }
-    public AuthController(){}
+    //public AuthController(){}
 
     [HttpPost("Register")]
     public async Task<ActionResult> Register([FromBody]RegisterDetails registerDetails)

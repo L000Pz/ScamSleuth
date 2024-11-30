@@ -22,19 +22,22 @@ public class NewCodeService : INewCodeService
     public async Task<String> Generate(string token)
     {
         // extract username from token
-        String? username = _jwtGenerator.GetUsername(token);
+        String? email = _jwtGenerator.GetEmail(token);
+        Console.WriteLine("here");
+        Console.WriteLine(email);
         // check if token or phone number is valid
-        if (username is null)
+        if (email is null)
         {
             return "invalidToken";
         }
-        Users? user = await _userRepository.GetUserByUsername(username);
+        
+        Users? user = await _userRepository.GetUserByEmail(email);
         if (user is null)
         {
             return "invalidUser";
         }
         string code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(username,code);
+        await _inMemoryRepository.Add(email,code);
         return "ok";
     }
 }

@@ -52,7 +52,7 @@ public class RegisterService : IRegisterService
             }        
         }
         String code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(registerDetails.username,code);
+        await _inMemoryRepository.Add(registerDetails.email,code);
         var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
         _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
