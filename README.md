@@ -39,11 +39,10 @@
 
 ## Technologies Used
 
-- **Frontend**: React.js
+- **Frontend**: Next.js
 - **Backend**: .NET 7.0
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL, MongoDB
 - **Authentication**: JWT
-- **Media**: MongoDB
 
 ## License
 
