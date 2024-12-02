@@ -10,20 +10,17 @@ public class AuthController : ControllerBase
     private readonly IRegisterService _registerService;
     private readonly ILoginService _loginService;
     private readonly IVerificationService _verificationService;
-    private readonly IJwtTokenGenerator _jwtTokenGenerator;
-    private readonly ICodeGenerator _codeGenerator;
-    private readonly IInMemoryRepository _inMemoryRepository;
     private readonly INewCodeService _newCodeService;
+    private readonly IAdminRegisterService _adminRegisterService;
+    
 
-    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, IJwtTokenGenerator jwtTokenGenerator, ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository, INewCodeService newCodeService)
+    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, INewCodeService newCodeService, IAdminRegisterService adminRegisterService)
     {
         _registerService = registerService;
         _loginService = loginService;
         _verificationService = verificationService;
-        _jwtTokenGenerator = jwtTokenGenerator;
-        _codeGenerator = codeGenerator;
-        _inMemoryRepository = inMemoryRepository;
         _newCodeService = newCodeService;
+        _adminRegisterService = adminRegisterService;
     }
     //public AuthController(){}
 
@@ -31,6 +28,30 @@ public class AuthController : ControllerBase
     public async Task<ActionResult> Register([FromBody]RegisterDetails registerDetails)
     {
         var result = await _registerService.Handle(registerDetails);
+        if (result.token.Equals("emailFormat"))
+        {
+            return BadRequest("Invalid email format!");
+        }
+
+        if (result.token.Equals("passwordFormat"))
+        {
+            return BadRequest("Password must be at least 6 characters long.");
+        }
+        if (result.token.Equals("email"))
+        {
+            return BadRequest("Email already exists!");
+        }
+        if (result.token.Equals("username"))
+        {
+            return BadRequest("Username already exists!");
+        }
+        return Ok(result);
+    }
+    
+    [HttpPost("Admin-Register")]
+    public async Task<ActionResult> AdminRegister([FromBody]AdminRegisterDetails adminRegisterDetails)
+    {
+        var result = await _adminRegisterService.Handle(adminRegisterDetails);
         if (result.token.Equals("emailFormat"))
         {
             return BadRequest("Invalid email format!");

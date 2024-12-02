@@ -16,11 +16,11 @@ public class AuthControllerTests
     private readonly Mock<IVerificationService> _mockVerificationService;
     private readonly Mock<IJwtTokenGenerator> _mockJwtTokenGenerator;
     private readonly Mock<ICodeGenerator> _mockCodeGenerator;
-    private readonly Mock<IInMemoryRepository> _mockInMemoryRepository;
     private readonly AuthController _controller;
     private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly Mock<INewCodeService> _mockNewCodeService;
     private readonly Mock<IHasher> _mockHasher;
+    private readonly Mock<IAdminRegisterService> _mockAdminRegisterService;
 
     public AuthControllerTests()
     {
@@ -29,19 +29,17 @@ public class AuthControllerTests
         _mockVerificationService = new Mock<IVerificationService>();
         _mockJwtTokenGenerator = new Mock<IJwtTokenGenerator>();
         _mockCodeGenerator = new Mock<ICodeGenerator>();
-        _mockInMemoryRepository = new Mock<IInMemoryRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockNewCodeService = new Mock<INewCodeService>();
         _mockHasher = new Mock<IHasher>();
+        _mockAdminRegisterService = new Mock<IAdminRegisterService>();
 
         _controller = new AuthController(
             _mockRegisterService.Object,
             _mockLoginService.Object,
             _mockVerificationService.Object,
-            _mockJwtTokenGenerator.Object,
-            _mockCodeGenerator.Object,
-            _mockInMemoryRepository.Object,
-            _mockNewCodeService.Object
+            _mockNewCodeService.Object,
+            _mockAdminRegisterService.Object
         );
     }
 

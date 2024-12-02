@@ -19,7 +19,13 @@ public class UserRepository : IUserRepository
         _context.SaveChanges();
     }
 
-
+    public void AddAdmin(Admins admins)
+    {
+        _context.admins.Add(admins);
+        _context.SaveChanges();
+    }
+    
+    
     public async Task<Users?> GetUserByEmail(string email)
     {
         return _context.users.SingleOrDefault(user => user.email == email);

@@ -11,5 +11,7 @@ public interface IUserRepository
     Task<Admins?> GetAdminByUsername(String username);
 
     Task Update(Users user);
+    void AddAdmin(Admins admins);
+
 
 }
