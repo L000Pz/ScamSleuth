@@ -2,11 +2,11 @@
   <img width="25%" src="Front-end/scam_sleuth/src/assets/images/hero.png" />
 </p>
 
-# Scam Report System
+# Scam Sleuth
 
 ## Overview
 
-The **Scam Report System** is a platform that allows users to report scam projects, and for admins to review, manage, and inform the public about various scams. The website provides a secure environment for users to submit reports, while also offering valuable content in the form of blog posts to keep everyone informed about the latest scams.
+**Scam Sleuth** is a platform that allows users to report scam projects, and for admins to review, manage, and inform the public about various scams. The website provides a secure environment for users to submit reports, while also offering valuable content in the form of blog posts to keep everyone informed about the latest scams.
 
 ## How It Works
 
