@@ -10,7 +10,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FakeItEasy" Version="8.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="7.0.20" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.1"/>
         <PackageReference Include="Moq" Version="4.20.72" />
