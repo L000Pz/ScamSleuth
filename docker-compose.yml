@@ -1,0 +1,40 @@
+# Root/docker-compose.yml
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ./Gateway/Gateway.API
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+      - "8081:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices-network
+    depends_on:
+      - iam-service
+      - media-service
+
+  iam-service:
+    build:
+      context: ./Services/IAM
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices-network
+
+  media-service:
+    build:
+      context: ./Services/Media
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge

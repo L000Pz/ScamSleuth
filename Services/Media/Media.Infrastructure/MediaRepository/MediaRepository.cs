@@ -2,6 +2,7 @@
 using Media.Contracts;
 using MongoDB.Driver;
 using MongoDB.Bson;
+
 namespace Media.Infrastructure.MediaRepository;
 
 public class MediaRepository : IMediaRepository
@@ -45,9 +46,9 @@ public class MediaRepository : IMediaRepository
         return max + 1;
     }
 
-    public async Task<BsonDocument> GetDoc(string username, string fileName)
+    public async Task<BsonDocument> GetDoc(string username, string file_name)
     {
-        BsonDocument doc =await _mongoRepository.GetDoc(username, fileName);
+        BsonDocument doc =await _mongoRepository.GetDoc(username, file_name);
         return doc;
     }
 
