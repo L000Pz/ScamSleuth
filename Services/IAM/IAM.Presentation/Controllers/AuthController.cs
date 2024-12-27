@@ -12,15 +12,16 @@ public class AuthController : ControllerBase
     private readonly IVerificationService _verificationService;
     private readonly INewCodeService _newCodeService;
     private readonly IAdminRegisterService _adminRegisterService;
-    
+    private readonly ITokenCheck _tokenCheck;
 
-    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, INewCodeService newCodeService, IAdminRegisterService adminRegisterService)
+    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, INewCodeService newCodeService, IAdminRegisterService adminRegisterService, ITokenCheck tokenCheck)
     {
         _registerService = registerService;
         _loginService = loginService;
         _verificationService = verificationService;
         _newCodeService = newCodeService;
         _adminRegisterService = adminRegisterService;
+        _tokenCheck = tokenCheck;
     }
     //public AuthController(){}
 
@@ -139,4 +140,16 @@ public class AuthController : ControllerBase
         }
         return Ok("Account verified successfully!");
     }
+    
+    [HttpPost("Check Token")]
+    public async Task<ActionResult> Check([FromBody] String token)
+    {
+        var user = await _tokenCheck.Handle(token);
+        if (user is not null)
+        {
+            return Ok(user);
+        }
+        return BadRequest("Invalid token!");
+    }
+    
 }

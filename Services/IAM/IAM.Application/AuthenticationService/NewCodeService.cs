@@ -23,8 +23,7 @@ public class NewCodeService : INewCodeService
     {
         // extract username from token
         String? email = _jwtGenerator.GetEmail(token);
-        Console.WriteLine("here");
-        Console.WriteLine(email);
+
         // check if token or phone number is valid
         if (email is null)
         {

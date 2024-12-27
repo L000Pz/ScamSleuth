@@ -21,6 +21,7 @@ public class AuthControllerTests
     private readonly Mock<INewCodeService> _mockNewCodeService;
     private readonly Mock<IHasher> _mockHasher;
     private readonly Mock<IAdminRegisterService> _mockAdminRegisterService;
+    private readonly Mock<ITokenCheck> _mockTokenCheck;
 
     public AuthControllerTests()
     {
@@ -33,13 +34,15 @@ public class AuthControllerTests
         _mockNewCodeService = new Mock<INewCodeService>();
         _mockHasher = new Mock<IHasher>();
         _mockAdminRegisterService = new Mock<IAdminRegisterService>();
+        _mockTokenCheck = new Mock<ITokenCheck>();
 
         _controller = new AuthController(
             _mockRegisterService.Object,
             _mockLoginService.Object,
             _mockVerificationService.Object,
             _mockNewCodeService.Object,
-            _mockAdminRegisterService.Object
+            _mockAdminRegisterService.Object,
+            _mockTokenCheck.Object
         );
     }
 
