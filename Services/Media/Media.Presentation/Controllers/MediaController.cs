@@ -44,7 +44,7 @@ public class MediaController: ControllerBase
             
             if (!response.IsSuccessStatusCode)
             {
-                return BadRequest("invalid token provided");
+                return BadRequest("Invalid token!");
             }
 
             token = await response.Content.ReadAsStringAsync();
@@ -53,7 +53,7 @@ public class MediaController: ControllerBase
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return BadRequest("wrong token");
+            return BadRequest("Invalid token!");
         }
         
         if (file == null || file.Length == 0)
@@ -71,15 +71,15 @@ public class MediaController: ControllerBase
         String ou = await _saveMedia.Handle(mediaFile,token);
         if (ou.Equals("failed"))
         {
-            return BadRequest("invalid token");
+            return BadRequest("Invalid token!");
         }
         if (ou.Equals("wrong"))
         {
-            return BadRequest("wrong type");
+            return BadRequest("Wrong data type!");
         }
         if (ou.Equals("bad"))
         {
-            return BadRequest("an error happened, try again");
+            return BadRequest("An error has happened, please try again later.");
         }
         return Ok();
     }
@@ -128,3 +128,8 @@ public class MediaController: ControllerBase
         return Ok();
     }
 }
+
+
+
+
+

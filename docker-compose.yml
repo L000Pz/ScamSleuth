@@ -1,16 +1,19 @@
-# Root/docker-compose.yml
 version: '3.8'
 
 services:
   api-gateway:
     build:
-      context: ./Gateway/Gateway.API
-      dockerfile: Dockerfile
+      context: ./Gateway
+      dockerfile: Gateway.API/Dockerfile
     ports:
       - "8080:80"
       - "8081:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ./Gateway/Gateway.API:/src
+      - /src/bin
+      - /src/obj
     networks:
       - microservices-network
     depends_on:
@@ -23,6 +26,10 @@ services:
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ./Services/IAM:/src
+      - /src/bin
+      - /src/obj
     networks:
       - microservices-network
 
@@ -32,6 +39,10 @@ services:
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ./Services/Media:/src
+      - /src/bin
+      - /src/obj
     networks:
       - microservices-network
 
