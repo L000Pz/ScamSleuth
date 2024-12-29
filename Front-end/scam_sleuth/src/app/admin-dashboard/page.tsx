@@ -1,66 +1,171 @@
-// src/app/admin-dashboard/page.tsx
 "use client";
 
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import heroImage from '@/assets/images/hero.png';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { z } from 'zod';
 
-export default function AdminDashboard() {
-  const router = useRouter();
+// Define the Zod schema for form validation
+const EditInfoSchema = z.object({
+  email: z.string()
+    .email({ message: 'Invalid email address' })
+    .optional()
+    .or(z.literal('')),
+  lastPassword: z.string()
+    .min(1, { message: 'Current password is required' }),
+  newPassword: z.string()
+    .min(6, { message: 'New password must be at least 6 characters long' })
+    .optional()
+    .or(z.literal(''))
+}).refine((data) => {
+  // If email is provided, new password must be provided
+  if (data.email && !data.newPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: "New password is required when changing email",
+  path: ["newPassword"]
+});
 
-  const handleLogout = () => {
-    // Simulate logout action (remove token if implemented)
-    router.push('/login');
+export default function AdminPage() {
+  const [formData, setFormData] = useState({
+    email: '',
+    lastPassword: '',
+    newPassword: ''
+  });
+  
+  const [errors, setErrors] = useState({
+    email: '',
+    lastPassword: '',
+    newPassword: ''
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    setErrors(prev => ({ ...prev, [name]: '' }));
+    setApiError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      // Validate form data
+      const result = EditInfoSchema.safeParse(formData);
+
+      if (!result.success) {
+        const fieldErrors = result.error.flatten().fieldErrors;
+        setErrors({
+          email: fieldErrors.email?.[0] || '',
+          lastPassword: fieldErrors.lastPassword?.[0] || '',
+          newPassword: fieldErrors.newPassword?.[0] || ''
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Clear validation errors
+      setErrors({
+        email: '',
+        lastPassword: '',
+        newPassword: ''
+      });
+
+      // Add your API call here
+      // const response = await updateAdminInfo(formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Reset form on success
+      setFormData({
+        email: '',
+        lastPassword: '',
+        newPassword: ''
+      });
+      
+    } catch (error) {
+      console.error('Error updating info:', error);
+      setApiError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Navigation Bar */}
-      <header className="bg-gray-800 p-4 text-white flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Button variant="outline" className="text-white border-white" onClick={handleLogout}>
-          Logout
-        </Button>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-grow p-[76px]">
-        <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col items-center p-8 w-full h-[610px] mx-auto">
-          {/* Welcome Section */}
-          <div className="flex items-center justify-between w-full mb-8">
-            <div>
-              <h2 className="text-[40px] font-bold">Welcome, Admin!</h2>
-              <p className="text-gray-600">Here are your administrative tools and reports.</p>
-            </div>
-            <Image src={heroImage} alt="Admin Icon" width={120} height={120} />
-          </div>
-
-          {/* Dashboard Features */}
-          <div className="w-full space-y-6">
-            {/* Manage Users Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">Manage Users</h3>
-              <p className="text-gray-600">View and manage all registered users.</p>
-              <Button variant="outline" className="mt-4">Go to Users</Button>
-            </div>
-
-            {/* View Reports Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">View Reports</h3>
-              <p className="text-gray-600">Review submitted scam reports and take action.</p>
-              <Button variant="outline" className="mt-4">View Reports</Button>
-            </div>
-
-            {/* Site Settings Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">Site Settings</h3>
-              <p className="text-gray-600">Manage administrative settings for the site.</p>
-              <Button variant="outline" className="mt-4">Settings</Button>
-            </div>
-          </div>
+    <>
+      <h2 className="text-[40px] font-bold mb-8">Edit Information</h2>
+      
+      <form className="space-y-6 max-w-4xl mx-auto" onSubmit={handleSubmit}>
+        <div>
+          <label className="block text-[20px] font-bold mb-2">New Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+            placeholder="Enter new email"
+            disabled={isSubmitting}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
-      </main>
-    </div>
+
+        <div>
+          <label className="block text-[20px] font-bold mb-2">Last Password</label>
+          <input
+            type="password"
+            name="lastPassword"
+            value={formData.lastPassword}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+            placeholder="Enter current password"
+            disabled={isSubmitting}
+          />
+          {errors.lastPassword && (
+            <p className="text-red-500 text-sm mt-1">{errors.lastPassword}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-[20px] font-bold mb-2">New Password</label>
+          <input
+            type="password"
+            name="newPassword"
+            value={formData.newPassword}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+            placeholder="Enter new password"
+            disabled={isSubmitting}
+          />
+          {errors.newPassword && (
+            <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>
+          )}
+        </div>
+
+        {apiError && (
+          <p className="text-red-500 text-sm text-center">{apiError}</p>
+        )}
+
+        <div className="pt-4">
+          <Button 
+            type="submit"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold py-3"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+          </Button>
+        </div>
+      </form>
+    </>
   );
 }
