@@ -4,5 +4,5 @@ namespace Media.Application.Media;
 
 public interface ISaveMedia
 {
-    Task<String> Handle(MediaFile file,String user);
+    Task<String> Handle(MediaFile file,String email);
 }

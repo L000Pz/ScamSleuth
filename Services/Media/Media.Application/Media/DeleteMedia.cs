@@ -11,9 +11,18 @@ public class DeleteMedia : IDeleteMedia
         _mediaRepository = mediaRepository;
     }
 
-    public async Task<string?> Delete(string username)
+    public async Task<string?> DeleteAll(string username)
     {
-        string? res = await _mediaRepository.Delete(username);
+        string? res = await _mediaRepository.DeleteAll(username);
+        return "ok";
+    }
+    public async Task<string?> Delete(int id)
+    {
+        var res = await _mediaRepository.Delete(id);
+        if (res is null)
+        {
+            return null;
+        }
         return "ok";
     }
 }

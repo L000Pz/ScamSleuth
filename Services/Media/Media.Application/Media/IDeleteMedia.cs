@@ -2,5 +2,6 @@
 
 public interface IDeleteMedia
 {
-    public Task<String?> Delete(String username);
+    public Task<String?> DeleteAll(String username);
+    public Task<String?> Delete(int id);
 }

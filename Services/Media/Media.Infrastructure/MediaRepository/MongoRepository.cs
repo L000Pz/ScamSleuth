@@ -6,8 +6,8 @@ namespace Media.Infrastructure.MediaRepository;
 
 public class MongoRepository : IMongoRepository
 {
-    private static MongoClient client = new MongoClient("mongodb://host.docker.internal:27017");
-    private static IMongoDatabase database = client.GetDatabase("HiBuddy");
+    private static MongoClient client = new MongoClient("mongodb://admin:admin@localhost:27017");
+    private static IMongoDatabase database = client.GetDatabase("ScamSleuth_db");
     private static IMongoCollection<BsonDocument> collection = database.GetCollection<BsonDocument>("Media");
 
     public async Task Insert(BsonDocument doc)
@@ -23,10 +23,10 @@ public class MongoRepository : IMongoRepository
         BsonDocument document = new BsonDocument
         {
             {"_id",media.row_id},
-            {"User_name",media.username},
-            {"Name",media.name},
-            {"File_name",media.file_name},
-            {"Content_Type",media.content_type},
+            {"email",media.email},
+            {"name",media.name},
+            {"file_name",media.file_name},
+            {"content_type",media.content_type},
             {"Content",image},
         };
         return document;
@@ -38,19 +38,30 @@ public class MongoRepository : IMongoRepository
         return docs;
     }
 
-    public async Task<BsonDocument> GetDoc(string user, string fileName)
+    public async Task<BsonDocument> GetDoc(string username, string file_name)
     {
-        //var filter1 = Builders<BsonDocument>.Filter.Eq("User_name", user);
-        var filter2 = Builders<BsonDocument>.Filter.Eq("File_name", fileName);
+        var filter2 = Builders<BsonDocument>.Filter.Eq("file_name", file_name);
         var combined = Builders<BsonDocument>.Filter.And(filter2);
         BsonDocument doc = collection.Find(combined).FirstOrDefault().ToBsonDocument();
         return doc;
     }
 
-    public async Task<string?> DeleteAll(string user)
+    public async Task<string?> DeleteAll(string email)
     {
-        var deletefilter = Builders<BsonDocument>.Filter.Eq("User_name", user);
+        var deletefilter = Builders<BsonDocument>.Filter.Eq("email", email);
         collection.DeleteMany(deletefilter);
+        return "ok";
+    }
+
+    public async Task<String?> Delete(int id)
+    {
+        var delete = Builders<BsonDocument>.Filter.Eq("_id", id);
+        BsonDocument doc = collection.Find(delete).FirstOrDefault().ToBsonDocument();
+        if (doc is null)
+        {
+            return null;
+        }
+        collection.DeleteOne(delete);
         return "ok";
     }
 }

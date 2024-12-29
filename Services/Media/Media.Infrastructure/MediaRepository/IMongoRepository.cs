@@ -9,5 +9,6 @@ public interface IMongoRepository
     Task<BsonDocument> CreateDoc(Domain.Media media);
     Task<List<BsonDocument>> GetAllDocs();
     Task<BsonDocument> GetDoc(String user, String fileName);
-    Task<String?> DeleteAll(String user);
+    Task<String?> DeleteAll(String email);
+    Task<String?> Delete(int id);
 }

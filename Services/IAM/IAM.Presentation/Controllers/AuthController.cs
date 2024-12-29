@@ -144,10 +144,10 @@ public class AuthController : ControllerBase
     [HttpPost("Check Token")]
     public async Task<ActionResult> Check([FromBody] String token)
     {
-        var user = await _tokenCheck.Handle(token);
-        if (user is not null)
+        var email = await _tokenCheck.Handle(token);
+        if (email is not null)
         {
-            return Ok(user);
+            return Ok(email);
         }
         return BadRequest("Invalid token!");
     }

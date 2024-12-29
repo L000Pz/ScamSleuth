@@ -14,7 +14,7 @@ public class TokenCheck : ITokenCheck
         _userRepository = userRepository;
     }
 
-    public async Task<Users?> Handle(string token)
+    public async Task<String?> Handle(string token)
     {
         String? email = _jwtTokenGenerator.GetEmail(token);
         if (email is null)
@@ -22,6 +22,10 @@ public class TokenCheck : ITokenCheck
             return null;
         }
         Users? user = await _userRepository.GetUserByEmail(email);
-        return user;
+        if (user is null)
+        {
+            return null;
+        }
+        return email;
     }
 }

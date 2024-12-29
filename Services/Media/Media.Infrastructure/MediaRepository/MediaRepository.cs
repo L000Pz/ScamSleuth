@@ -46,9 +46,9 @@ public class MediaRepository : IMediaRepository
         return max + 1;
     }
 
-    public async Task<BsonDocument> GetDoc(string username, string file_name)
+    public async Task<BsonDocument> GetDoc(string email, string file_name)
     {
-        BsonDocument doc =await _mongoRepository.GetDoc(username, file_name);
+        BsonDocument doc =await _mongoRepository.GetDoc(email, file_name);
         return doc;
     }
 
@@ -63,9 +63,18 @@ public class MediaRepository : IMediaRepository
         return mediaFile;
     }
 
-    public async Task<string?> Delete(string username)
+    public async Task<string?> DeleteAll(string username)
     {
         String? res = await _mongoRepository.DeleteAll(username);
+        return "ok";
+    }
+    public async Task<string?> Delete(int id)
+    {
+        var res = await _mongoRepository.Delete(id);
+        if (res is null)
+        {
+            return null;
+        }
         return "ok";
     }
 }

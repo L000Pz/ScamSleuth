@@ -3,8 +3,8 @@ version: '3.8'
 services:
   api-gateway:
     build:
-      context: ./Gateway
-      dockerfile: Gateway.API/Dockerfile
+      context: ./Gateway/Gateway.API
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
       - "8081:443"

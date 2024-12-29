@@ -4,5 +4,5 @@ namespace IAM.Application.AuthenticationService;
 
 public interface ITokenCheck
 {
-    public Task<Users?> Handle(String token);
+    public Task<String?> Handle(String token);
 }

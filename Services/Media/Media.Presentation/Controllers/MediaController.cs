@@ -17,7 +17,7 @@ public class MediaController: ControllerBase
     private readonly IGetMedia _getMedia;
     private readonly HttpClient _httpClient;
     private readonly IDeleteMedia _deleteMedia;
-    private string checkUrl = "http://host.docker.internal:5000/authentication/Check Token";
+    private string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
 
     public MediaController(ISaveMedia saveMedia, IGetMedia getMedia, HttpClient httpClient, IDeleteMedia deleteMedia)
     {
@@ -44,16 +44,15 @@ public class MediaController: ControllerBase
             
             if (!response.IsSuccessStatusCode)
             {
-                return BadRequest("Invalid token!");
+                return BadRequest("Could not validate the token.");
             }
 
             token = await response.Content.ReadAsStringAsync();
-            token = token.Remove(0, 1).Remove(token.Length - 2);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return BadRequest("Invalid token!");
+            return BadRequest("Could not validate the token.");
         }
         
         if (file == null || file.Length == 0)
@@ -81,51 +80,43 @@ public class MediaController: ControllerBase
         {
             return BadRequest("An error has happened, please try again later.");
         }
-        return Ok();
+
+        if (ou.Equals("invalid"))
+        {
+            return BadRequest("User does not exist!");
+        }
+        return Ok("File has been saved successfully!");
     }
 
-    [HttpGet("GetMedia")]
+    [HttpGet("Get")]
     //[Authorize]
     public async Task<ActionResult> GetMedia(String Filename)
     {
-       /* string token = HttpContext.Request.Headers.Authorization;
-        token = token.Split(" ")[1];
-        try
-        {
-            string jsonToken = JsonConvert.SerializeObject(token);
-            // create http content to send
-            HttpContent content = new StringContent(jsonToken, Encoding.UTF8, "application/json");
-            // send request using post
-            HttpResponseMessage response = await _httpClient.PostAsync(checkUrl, content);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                return BadRequest("invalid token provided");
-            }
-
-            token = await response.Content.ReadAsStringAsync();
-            token = token.Remove(0, 1).Remove(token.Length - 2);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return BadRequest("wrong token");
-        }*/
-        
         MediaFile? media = await _getMedia.GetFile("token", Filename);
         if (media is null)
         {
-            return NotFound("correct token or file not found");
+            return NotFound("Incorrect token or file name!");
         }
         media.Content.Position = 0;
         return File(media.Content, media.content_type, media.file_name);
     }
 
     [HttpDelete("DeleteAll")]
-    public async Task<ActionResult> DeleteAll(String username)
+    public async Task<ActionResult> DeleteAll(String email)
     {
-        String? res = await _deleteMedia.Delete(username);
-        return Ok();
+        String? res = await _deleteMedia.DeleteAll(email);
+        return Ok("All files have been deleted successfully!");
+    }
+
+    [HttpDelete("Delete")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        String? res = await _deleteMedia.Delete(id);
+        if (res is null)
+        {
+            return BadRequest("File not found!");
+        }
+        return Ok("File has been deleted successfully!");
     }
 }
 
