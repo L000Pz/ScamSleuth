@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
+import Script from 'next/script';
+import { config } from '@/app/config/env';
 
 const navItems = [
   { name: 'Edit Info', href: '/admin-dashboard' },
@@ -30,6 +32,12 @@ export default function AdminLayout({
   };
 
   return (
+    <>
+        <Script 
+            src={`https://cdn.tiny.cloud/1/${config.tinymceApiKey}/tinymce/6/tinymce.min.js`}
+            strategy="beforeInteractive"
+            referrerPolicy="origin"
+        />
     <div className="flex items-center justify-center p-[76px]">
       <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
         {/* Left Sidebar */}
@@ -73,5 +81,6 @@ export default function AdminLayout({
         </div>
       </div>
     </div>
+    </>
   );
 }

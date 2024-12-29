@@ -163,7 +163,7 @@ export default function ScamReportsPage() {
                   <span className="text-gray-500">{report.date}</span>
                   <Button 
                     variant="outline"
-                    onClick={() => router.push(`/admin/scam-reports/${report.id}`)}
+                    onClick={() => router.push(`/admin-dashboard/scam-reports/${report.id}`)}
                     className="rounded-full px-6 font-bold"
                   >
                     Review
