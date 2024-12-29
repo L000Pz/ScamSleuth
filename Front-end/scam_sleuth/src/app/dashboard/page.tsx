@@ -6,6 +6,7 @@ import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { logout } from './actions';
+import { report } from 'process';
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -71,12 +72,14 @@ export default function UserDashboard() {
                 <Button 
                   variant="outline" 
                   className="h-[40px] rounded-full font-bold"
+                  onClick={()=>router.push('report')}
                 >
                   Submit Report
                 </Button>
                 <Button 
                   variant="outline" 
                   className="h-[40px] rounded-full font-bold"
+                  onClick={()=>router.push('scams')}
                 >
                   Browse Alerts
                 </Button>
