@@ -31,7 +31,7 @@ export async function signup(formData: {
     }
 > {
   try {
-    const response = await fetch('http://localhost:5000/authentication/Register', {
+    const response = await fetch('http://localhost:8080/authentication/Register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

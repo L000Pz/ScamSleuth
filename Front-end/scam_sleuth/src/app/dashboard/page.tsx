@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { logout } from './actions';
 
-
 export default function UserDashboard() {
   const router = useRouter();
 
@@ -22,64 +21,79 @@ export default function UserDashboard() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Navigation Bar */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-800 p-4 text-white">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">User Dashboard</h1>
-          <Button 
-            variant="ghost" 
-            className="text-white border-white"
-            onClick={handleLogout}
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Rest of your dashboard code... */}
-      {/* Main Content */}
-      <main className="flex-grow p-[76px]">
-        <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col items-center p-8 w-full h-[610px] mx-auto">
-          {/* Welcome Section */}
-          <div className="flex items-center justify-between w-full mb-8">
-            <div>
-              <h2 className="text-[40px] font-bold">Welcome, [User]!</h2>
-              <p className="text-gray-600">Here's what's happening with your account today.</p>
-            </div>
-            <Image src={heroImage} alt="User Icon" width={120} height={120} />
+    <div className="flex items-center justify-center p-[76px]">
+      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
+        {/* Left Column - Dashboard Content */}
+        <div className="w-3/5 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-[40px] font-bold">Welcome, [User]!</h2>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </Button>
           </div>
-
-          {/* Dashboard Features */}
-          <div className="w-full space-y-6">
+          
+          <div className="space-y-6 mx-[30px] -mt-4">
             {/* Profile Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">Your Profile</h3>
-              <p className="text-gray-600">View or edit your personal information and settings.</p>
-              <Button variant="outline" className="mt-4">Edit Profile</Button>
+            <div className="p-4 border border-gray-300 rounded-xl">
+              <h3 className="text-[20px] font-bold mb-2">Your Profile</h3>
+              <p className="text-gray-600 mb-4">View or edit your personal information and settings.</p>
+              <Button 
+                variant="outline" 
+                className="w-[150px] h-[40px] rounded-full font-bold"
+                onClick={()=> router.push('dashboard/profile-edit')}
+              >
+                Edit Profile
+              </Button>
             </div>
 
-            {/* Recent Activity Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">Recent Activity</h3>
-              <p className="text-gray-600">View your recent reports or actions taken on your account.</p>
-              <Button variant="outline" className="mt-4">View Activity</Button>
+            {/* Recent Activity */}
+            <div className="p-4 border border-gray-300 rounded-xl">
+              <h3 className="text-[20px] font-bold mb-2">Recent Activity</h3>
+              <p className="text-gray-600 mb-4">Track your recent reports and account activities.</p>
+              <Button 
+                variant="outline" 
+                className="w-[150px] h-[40px] rounded-full font-bold"
+                onClick={()=> router.push('dashboard/activities')}
+              >
+                View Activity
+              </Button>
             </div>
 
-            {/* Quick Links Section */}
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold">Quick Links</h3>
-              <ul className="list-disc pl-5 text-gray-600">
-                <li className="mt-1">Submit a Scam Report</li>
-                <li className="mt-1">Browse Scam Alerts</li>
-                <li className="mt-1">Contact Support</li>
-              </ul>
-              <Button variant="outline" className="mt-4">Explore More</Button>
+            {/* Quick Actions */}
+            <div className="p-4 border border-gray-300 rounded-xl">
+              <h3 className="text-[20px] font-bold mb-2">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <Button 
+                  variant="outline" 
+                  className="h-[40px] rounded-full font-bold"
+                >
+                  Submit Report
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-[40px] rounded-full font-bold"
+                >
+                  Browse Alerts
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Right Column - Gradient Background and Image */}
+        <div className="w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex flex-col items-center justify-center p-8">
+          <Image src={heroImage} alt="Detective Dog" width={278} height={319} className="mb-4" />
+          <p className="text-[40px] font-bold text-white text-left">
+            Welcome back, <span style={{ color: "#E14048" }}>Sleuth</span>!
+          </p>
+          <p className="text-[40px] font-bold text-white text-left">Ready to make a difference?</p>
+        </div>
+      </div>
     </div>
   );
 }
