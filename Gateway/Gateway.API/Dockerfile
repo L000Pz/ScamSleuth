@@ -1,24 +1,12 @@
-# ApiGateway/Dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0
 WORKDIR /src
-# Copy only the solution and project files first to optimize layer caching
-COPY ["*.sln", "./"]
-COPY ["*/*.csproj", "./"]
-RUN for file in $(ls *.csproj); do mkdir -p ${file%.*}/ && mv $file ${file%.*}/; done
-RUN dotnet restore
-# Now copy everything else
+
+# Copy the project file from the correct nested location
+COPY ["Gateway.API/Gateway.API/Gateway.API.csproj", "Gateway.API/Gateway.API/"]
+RUN dotnet restore "Gateway.API/Gateway.API/Gateway.API.csproj"
+
+# Copy everything else
 COPY . .
-RUN dotnet build -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Gateway.API.dll"]
+# Use dotnet watch for development, specify the project path
+ENTRYPOINT ["dotnet", "watch", "run", "--no-restore", "--project", "Gateway.API/Gateway.API/Gateway.API.csproj"]

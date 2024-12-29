@@ -5,11 +5,9 @@ namespace Media.Application.Media;
 
 public class SaveMedia : ISaveMedia
 {
-    private readonly IJWTChecker _jwtChecker;
     private readonly IMediaRepository _mediaRepository;
-    public SaveMedia(IJWTChecker jwtChecker, IMediaRepository mediaRepository)
+    public SaveMedia(IMediaRepository mediaRepository)
     {
-        _jwtChecker = jwtChecker;
         _mediaRepository = mediaRepository;
     }
 

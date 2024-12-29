@@ -1,38 +1,18 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0
 WORKDIR /src
 
-# Copy solution file
-COPY ["*.sln", "./"]
-
-# Copy all project files first
+# Copy csproj files for all projects in the service
 COPY ["Media.Presentation/*.csproj", "Media.Presentation/"]
 COPY ["Media.Application/*.csproj", "Media.Application/"]
 COPY ["Media.Infrastructure/*.csproj", "Media.Infrastructure/"]
 COPY ["Media.Domain/*.csproj", "Media.Domain/"]
 COPY ["Media.Contracts/*.csproj", "Media.Contracts/"]
 
-# Restore packages
+# Restore as distinct layers
 RUN dotnet restore "Media.Presentation/Media.Presentation.csproj"
 
-# Copy the rest of the files
+# Copy everything else
 COPY . .
 
-# Build the projects one by one to better handle dependencies
-RUN dotnet build "Media.Domain/Media.Domain.csproj" -c Release
-RUN dotnet build "Media.Contracts/Media.Contracts.csproj" -c Release
-RUN dotnet build "Media.Application/Media.Application.csproj" -c Release
-RUN dotnet build "Media.Infrastructure/Media.Infrastructure.csproj" -c Release
-RUN dotnet build "Media.Presentation/Media.Presentation.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "Media.Presentation/Media.Presentation.csproj" -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Media.Presentation.dll"]
+# Use dotnet watch for development
+ENTRYPOINT ["dotnet", "watch", "run", "--no-restore", "--project", "Media.Presentation/Media.Presentation.csproj"]

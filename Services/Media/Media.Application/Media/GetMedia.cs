@@ -7,12 +7,10 @@ namespace Media.Application.Media;
 public class GetMedia : IGetMedia
 {
     private readonly IMediaRepository _mediaRepository;
-    private readonly IJWTChecker _jwtChecker;
 
-    public GetMedia(IMediaRepository mediaRepository, IJWTChecker jwtChecker)
+    public GetMedia(IMediaRepository mediaRepository)
     {
         _mediaRepository = mediaRepository;
-        _jwtChecker = jwtChecker;
     }
 
     public async Task<MediaFile?> GetFile(string user, string fileName)
