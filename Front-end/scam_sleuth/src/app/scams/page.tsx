@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
+import { ScamList } from '@/app/components/cardLong';
 
 interface ScamReport {
   id: string;
@@ -15,6 +16,7 @@ interface ScamReport {
 }
 
 export default function ScamsPage() {
+
   const router = useRouter();
   const [sortBy, setSortBy] = useState('date');
   const [isLoading, setIsLoading] = useState(true);
@@ -30,19 +32,74 @@ export default function ScamsPage() {
         const dummyReports: ScamReport[] = [
           {
             id: '1',
-            name: 'Email Scam',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
+            name: 'Phishing Email Scam',
+            description: 'Sophisticated email impersonating a major bank, requesting urgent account verification. Includes fraudulent login page to steal credentials.',
             date: '2024/10/1',
             imageUrl: '/detective-dog.png'
           },
           {
             id: '2',
-            name: 'Crypto Scam',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-            date: '2024/10/1',
+            name: 'Crypto Investment Fraud',
+            description: 'Fake cryptocurrency trading platform promising unrealistic returns. Uses social media ads to lure victims into "guaranteed" investment schemes.',
+            date: '2024/9/28',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '3',
+            name: 'Romance Scam',
+            description: 'Dating app profile using stolen photos, building emotional connection to request money for fake emergencies and travel expenses.',
+            date: '2024/9/25',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '4',
+            name: 'Tech Support Scam',
+            description: 'Pop-up alerts claiming computer virus infection, directing victims to call fake Microsoft support number for expensive unnecessary repairs.',
+            date: '2024/9/22',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '5',
+            name: 'Job Offer Scam',
+            description: 'Remote work opportunity requiring upfront payment for training materials. Promises high salary for minimal work experience.',
+            date: '2024/9/20',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '6',
+            name: 'Shopping Website Fraud',
+            description: 'Fake e-commerce site advertising luxury goods at extremely low prices. Takes payment but never delivers products.',
+            date: '2024/9/18',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '7',
+            name: 'Rental Property Scam',
+            description: 'Listing for apartment rental at below-market rate, requiring immediate deposit without viewing. Property doesnt actually exist.',
+            date: '2024/9/15',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '8',
+            name: 'Government Impersonation',
+            description: 'Caller claiming to be from tax office, threatening arrest unless immediate payment is made through gift cards for alleged tax debt.',
+            date: '2024/9/12',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '9',
+            name: 'Lottery Winner Scam',
+            description: 'Email notification of huge lottery win, requiring payment of fees to claim prize. Uses official-looking documents and logos.',
+            date: '2024/9/10',
+            imageUrl: '/detective-dog.png'
+          },
+          {
+            id: '10',
+            name: 'Invoice Fraud',
+            description: 'Business email compromise sending fake invoices for legitimate-looking services. Targets accounting departments with urgent payment requests.',
+            date: '2024/9/8',
             imageUrl: '/detective-dog.png'
           }
-          // Add more dummy data as needed
         ];
 
         setReports(dummyReports);
@@ -71,6 +128,9 @@ export default function ScamsPage() {
     });
     setReports(sortedReports);
   };
+  const handleReview = (id: string) => {
+    router.push(`/scams/${id}`);
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -98,41 +158,7 @@ export default function ScamsPage() {
       </div>
 
       <div className="space-y-4">
-        {reports.map((report, index) => (
-          <div 
-            key={report.id}
-            className="flex bg-cardWhite rounded-xl overflow-hidden shadow-lg"
-          >
-            {/* Left side with image */}
-            <div className={`${index % 2 === 0 ? "w-32 bg-black flex items-center justify-center p-4":"w-10 bg-black flex items-center justify-center p-4"}`}>
-              
-            </div>
-            {/* Image */}
-            <div className={`${index % 2 === 0 ? 'ml-[-119px]' : 'mr-0'} flex justify-center`}>
-                <div className="flex justify-center w-[100px] h-[100px]">
-                    <Image src={heroImage} alt={"hero"} width={280} height={119} className="object-cover" />
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-grow p-6">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-2xl font-bold">{report.name}</h3>
-                <span className="font-bold">{report.date}</span>
-              </div>
-              <p className="text-gray-700 mb-4">{report.description}</p>
-              <div className="flex justify-end">
-                <Button 
-                  variant={index % 2 === 0 ? "outline" : "outlineW"}
-                  onClick={() => router.push(`/scams/${report.id}`)}
-                  className="rounded-full px-8 py-2 font-bold"
-                >
-                  Read More
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
+        <ScamList scams={reports} onReview={handleReview} />
       </div>
     </div>
   );
