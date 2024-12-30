@@ -38,11 +38,10 @@ public class MongoRepository : IMongoRepository
         return docs;
     }
 
-    public async Task<BsonDocument> GetDoc(string username, string file_name)
+    public async Task<BsonDocument> GetDoc(int id)
     {
-        var filter2 = Builders<BsonDocument>.Filter.Eq("file_name", file_name);
-        var combined = Builders<BsonDocument>.Filter.And(filter2);
-        BsonDocument doc = collection.Find(combined).FirstOrDefault().ToBsonDocument();
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", id);
+        BsonDocument doc = collection.Find(filter).FirstOrDefault().ToBsonDocument();
         return doc;
     }
 

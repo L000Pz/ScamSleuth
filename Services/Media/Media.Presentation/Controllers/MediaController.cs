@@ -90,12 +90,12 @@ public class MediaController: ControllerBase
 
     [HttpGet("Get")]
     //[Authorize]
-    public async Task<ActionResult> GetMedia(String Filename)
+    public async Task<ActionResult> GetMedia(int id)
     {
-        MediaFile? media = await _getMedia.GetFile("token", Filename);
+        MediaFile? media = await _getMedia.GetFile(id);
         if (media is null)
         {
-            return NotFound("Incorrect token or file name!");
+            return NotFound("File not found!");
         }
         media.Content.Position = 0;
         return File(media.Content, media.content_type, media.file_name);

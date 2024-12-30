@@ -13,10 +13,10 @@ public class GetMedia : IGetMedia
         _mediaRepository = mediaRepository;
     }
 
-    public async Task<MediaFile?> GetFile(string user, string fileName)
+    public async Task<MediaFile?> GetFile(int id)
     {
         // get the desired document
-        BsonDocument? file = await _mediaRepository.GetDoc(user, fileName);
+        BsonDocument? file = await _mediaRepository.GetDoc(id);
         if (file is null)
         {
             return null;

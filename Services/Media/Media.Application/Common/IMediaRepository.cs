@@ -7,7 +7,7 @@ public interface IMediaRepository
 {
     public Task<String> Add(Domain.Media media);
     public Task<int> GetLastId();
-    public Task<BsonDocument> GetDoc(String username, String fileName);
+    public Task<BsonDocument> GetDoc(int id);
     public Task<MediaFile> CreateMedia(BsonDocument file);
     public Task<String?> DeleteAll(string username);
     public Task<String?> Delete(int id);

@@ -46,9 +46,9 @@ public class MediaRepository : IMediaRepository
         return max + 1;
     }
 
-    public async Task<BsonDocument> GetDoc(string email, string file_name)
+    public async Task<BsonDocument> GetDoc(int id)
     {
-        BsonDocument doc =await _mongoRepository.GetDoc(email, file_name);
+        BsonDocument doc =await _mongoRepository.GetDoc(id);
         return doc;
     }
 
