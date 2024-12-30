@@ -8,19 +8,22 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
     
     // Clear all authentication-related cookies
     cookieStore.delete('token');
-    cookieStore.delete('userType'); // In case you add this later
-    
-    // Optional: Call backend logout endpoint if available
+    cookieStore.delete('userType');
+
+    // Optional: Call backend logout endpoint if you need to invalidate the token server-side
     try {
-      await fetch('http://localhost:8080/IAM/authentication/Logout', {
+      const response = await fetch('http://localhost:8080/IAM/authentication/Logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cookieStore.get('token')?.value}`,
         },
       });
+
+      if (!response.ok) {
+        console.warn('Backend logout failed, but cookies were cleared');
+      }
     } catch (error) {
-      // Continue with logout even if backend call fails
-      console.warn('Backend logout call failed, but cookies were cleared');
+      console.warn('Could not reach logout endpoint, but cookies were cleared');
     }
 
     return {

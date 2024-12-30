@@ -9,13 +9,15 @@ import {checkAuth} from './actions'
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
   const router = useRouter();
 
   // Check authentication status on mount and when token changes
   useEffect(() => {
     const verifyAuth = async () => {
-      const isAuthed = await checkAuth();
-      setIsAuthenticated(isAuthed);
+      const authStatus = await checkAuth();
+      setIsAuthenticated(authStatus.isAuthenticated);
+      setUserType(authStatus.userType);
     };
 
     verifyAuth();
@@ -30,7 +32,11 @@ export default function Navbar() {
   };
 
   const handleDashboard = () => {
-    router.push('/dashboard');
+    if (userType === 'admin') {
+      router.push('/admin-dashboard');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const toggleMenu = () => {

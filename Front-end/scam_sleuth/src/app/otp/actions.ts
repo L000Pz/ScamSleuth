@@ -18,7 +18,7 @@ export async function authorize(code: string): Promise<{
   }
 
   try {
-    const response = await fetch('http://localhost:5000/authentication/Verify', {
+    const response = await fetch('http://localhost:8080/IAM/authentication/Verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,6 +35,15 @@ export async function authorize(code: string): Promise<{
         message: 'Invalid verification code. Please try again.',
       };
     }
+
+    cookieStore.set({
+      name: 'isVerified',
+      value: 'true',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
 
     return {
       success: true,
@@ -65,7 +74,7 @@ export async function resendCode(): Promise<{
 
   try {
     // Changed to use query parameter instead of request body
-    const response = await fetch(`http://localhost:5000/authentication/New Code?token=${token}`, {
+    const response = await fetch(`http://localhost:8080/IAM/authentication/New Code?token=${token}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

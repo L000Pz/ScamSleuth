@@ -2,8 +2,18 @@
 
 import { cookies } from 'next/headers';
 
-export async function checkAuth(): Promise<boolean> {
+interface AuthStatus {
+  isAuthenticated: boolean;
+  userType: string | null;
+}
+
+export async function checkAuth(): Promise<AuthStatus> {
   const cookieStore = await cookies();
   const token = cookieStore.get('token');
-  return !!token;
+  const userType = cookieStore.get('userType');
+
+  return {
+    isAuthenticated: !!token,
+    userType: userType?.value || null
+  };
 }

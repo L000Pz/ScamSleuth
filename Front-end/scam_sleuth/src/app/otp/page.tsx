@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authorize, resendCode } from './actions';
+import { authorize, resendCode} from './actions';
 
 export default function CodeVerificationPage() {
   const router = useRouter();
@@ -29,6 +29,8 @@ export default function CodeVerificationPage() {
 
     generateInitialCode();
   }, []);
+
+
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
@@ -60,6 +62,8 @@ export default function CodeVerificationPage() {
     setMessage(response.message);
     setIsError(!response.success);
   };
+
+  
 
   if (isLoading) {
     return (

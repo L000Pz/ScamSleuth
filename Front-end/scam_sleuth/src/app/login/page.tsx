@@ -15,6 +15,15 @@ const LoginSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
 });
 
+interface AdminData {
+  admin_id: number;
+  username: string;
+  email: string;
+  name: string;
+  contact_info: string;
+  password: string;
+}
+
 interface UserData {
   user_id: number;
   username: string;
@@ -61,14 +70,20 @@ export default function LoginPage() {
         return;
       }
 
-      // If user is not verified, redirect to verification page
-      if (!response.userData.is_verified) {
-        router.push('/otp');
-        return;
+      // Check if response contains admin data
+      if ('admin' in response.data) {
+        // Admin login successful
+        router.refresh();
+        router.push('/admin-dashboard');
+      } else {
+        // Regular user login
+        if (!response.data.users.is_verified) {
+          router.push('/otp');
+          return;
+        }
+        router.refresh();
+        router.push('/dashboard');
       }
-
-      // Redirect to dashboard upon successful login
-      router.push('/dashboard');
     } catch (error) {
       console.error('Error logging in:', error);
       setApiError('An unexpected error occurred. Please try again.');
@@ -78,7 +93,6 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center p-[76px]">
       <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
-        
         {/* Left Column - Form */}
         <div className="w-3/5 p-8">
           <h2 className="text-[40px] text-center font-bold mb-6">Log In</h2>

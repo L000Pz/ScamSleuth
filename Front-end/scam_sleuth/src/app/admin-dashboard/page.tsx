@@ -3,6 +3,9 @@
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 
 // Define the Zod schema for form validation
 const EditInfoSchema = z.object({
@@ -28,6 +31,8 @@ const EditInfoSchema = z.object({
 });
 
 export default function AdminPage() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     email: '',
     lastPassword: '',
@@ -39,6 +44,18 @@ export default function AdminPage() {
     lastPassword: '',
     newPassword: ''
   });
+
+  useEffect(() => {
+    // Force reload on mount
+    const reloadOnce = () => {
+      if (!window.location.hash) {
+        window.location.hash = 'loaded';
+        window.location.reload();
+      }
+    };
+    
+    reloadOnce();
+  }, []);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);

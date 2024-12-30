@@ -31,7 +31,7 @@ export async function signup(formData: {
     }
 > {
   try {
-    const response = await fetch('http://localhost:8080/authentication/Register', {
+    const response = await fetch('http://localhost:8080/IAM/authentication/Register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,6 +53,24 @@ export async function signup(formData: {
     cookieStore.set({
       name: 'token',
       value: data.token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+    
+    cookieStore.set({
+      name: 'userType',
+      value: 'user',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+
+    cookieStore.set({
+      name: 'isVerified',
+      value: data.users.is_verified.toString(),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

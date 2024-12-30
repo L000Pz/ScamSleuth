@@ -7,14 +7,28 @@ import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { logout } from './actions';
 import { report } from 'process';
+import { useEffect } from 'react';
+
 
 export default function UserDashboard() {
   const router = useRouter();
 
+  useEffect(() => {
+    // Force reload on mount using hash strategy
+    const reloadOnce = () => {
+      if (!window.location.hash) {
+        window.location.hash = 'loaded';
+        window.location.reload();
+      }
+    };
+    
+    reloadOnce();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/login');
+      window.location.href = '/login';
       router.refresh();
     } catch (error) {
       console.error('Logout failed:', error);
