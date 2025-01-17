@@ -4,6 +4,6 @@ namespace Core.Application.UserManagement;
 
 public interface IChangePassword
 {
-    public Task<string?> Handle(Users users,string password);
+    public Task<string?> Handle(string email,string password);
 
 }

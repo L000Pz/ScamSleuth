@@ -13,9 +13,9 @@ public class ChangePassword : IChangePassword
         _userRepository = userRepository;
         _hasher = hasher;
     }
-    public async Task<string?> Handle(Users users, string password)
+    public async Task<string?> Handle(string email,string password)
     {
-        Users? user = await _userRepository.GetUserByUsername(users.username);
+        Users? user = await _userRepository.GetUserByEmail(email);
         if (user is null)
         {
             return null;
@@ -25,7 +25,7 @@ public class ChangePassword : IChangePassword
             return "format";
         }
         Users? newPassUser = await _userRepository.ChangePassword(user, _hasher.Hash(password));
-        return "ok";
+        return "Password has been changed successfully!";
     }
 
 }
