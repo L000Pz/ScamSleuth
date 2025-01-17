@@ -89,7 +89,6 @@ public class MediaController: ControllerBase
     }
 
     [HttpGet("Get")]
-    //[Authorize]
     public async Task<ActionResult> GetMedia(int id)
     {
         MediaFile? media = await _getMedia.GetFile(id);
