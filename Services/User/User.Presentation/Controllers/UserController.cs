@@ -12,8 +12,8 @@ namespace Core.Presentation.Controllers;
 
 [ApiController]
 [Produces("application/json")]
-[Route("core")]
-public class CoreController: ControllerBase
+[Route("userManager")]
+public class UserController: ControllerBase
 {
     private readonly IChangePassword _changePassword;
     private readonly IGetUserReports _getUserReports;
@@ -22,14 +22,14 @@ public class CoreController: ControllerBase
     private string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
     private string postUrl = "htto://localhost:8080/Media/Media/Save";
     private string mediaUrl = "http://localhost:8080/Media/Media/Get";
-    public CoreController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport)
+    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport)
     {
         _changePassword = changePassword;
         _httpClient = httpClient;
         _getUserReports = getUserReports;
         _submitReport = submitReport;
     }
-    [HttpPut("Change Password")]
+    [HttpPut("ChangePassword")]
     [Authorize]
     public async Task<ActionResult> ChangePassword([FromBody]string email,string password)
     {
@@ -49,7 +49,7 @@ public class CoreController: ControllerBase
         return Ok(result);
     }
     
-    [HttpPost("Submit Report")]
+    [HttpPost("SubmitReport")]
     [Authorize]
     public async Task<ActionResult> SubmitReport([FromBody] ReportSubmission reportSubmission)
     {
@@ -90,7 +90,7 @@ public class CoreController: ControllerBase
     }
     
     
-    [HttpGet("Get User's Reports")]
+    [HttpGet("GetUserReports")]
     [Authorize]
     public async Task<ActionResult> GetReports()
     {

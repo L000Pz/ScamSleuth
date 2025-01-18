@@ -9,7 +9,7 @@ namespace Media.Presentation.Controllers;
 
 [ApiController]
 [Produces("application/json")]
-[Route("Media")]
+[Route("mediaManager")]
 public class MediaController: ControllerBase
 {
     
