@@ -5,18 +5,17 @@ namespace User.Domain;
 
 public class Report
 {
-    [Key]
     public int report_id { get; set; }
     [Required]
     public string title { get; set; }
     public int scam_type_id { get; set; }
     [Required]
     public DateTime scam_date { get; set; }
-    public SqlMoney financial_loss { get; set; }
+    public decimal financial_loss { get; set; }
     [Required]
     public string description { get; set; }
     
-    public static Report Create(string title, int scam_type_id, DateTime scam_date, SqlMoney financial_loss, string description)
+    public static Report Create(string title, int scam_type_id, DateTime scam_date, decimal financial_loss, string description)
     {
         return new Report
         {

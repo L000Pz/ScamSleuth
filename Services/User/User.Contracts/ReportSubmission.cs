@@ -6,6 +6,6 @@ public record ReportSubmission(
     string title,
     int scam_type_id,
     DateTime scam_date,
-    SqlMoney financial_loss,
+    decimal financial_loss,
     string description,
     int media_id);

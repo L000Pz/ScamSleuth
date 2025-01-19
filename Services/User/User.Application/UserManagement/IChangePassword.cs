@@ -1,9 +1,10 @@
-﻿using User.Domain;
+﻿using User.Contracts;
+using User.Domain;
 
 namespace User.Application.UserManagement;
 
 public interface IChangePassword
 {
-    public Task<string?> Handle(string email,string password);
+    public Task<string?> Handle(PasswordChange passwordChange);
 
 }

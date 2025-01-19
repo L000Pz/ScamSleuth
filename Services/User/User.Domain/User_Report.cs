@@ -4,9 +4,7 @@ namespace User.Domain;
 
 public class User_Report
 {
-    [Key]
     public int user_id { get; set; }
-    [Key]
     public int review_id { get; set; }
     public static User_Report Create(int user_id,int review_id)
     {

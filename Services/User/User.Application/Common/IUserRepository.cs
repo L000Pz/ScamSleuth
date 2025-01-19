@@ -10,4 +10,5 @@ public interface IUserRepository
     public Task<Report?> SubmitReport(Report report);
     public Task<Report_Media?> SubmitReportMedia(Report_Media report_media);
     public Task<List<Report>> GetUserReports(string username);
+    public Task<User_Report?> SubmitUserReport(User_Report user_report);
 }

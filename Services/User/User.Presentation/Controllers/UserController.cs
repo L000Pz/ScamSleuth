@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices.JavaScript;
+using System.Text;
 using User.Application.UserManagement;
 using User.Contracts;
 using User.Domain;
@@ -19,9 +20,9 @@ public class UserController: ControllerBase
     private readonly IGetUserReports _getUserReports;
     private readonly ISubmitReport _submitReport;
     private readonly HttpClient _httpClient;
-    private string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
-    private string postUrl = "htto://localhost:8080/Media/Media/Save";
-    private string mediaUrl = "http://localhost:8080/Media/Media/Get";
+    private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
+    private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
+
     public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport)
     {
         _changePassword = changePassword;
@@ -31,20 +32,30 @@ public class UserController: ControllerBase
     }
     [HttpPut("ChangePassword")]
     [Authorize]
-    public async Task<ActionResult> ChangePassword([FromBody]string email,string password)
+    public async Task<ActionResult> ChangePassword([FromBody] PasswordChange passwordChange)
     {
         string? token = HttpContext.Request.Headers.Authorization;
         token = token.Split(" ")[1];
-        
+
         token = await CheckToken(token);
-        if (email != token)
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Could not validate the token.");
+        }
+        if (passwordChange.email != token)
         {
             return BadRequest("Email doesn't match!");
         }
-        String? result = await _changePassword.Handle(token,password);
+
+        String? result = await _changePassword.Handle(passwordChange);
         if (result is null)
         {
             return BadRequest("Operation failed!");
+        }
+
+        if (result == "format")
+        {
+            return BadRequest("New password's length must be over 6 characters!");
         }
         return Ok(result);
     }
@@ -57,7 +68,7 @@ public class UserController: ControllerBase
         token = token.Split(" ")[1];
 
         token = await CheckToken(token);
-        if (token == "Could not validate the token.")
+        if (token == "unsuccessful")
         {
             return BadRequest("Authentication failed!");
         }
@@ -67,7 +78,7 @@ public class UserController: ControllerBase
             HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={reportSubmission.media_id}");
             if (!mediaResponse.IsSuccessStatusCode)
             {
-                return BadRequest("Media does not exist!");
+                return BadRequest("Could not find the media!");
             }
         }
         catch (Exception e) 
@@ -84,7 +95,7 @@ public class UserController: ControllerBase
 
         if (result == "writer")
         {
-            return BadRequest("User doesn't exist!");
+            return BadRequest("Failed to authenticate user!");
         }
         return Ok("Report submitted successfully.");
     }
@@ -116,8 +127,9 @@ public class UserController: ControllerBase
             HttpResponseMessage response = await _httpClient.PostAsync(checkUrl, content);
             
             if (!response.IsSuccessStatusCode)
-            {
-                return "Could not validate the token.";
+            {            
+                Console.WriteLine(response);
+                return "unsuccessful";
             }
 
             token = await response.Content.ReadAsStringAsync();
@@ -126,7 +138,7 @@ public class UserController: ControllerBase
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return "Could not validate the token.";
+            return "unsuccessful";
         }
     }
 }

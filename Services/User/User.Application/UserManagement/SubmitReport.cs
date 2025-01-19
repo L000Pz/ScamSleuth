@@ -29,7 +29,7 @@ public class SubmitReport : ISubmitReport
             return "writer";
         }
         User_Report userReport = User_Report.Create(newReport.report_id, writer.user_id);
-        await _userRepository.SubmitReportMedia(reportMedia);
+        await _userRepository.SubmitUserReport(userReport);
         return "ok";
     }
 }
