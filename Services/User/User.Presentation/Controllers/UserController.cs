@@ -13,7 +13,7 @@ namespace Core.Presentation.Controllers;
 
 [ApiController]
 [Produces("application/json")]
-[Route("userManager")]
+[Route("userManagement")]
 public class UserController: ControllerBase
 {
     private readonly IChangePassword _changePassword;

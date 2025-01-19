@@ -3,6 +3,7 @@ using Media.Application;
 using Media.Infrastructure;
 using Media.Infrastructure.JWT;
 using Media.Presentation;
+using Media.Presentation.Services;
 //using Media.Presentation.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -14,7 +15,7 @@ builder.Services.AddPresentation(builder.Configuration).AddApplication().AddInfr
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddHostedService<RabbitMQConsumer>();
+builder.Services.AddHostedService<RabbitMqConsumer>();
 builder.Services.AddCors(options =>{
     options.AddPolicy("AllowOrigin",builder => builder.WithOrigins("http://localhost:3000").AllowAnyMethod().AllowAnyHeader());
 
