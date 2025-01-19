@@ -8,6 +8,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<IShowAllReviews, ShowAllReviews>();
+        services.AddScoped<IGetScamTypes, GetScamTypes>();
         services.AddScoped<IShowRecentReviews, ShowRecentReviews>();
         services.AddScoped<IReturnReviewById, ReturnReviewById>();
         return services;

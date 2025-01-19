@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using System.Text;
+﻿using System.Text;
 using User.Application.UserManagement;
 using User.Contracts;
 using User.Domain;
@@ -22,6 +21,7 @@ public class UserController: ControllerBase
     private readonly HttpClient _httpClient;
     private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
     private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
+    private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
 
     public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport)
     {
@@ -72,7 +72,31 @@ public class UserController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
+    
+        // Validate scam type
+        try 
+        {
+            HttpResponseMessage scamTypeResponse = await _httpClient.GetAsync(scamTypeUrl);
+            if (!scamTypeResponse.IsSuccessStatusCode)
+            {
+                return BadRequest("Failed to verify scam type!");
+            }
         
+            var validScamTypes = JsonConvert.DeserializeObject<List<Scam_Type>>(
+                await scamTypeResponse.Content.ReadAsStringAsync());
+            
+            if (!validScamTypes.Any(st => st.scam_type_id == reportSubmission.scam_type_id))
+            {
+                return BadRequest("Invalid scam type! Please select from available scam types.");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return BadRequest("Failed to verify scam type!");
+        }
+    
+        // Validate media
         try 
         { 
             HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={reportSubmission.media_id}");
@@ -86,7 +110,7 @@ public class UserController: ControllerBase
             Console.WriteLine(e);
             return BadRequest("Failed to verify media!");
         }
-    
+
         string result = await _submitReport.Handle(reportSubmission, token);
         if (result == "report")
         {

@@ -24,6 +24,16 @@ public class PublicRepository : IPublicRepository
         }
         return reviews;
     }
+    public async Task<List<Scam_Type>?> GetAllScamTypes()
+    {
+        var scamTypes = await _context.scam_type
+            .ToListAsync();
+        if (scamTypes.Count == 0)
+        {
+            return null;
+        }
+        return scamTypes;
+    }
     public async Task<List<Review>?> GetRecentReviews(int numberOfReviews)
     {
         var recentReviews = await _context.review
