@@ -28,7 +28,8 @@ public class SubmitReport : ISubmitReport
         {
             return "writer";
         }
-        User_Report userReport = User_Report.Create(newReport.report_id, writer.user_id);
+
+        User_Report userReport = User_Report.Create(writer.user_id, newReport.report_id);
         await _userRepository.SubmitUserReport(userReport);
         return "ok";
     }

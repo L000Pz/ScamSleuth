@@ -24,7 +24,11 @@ public class TokenCheck : ITokenCheck
         Users? user = await _userRepository.GetUserByEmail(email);
         if (user is null)
         {
-            return null;
+            Admins? admins = await _userRepository.GetAdminByEmail(email);
+            if (admins is null)
+            {
+                return null;
+            }
         }
         return email;
     }
