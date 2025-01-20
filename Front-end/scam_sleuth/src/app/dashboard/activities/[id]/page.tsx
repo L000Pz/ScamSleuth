@@ -1,10 +1,10 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { getSpecificReport } from './actions';
 
 interface ScamReport {
@@ -21,19 +21,33 @@ interface ScamReport {
     amount?: string;
     evidence?: string;
   };
+  writer: {
+    id: number;
+    username: string;
+    email: string;
+    name: string;
+    profilePicture: string | null;
+  };
+  media: Array<{
+    report_id: number;
+    media_id: number;
+  }>;
 }
 
-export default function ScamReportPage({ params }: { params: { id: string } }) {
+export default function ScamReportPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [report, setReport] = useState<ScamReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Unwrap params using React.use()
+  const resolvedParams = React.use(params);
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
         setIsLoading(true);
-        const result = await getSpecificReport(params.id);
+        const result = await getSpecificReport(resolvedParams.id);
         
         if (result.success && result.data) {
           setReport(result.data);
@@ -48,7 +62,7 @@ export default function ScamReportPage({ params }: { params: { id: string } }) {
     };
 
     fetchReport();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   if (isLoading) {
     return (
@@ -109,42 +123,43 @@ export default function ScamReportPage({ params }: { params: { id: string } }) {
 
           {/* Report Details */}
           <div className="space-y-6">
+            {/* Reporter Information */}
             <div>
-              <h4 className="text-xl font-bold mb-3">Status Information</h4>
+              <h4 className="text-xl font-bold mb-3">Reporter Information</h4>
               <div className="bg-gray-100 rounded-xl p-4">
                 <p className="mb-2">
-                  <span className="font-bold">Current Status:</span>{' '}
-                  <span className="inline-block bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">
-                    {report.status}
-                  </span>
+                  <span className="font-bold">Name:</span> {report.writer.name}
                 </p>
                 <p className="mb-2">
-                  <span className="font-bold">Reported By:</span> {report.reportedBy}
+                  <span className="font-bold">Username:</span> {report.writer.username}
+                </p>
+                <p className="mb-2">
+                  <span className="font-bold">Email:</span> {report.writer.email}
                 </p>
               </div>
             </div>
 
+            {/* Financial Information */}
             <div>
-              <h4 className="text-xl font-bold mb-3">Incident Details</h4>
+              <h4 className="text-xl font-bold mb-3">Financial Impact</h4>
               <div className="bg-gray-100 rounded-xl p-4">
                 <p className="mb-2">
-                  <span className="font-bold">Platform:</span> {report.details.platform}
+                  <span className="font-bold">Financial Loss:</span> {report.details.amount}
                 </p>
-                <p className="mb-2">
-                  <span className="font-bold">Location:</span> {report.details.location}
-                </p>
-                {report.details.amount && (
-                  <p className="mb-2">
-                    <span className="font-bold">Amount Involved:</span> {report.details.amount}
-                  </p>
-                )}
-                {report.details.evidence && (
-                  <p className="mb-2">
-                    <span className="font-bold">Evidence:</span> {report.details.evidence}
-                  </p>
-                )}
               </div>
             </div>
+
+            {/* Media Attachments */}
+            {report.media && report.media.length > 0 && (
+              <div>
+                <h4 className="text-xl font-bold mb-3">Media Attachments</h4>
+                <div className="bg-gray-100 rounded-xl p-4">
+                  <p className="mb-2">
+                    {report.details.evidence}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
