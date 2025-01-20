@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
 import { getSpecificReport } from './actions';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Eye, EyeOff } from 'lucide-react';
 
 interface ScamReport {
   id: string;
@@ -35,18 +35,23 @@ interface ScamReport {
   }>;
 }
 
-export default function ScamReportPage({ params }: { params: Promise<{ id: string }> }) {
+interface PageParams {
+  params: Promise<{ id: string }>;
+}
+
+export default function ScamReportPage({ params }: PageParams) {
   const router = useRouter();
   const [report, setReport] = useState<ScamReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
+  const [previewingIds, setPreviewingIds] = useState<Set<number>>(new Set());
   
   const resolvedParams = React.use(params);
 
   const handleMediaDownload = (mediaId: number) => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
-    const downloadUrl = `http://localhost:5002/mediaManager/Get?id=${mediaId}`;
+    const downloadUrl = `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
     window.open(downloadUrl, '_blank');
     
     setTimeout(() => {
@@ -56,6 +61,18 @@ export default function ScamReportPage({ params }: { params: Promise<{ id: strin
         return newSet;
       });
     }, 1000);
+  };
+
+  const togglePreview = (mediaId: number) => {
+    setPreviewingIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mediaId)) {
+        newSet.delete(mediaId);
+      } else {
+        newSet.add(mediaId);
+      }
+      return newSet;
+    });
   };
 
   useEffect(() => {
@@ -137,69 +154,95 @@ export default function ScamReportPage({ params }: { params: Promise<{ id: strin
               <p className="text-gray-700">{report.description}</p>
             </div>
 
-            {/* Report Details */}
-            <div className="space-y-6">
-              {/* Reporter Information */}
-              <div>
-                <h4 className="text-lg md:text-xl font-bold mb-3">Reporter Information</h4>
-                <div className="bg-gray-100 rounded-xl p-4">
-                  <p className="mb-2">
-                    <span className="font-bold">Name:</span> {report.writer.name}
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Username:</span> {report.writer.username}
-                  </p>
-                  <p>
-                    <span className="font-bold">Email:</span> {report.writer.email}
-                  </p>
-                </div>
+            {/* Reporter Information */}
+            <div className="mb-6">
+              <h4 className="text-lg md:text-xl font-bold mb-3">Reporter Information</h4>
+              <div className="bg-gray-100 rounded-xl p-4">
+                <p className="mb-2">
+                  <span className="font-bold">Name:</span> {report.writer.name}
+                </p>
+                <p className="mb-2">
+                  <span className="font-bold">Username:</span> {report.writer.username}
+                </p>
+                <p>
+                  <span className="font-bold">Email:</span> {report.writer.email}
+                </p>
               </div>
+            </div>
 
-              {/* Financial Information */}
-              <div>
-                <h4 className="text-lg md:text-xl font-bold mb-3">Financial Impact</h4>
-                <div className="bg-gray-100 rounded-xl p-4">
-                  <p>
-                    <span className="font-bold">Financial Loss:</span> {report.details.amount}
-                  </p>
-                </div>
+            {/* Financial Information */}
+            <div className="mb-6">
+              <h4 className="text-lg md:text-xl font-bold mb-3">Financial Impact</h4>
+              <div className="bg-gray-100 rounded-xl p-4">
+                <p>
+                  <span className="font-bold">Financial Loss:</span> {report.details.amount}
+                </p>
               </div>
+            </div>
 
-              {/* Media Attachments */}
-              {report.media && report.media.length > 0 && (
-                <div>
-                  <h4 className="text-lg md:text-xl font-bold mb-3">Media Attachments</h4>
-                  <div className="bg-gray-100 rounded-xl p-4">
-                    <div className="space-y-3">
-                      {report.media.map((media, index) => (
-                        <div 
-                          key={media.media_id}
-                          className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-white rounded-lg shadow-sm gap-2"
-                        >
+            {/* Media Attachments */}
+            {report.media && report.media.length > 0 && (
+              <div>
+                <h4 className="text-lg md:text-xl font-bold mb-3">Media Attachments</h4>
+                <div className="bg-gray-100 rounded-xl p-4">
+                  <div className="space-y-4">
+                    {report.media.map((media, index) => (
+                      <div key={media.media_id}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-white rounded-lg shadow-sm gap-2">
                           <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5 text-gray-500" />
                             <span>Attachment {index + 1}</span>
                           </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => handleMediaDownload(media.media_id)}
-                            disabled={downloadingIds.has(media.media_id)}
-                            className="flex items-center gap-2 w-full sm:w-auto"
-                          >
-                            {downloadingIds.has(media.media_id) ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            {downloadingIds.has(media.media_id) ? 'Opening...' : 'Download'}
-                          </Button>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button
+                              variant="outline"
+                              onClick={() => togglePreview(media.media_id)}
+                              className="flex items-center gap-2 flex-1 sm:flex-initial"
+                            >
+                              {previewingIds.has(media.media_id) ? (
+                                <>
+                                  <EyeOff className="h-4 w-4" />
+                                  Hide
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4" />
+                                  Preview
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleMediaDownload(media.media_id)}
+                              disabled={downloadingIds.has(media.media_id)}
+                              className="flex items-center gap-2 flex-1 sm:flex-initial"
+                            >
+                              {downloadingIds.has(media.media_id) ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              {downloadingIds.has(media.media_id) ? 'Opening...' : 'Download'}
+                            </Button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                        
+                        {/* Inline Preview */}
+                        {previewingIds.has(media.media_id) && (
+                          <div className="mt-2 rounded-lg overflow-hidden bg-gray-50 p-2">
+                            <img
+                              src={`http://localhost:8080/Media/mediaManager/Get?id=${media.media_id}`}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-auto max-h-96 object-contain rounded-lg"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Gradient Background and Image */}
