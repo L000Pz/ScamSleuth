@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
-import { fetchScamTypes, submitScamReport, type ScamType } from './actions';
+import { fetchScamTypes, submitScamReport, uploadFile, type ScamType } from './actions';
 import { z } from 'zod';
 
 // Define the Zod schema for form validation
@@ -18,14 +18,26 @@ const ReportSchema = z.object({
   media_id: z.number()
 });
 
+interface FormData {
+  title: string;
+  scam_type_id: number;
+  scam_date: string;
+  financial_loss: number;
+  description: string;
+  media_id: number;
+}
+
 export default function ReportScamPage() {
   const router = useRouter();
   const [scamTypes, setScamTypes] = useState<ScamType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     scam_type_id: 0,
     scam_date: '',
@@ -36,44 +48,118 @@ export default function ReportScamPage() {
 
   useEffect(() => {
     const loadScamTypes = async () => {
-      const { data, error } = await fetchScamTypes();
-      if (data) {
-        setScamTypes(data);
-      } else if (error) {
-        setError(error);
+      try {
+        const { data, error } = await fetchScamTypes();
+        if (data) {
+          setScamTypes(data);
+        } else if (error) {
+          setError(error);
+        }
+      } catch (err) {
+        setError('Failed to load scam types. Please try again later.');
       }
     };
 
     loadScamTypes();
   }, []);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileUploadError(null);
+    setUploadProgress(0);
+    
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Log file details for debugging
+      console.log('Selected file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setFileUploadError('File size should not exceed 5MB');
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        setFileUploadError('Only images (JPEG, PNG, GIF), PDF, and Word documents are allowed');
+        return;
+      }
+
+      setSelectedFile(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate form data using Zod schema
-    const result = ReportSchema.safeParse(formData);
-
-    if (!result.success) {
-      const fieldErrors = result.error.flatten().fieldErrors;
-      setFormErrors(
-        Object.entries(fieldErrors).reduce((acc, [key, value]) => {
-          acc[key] = value?.[0] || '';
-          return acc;
-        }, {} as {[key: string]: string})
-      );
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setFormErrors({});
 
-    const { success, error } = await submitScamReport(formData);
+    try {
+      // Handle file upload if a file is selected
+      let mediaId = formData.media_id;
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile, selectedFile.name);
 
-    if (success) {
-      router.push('/scams');
-    } else {
-      setError(error || 'Failed to submit report');
+        const { mediaId: uploadedMediaId, error: uploadError } = await uploadFile(uploadFormData);
+
+        if (uploadError) {
+          setError(uploadError);
+          setIsLoading(false);
+          return;
+        }
+
+        if (uploadedMediaId) {
+          mediaId = uploadedMediaId;
+        }
+      }
+
+      // Update form data with the new media_id
+      const updatedFormData = {
+        ...formData,
+        media_id: mediaId
+      };
+
+      // Validate form data
+      const validationResult = ReportSchema.safeParse(updatedFormData);
+
+      if (!validationResult.success) {
+        const fieldErrors = validationResult.error.flatten().fieldErrors;
+        setFormErrors(
+          Object.entries(fieldErrors).reduce((acc, [key, value]) => {
+            acc[key] = value?.[0] || '';
+            return acc;
+          }, {} as {[key: string]: string})
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Submit the report
+      const { success, error: submitError } = await submitScamReport(updatedFormData);
+
+      if (success) {
+        router.push('/scams');
+      } else {
+        setError(submitError || 'Failed to submit report');
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setError('An unexpected error occurred. Please try again.');
     }
 
     setIsLoading(false);
@@ -123,10 +209,10 @@ export default function ReportScamPage() {
                 required
               >
                 <option value="">Select a scam type</option>
-                    {scamTypes.map((type) => (
-                    <option key={type.scam_type_id} value={type.scam_type_id}>
-                        {type.scam_type}
-                </option>
+                {scamTypes.map((type) => (
+                  <option key={type.scam_type_id} value={type.scam_type_id}>
+                    {type.scam_type}
+                  </option>
                 ))}
               </select>
               {formErrors.scam_type_id && <p className="text-red-500 text-sm">{formErrors.scam_type_id}</p>}
@@ -173,6 +259,35 @@ export default function ReportScamPage() {
                 required
               />
               {formErrors.description && <p className="text-red-500 text-sm">{formErrors.description}</p>}
+            </div>
+
+            <div>
+              <label className="block text-[20px] font-bold mb-1">Upload Evidence (Optional)</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                />
+                {fileUploadError && <p className="text-red-500 text-sm mt-1">{fileUploadError}</p>}
+                {selectedFile && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">Selected file: {selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">
+                      Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
