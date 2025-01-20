@@ -129,7 +129,7 @@ export default function ReviewsPage() {
                   <span className="text-gray-500">{review.date}</span>
                   <Button 
                     variant="outline"
-                    onClick={() => router.push(`/admin/reviews/${review.id}`)}
+                    onClick={() => router.push(`/admin-dashboard/reviews/${review.id}`)}
                     className="rounded-full px-6 font-bold"
                   >
                     Edit

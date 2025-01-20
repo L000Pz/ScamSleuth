@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import ScamCard from './card';
 import ScamCardSkeleton from './ScamCardSkeleton';
 import { getRecentReviews } from './actions';
+import heroImage from '@/assets/images/hero.png';
 
 interface Review {
   review_id: number;
@@ -32,11 +33,13 @@ export default function RecentScams() {
         const result = await getRecentReviews();
         
         if (result.success && result.data) {
-          const transformedScams: TransformedScam[] = result.data.map((review: Review) => ({
-            id: review.review_id,
-            name: review.title,
-            description: review.description || 'No description available',
-          }));
+          const transformedScams: TransformedScam[] = result.data
+            .slice(0, 6) // Limit to 6 items
+            .map((review: Review) => ({
+              id: review.review_id,
+              name: review.title,
+              description: review.description || 'No description available',
+            }));
           setScams(transformedScams);
         } else {
           setError(result.error || 'Failed to load recent scams');
@@ -72,7 +75,7 @@ export default function RecentScams() {
                 id={scam.id}
                 name={scam.name}
                 description={scam.description}
-                imageUrl={scam.imageUrl}
+                imageUrl= {heroImage}
               />
             ))}
       </div>
