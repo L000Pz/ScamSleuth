@@ -8,97 +8,80 @@ import heroImage from '@/assets/images/hero.png';
 import { fetchScamTypes, submitScamReport, uploadFile, type ScamType } from './actions';
 import { z } from 'zod';
 
-// Define the Zod schema for form validation
+// Schema remains the same
 const ReportSchema = z.object({
   title: z.string().min(1, { message: 'Title is required' }),
   scam_type_id: z.number().min(1, { message: 'Please select a scam type' }),
   scam_date: z.string().min(1, { message: 'Date is required' }),
   financial_loss: z.number().min(0, { message: 'Financial loss must be 0 or greater' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters' }),
-  media_id: z.number()
+  media: z.array(z.number())
 });
 
-interface FormData {
-  title: string;
-  scam_type_id: number;
-  scam_date: string;
-  financial_loss: number;
-  description: string;
-  media_id: number;
-}
-
 export default function ReportScamPage() {
+  // State declarations remain the same
   const router = useRouter();
   const [scamTypes, setScamTypes] = useState<ScamType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     title: '',
     scam_type_id: 0,
     scam_date: '',
     financial_loss: 0,
     description: '',
-    media_id: 0
+    media: [] as number[]
   });
 
+  // All useEffect and handler functions remain the same
   useEffect(() => {
     const loadScamTypes = async () => {
-      try {
-        const { data, error } = await fetchScamTypes();
-        if (data) {
-          setScamTypes(data);
-        } else if (error) {
-          setError(error);
-        }
-      } catch (err) {
-        setError('Failed to load scam types. Please try again later.');
+      const { data, error } = await fetchScamTypes();
+      if (data) {
+        setScamTypes(data);
+      } else if (error) {
+        setError(error);
       }
     };
 
     loadScamTypes();
   }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFileUploadError(null);
-    setUploadProgress(0);
-    
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
       
-      // Log file details for debugging
-      console.log('Selected file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
+      const validFiles = files.filter(file => {
+        if (file.size > 5 * 1024 * 1024) {
+          setFileUploadError('File size should not exceed 5MB');
+          return false;
+        }
+        
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        
+        if (!allowedTypes.includes(file.type)) {
+          setFileUploadError('Only images (JPEG, PNG, GIF), PDF, and Word documents are allowed');
+          return false;
+        }
+
+        return true;
       });
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setFileUploadError('File size should not exceed 5MB');
-        return;
+      setSelectedFiles(validFiles);
+      if (validFiles.length > 0) {
+        setFileUploadError(null);
       }
-
-      // Validate file type
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setFileUploadError('Only images (JPEG, PNG, GIF), PDF, and Word documents are allowed');
-        return;
-      }
-
-      setSelectedFile(file);
     }
   };
 
@@ -107,36 +90,35 @@ export default function ReportScamPage() {
     setIsLoading(true);
     setError(null);
     setFormErrors({});
-
+  
     try {
-      // Handle file upload if a file is selected
-      let mediaId = formData.media_id;
-      if (selectedFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', selectedFile, selectedFile.name);
-
-        const { mediaId: uploadedMediaId, error: uploadError } = await uploadFile(uploadFormData);
-
+      const mediaIds: number[] = [];
+      
+      for (const file of selectedFiles) {
+        const singleFileFormData = new FormData();
+        singleFileFormData.append('file', file);
+  
+        const { mediaId, error: uploadError } = await uploadFile(singleFileFormData);
+  
         if (uploadError) {
-          setError(uploadError);
+          setError(`Error uploading ${file.name}: ${uploadError}`);
           setIsLoading(false);
           return;
         }
-
-        if (uploadedMediaId) {
-          mediaId = uploadedMediaId;
+  
+        if (mediaId) {
+          mediaIds.push(mediaId);
         }
       }
-
-      // Update form data with the new media_id
+  
       const updatedFormData = {
         ...formData,
-        media_id: mediaId
+        scam_date: new Date(formData.scam_date).toISOString(), // Convert to UTC ISO string
+        media: mediaIds
       };
-
-      // Validate form data
+  
       const validationResult = ReportSchema.safeParse(updatedFormData);
-
+  
       if (!validationResult.success) {
         const fieldErrors = validationResult.error.flatten().fieldErrors;
         setFormErrors(
@@ -148,10 +130,9 @@ export default function ReportScamPage() {
         setIsLoading(false);
         return;
       }
-
-      // Submit the report
+  
       const { success, error: submitError } = await submitScamReport(updatedFormData);
-
+  
       if (success) {
         router.push('/scams');
       } else {
@@ -161,7 +142,7 @@ export default function ReportScamPage() {
       console.error('Submit error:', err);
       setError('An unexpected error occurred. Please try again.');
     }
-
+  
     setIsLoading(false);
   };
 
@@ -178,15 +159,15 @@ export default function ReportScamPage() {
   };
 
   return (
-    <div className="flex items-center justify-center p-[76px]">
-      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px]">
-        {/* Left Column - Form */}
-        <div className="w-3/5 p-8">
-          <h2 className="text-[40px] text-center font-bold mb-6">Report a Scam</h2>
+    <div className="min-h-screen w-full p-4 md:p-8 lg:p-12">
+      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden max-w-6xl mx-auto flex flex-col lg:flex-row">
+        {/* Form Section */}
+        <div className="w-full lg:w-3/5 p-4 md:p-6 lg:p-8">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl text-center font-bold mb-6">Report a Scam</h2>
           
-          <form className="space-y-4 mx-[30px]" onSubmit={handleSubmit}>
+          <form className="space-y-4 max-w-xl mx-auto" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-[20px] font-bold mb-1">Title</label>
+              <label className="block text-lg md:text-xl font-bold mb-1">Title</label>
               <input
                 type="text"
                 name="title"
@@ -200,7 +181,7 @@ export default function ReportScamPage() {
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Scam Type</label>
+              <label className="block text-lg md:text-xl font-bold mb-1">Scam Type</label>
               <select
                 name="scam_type_id"
                 value={formData.scam_type_id}
@@ -218,37 +199,39 @@ export default function ReportScamPage() {
               {formErrors.scam_type_id && <p className="text-red-500 text-sm">{formErrors.scam_type_id}</p>}
             </div>
 
-            <div>
-              <label className="block text-[20px] font-bold mb-1">Date of Incident</label>
-              <input
-                type="date"
-                name="scam_date"
-                value={formData.scam_date}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-                required
-              />
-              {formErrors.scam_date && <p className="text-red-500 text-sm">{formErrors.scam_date}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-lg md:text-xl font-bold mb-1">Date of Incident</label>
+                <input
+                  type="date"
+                  name="scam_date"
+                  value={formData.scam_date}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                  required
+                />
+                {formErrors.scam_date && <p className="text-red-500 text-sm">{formErrors.scam_date}</p>}
+              </div>
+
+              <div>
+                <label className="block text-lg md:text-xl font-bold mb-1">Financial Loss (USD)</label>
+                <input
+                  type="number"
+                  name="financial_loss"
+                  min="0"
+                  step="0.01"
+                  value={formData.financial_loss}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                  placeholder="0.00"
+                  required
+                />
+                {formErrors.financial_loss && <p className="text-red-500 text-sm">{formErrors.financial_loss}</p>}
+              </div>
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Financial Loss (USD)</label>
-              <input
-                type="number"
-                name="financial_loss"
-                min="0"
-                step="0.01"
-                value={formData.financial_loss}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-                placeholder="0.00"
-                required
-              />
-              {formErrors.financial_loss && <p className="text-red-500 text-sm">{formErrors.financial_loss}</p>}
-            </div>
-
-            <div>
-              <label className="block text-[20px] font-bold mb-1">Description</label>
+              <label className="block text-lg md:text-xl font-bold mb-1">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -262,29 +245,23 @@ export default function ReportScamPage() {
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Upload Evidence (Optional)</label>
+              <label className="block text-lg md:text-xl font-bold mb-1">Upload Evidence (Optional)</label>
               <div className="relative">
                 <input
                   type="file"
                   onChange={handleFileChange}
                   className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                   accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                  multiple
                 />
                 {fileUploadError && <p className="text-red-500 text-sm mt-1">{fileUploadError}</p>}
-                {selectedFile && (
+                {selectedFiles.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-sm text-gray-600">Selected file: {selectedFile.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                    {uploadProgress > 0 && uploadProgress < 100 && (
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                        <div 
-                          className="bg-blue-600 h-2.5 rounded-full" 
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="text-sm text-gray-600">
+                        {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -292,12 +269,12 @@ export default function ReportScamPage() {
 
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-            <div className="mt-[50px]">
+            <div className="mt-8">
               <Button 
                 type="submit"
                 variant="outline"
                 disabled={isLoading}
-                className="block mx-auto w-[250px] h-[40px] py-2 text-[20px] leading-none font-bold"
+                className="block mx-auto w-full md:w-64 h-10 text-lg font-bold"
               >
                 {isLoading ? 'Submitting...' : 'Submit Report'}
               </Button>
@@ -305,13 +282,24 @@ export default function ReportScamPage() {
           </form>
         </div>
 
-        {/* Right Column - Image and Text */}
-        <div className="w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex flex-col items-center justify-center p-8">
-          <Image src={heroImage} alt="Detective Dog" width={278} height={319} className="mb-4" />
-          <p className="text-[40px] font-bold text-white text-left">
-            Report a <span style={{ color: "#E14048" }}>Scam</span>
-          </p>
-          <p className="text-[40px] font-bold text-white text-left">Help protect others.</p>
+        {/* Image Section - Hidden on mobile, visible on lg screens */}
+        <div className="hidden lg:flex w-full lg:w-2/5 bg-gradient-to-t from-black via-black/40 via-40% to-red p-8 flex-col items-center justify-center">
+          <div className="relative w-48 h-48 md:w-64 md:h-64 lg:w-72 lg:h-72">
+            <Image
+              src={heroImage}
+              alt="Detective Dog"
+              layout="responsive"
+              className="object-contain"
+            />
+          </div>
+          <div className="text-center mt-4">
+            <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+              Report a <span className="text-red-500">Scam</span>
+            </p>
+            <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+              Help protect others.
+            </p>
+          </div>
         </div>
       </div>
     </div>

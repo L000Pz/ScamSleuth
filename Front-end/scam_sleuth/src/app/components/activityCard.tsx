@@ -18,10 +18,10 @@ export const ActivityCard = ({ activity, onReview }: ActivityCardProps) => {
   return (
     <div className="flex items-stretch bg-background rounded-2xl overflow-hidden shadow-md">
       {/* Left black label */}
-      <div className="bg-black text-white p-4 w-32 flex items-center justify-center">
-        <span className="text-sm font-medium rotate-180 text-center" style={{ writingMode: 'vertical-rl' }}>
-          {activity.type}
-        </span>
+      <div className="bg-black text-white p-4 w-36 flex items-center justify-center">
+      <span className="text-sm font-medium [writing-mode:vertical-rl] rotate-180 max-h-[100px] whitespace-pre-wrap break-words">
+        {activity.type}
+      </span>
       </div>
 
       {/* Main content */}
