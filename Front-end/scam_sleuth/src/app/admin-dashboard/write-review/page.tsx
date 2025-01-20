@@ -1,15 +1,20 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Editor } from '@tinymce/tinymce-react';
 import { ArrowLeft, Save } from 'lucide-react';
+import { getScamTypes, submitReview } from './actions';
 
+interface ScamType {
+  scam_type_id: number;
+  scam_type: string;
+}
 
 interface ReviewForm {
   title: string;
-  category: string;
+  scam_type_id: number;
   content: string;
 }
 
@@ -17,38 +22,91 @@ export default function WriteReviewPage() {
   const router = useRouter();
   const editorRef = useRef<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [scamTypes, setScamTypes] = useState<ScamType[]>([]);
   const [form, setForm] = useState<ReviewForm>({
     title: '',
-    category: 'general',
+    scam_type_id: 1,
     content: '',
   });
+
+  useEffect(() => {
+    const fetchScamTypes = async () => {
+      const result = await getScamTypes();
+      
+      if (result.success && result.data) {
+        setScamTypes(result.data);
+        // Set default scam type if available
+        if (result.data.length > 0) {
+          setForm(prev => ({ ...prev, scam_type_id: result.data[0].scam_type_id }));
+        }
+      } else {
+        setError(result.error || 'Failed to fetch scam types');
+      }
+    };
+
+    fetchScamTypes();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const content = editorRef.current?.getContent();
       
-      // Prepare the data to be sent
-      const reviewData = {
-        ...form,
+      if (!content) {
+        setError('Content is required');
+        return;
+      }
+
+      if (!form.title.trim()) {
+        setError('Title is required');
+        return;
+      }
+
+      // Log the form data before submission
+      console.log('Submitting form data:', {
         content,
-        publishedAt: new Date().toISOString(),
+        title: form.title,
+        scam_type_id: form.scam_type_id,
+      });
+
+      // Prepare the data according to API requirements
+      const reviewData = {
+        content,
+        title: form.title.trim(),
+        scam_type_id: form.scam_type_id,
+        review_date: new Date().toISOString(),
+        media: []
       };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Review data:', reviewData);
+      const result = await submitReview(reviewData);
 
-      // Navigate back to reviews page after successful submission
-      router.push('/admin-dashboard/reviews');
+      if (result.success) {
+        // Navigate back to reviews page after successful submission
+        router.push('/admin-dashboard/reviews');
+      } else {
+        setError(result.error || 'Failed to submit review');
+        console.error('Submission error:', result.error);
+      }
     } catch (error) {
-      console.error('Error submitting review:', error);
+      const err = error as Error;
+      console.error('Error submitting review:', err);
+      setError(err?.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -92,29 +150,29 @@ export default function WriteReviewPage() {
               <input
                 type="text"
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 placeholder="Enter review title"
                 required
               />
             </div>
 
-            {/* Category Select */}
+            {/* Scam Type Select */}
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">
-                Category
+                Scam Type
               </label>
               <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                value={form.scam_type_id}
+                onChange={(e) => setForm(prev => ({ ...prev, scam_type_id: Number(e.target.value) }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 required
               >
-                <option value="general">General</option>
-                <option value="security">Security</option>
-                <option value="privacy">Privacy</option>
-                <option value="technology">Technology</option>
-                <option value="awareness">Awareness</option>
+                {scamTypes.map((type) => (
+                  <option key={type.scam_type_id} value={type.scam_type_id}>
+                    {type.scam_type}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
