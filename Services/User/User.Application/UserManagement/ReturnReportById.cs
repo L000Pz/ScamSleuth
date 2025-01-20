@@ -24,11 +24,17 @@ public class ReturnReportById:IReturnReportById
         {
             return null;
         }
+
+        var writerUser = await _userRepository.GetUserById(writer.user_id);
+        if (writerUser is null)
+        {
+            return null;
+        }
         var media = await _userRepository.GetReportMedia(report.report_id);
         return new ReportDetails
         {
             Report = report,
-            User_Report = writer,
+            Writer = writerUser,
             Media = media
         };
     }

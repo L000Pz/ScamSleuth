@@ -16,15 +16,17 @@ namespace Admin.Presentation.Controllers;
 public class UserController: ControllerBase
 {
     private readonly IShowAllReports _showAllReports;
+    private readonly IGetAdminReviews _getAdminReviews;
     private readonly HttpClient _httpClient;
     private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
     private const string reportUrl = "http://localhost:8080/User/userManagement/reportId";
     private const string reviewUrl = "http://localhost:8080/Public/publicManager/reviewId";
 
-    public UserController(HttpClient httpClient, IShowAllReports showAllReports)
+    public UserController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
+        _getAdminReviews = getAdminReviews;
     }
     [HttpPut("ViewReports")]
     [Authorize]
@@ -75,6 +77,24 @@ public class UserController: ControllerBase
             return BadRequest("Failed find report's information!");
         }
     }
+
+    [HttpGet("GetAdminReviews")]
+    [Authorize]
+    public async Task<ActionResult> GetReviews()
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        List<Review>? reviews = await _getAdminReviews.Handle(token);
+        if (reviews is null)
+        {
+            return BadRequest("No reviews could be found!");
+        }
+
+        return Ok(reviews);
+    }
+
     private async Task<String> CheckToken(String token)
     {
         try

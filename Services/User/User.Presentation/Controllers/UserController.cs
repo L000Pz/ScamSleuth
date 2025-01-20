@@ -108,7 +108,7 @@ public class UserController: ControllerBase
         { 
             foreach (var media_id in reportSubmission.media)
             {
-                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
+                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}/{media_id}");
         
                 // If any media ID fails verification, return a bad request
                 if (!mediaResponse.IsSuccessStatusCode)
@@ -154,7 +154,7 @@ public class UserController: ControllerBase
     }
   
     [HttpGet("reportId")]
-    public async Task<ActionResult> GetReviewById([FromBody] int report_id)
+    public async Task<ActionResult> GetReportById(int report_id)
     {
         var reportInfo = await _returnReportById.Handle(report_id);
         if (reportInfo == null)

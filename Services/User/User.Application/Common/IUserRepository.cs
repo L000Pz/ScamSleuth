@@ -5,6 +5,7 @@ namespace User.Application.Common;
 public interface IUserRepository
 {
     public Task<Users?> GetUserByUsername(String username);
+    public Task<Users?> GetUserById(int user_id);
     public Task<Users?> ChangePassword(Users users, string password);
     public Task<Users?> GetUserByEmail(string email);
     public Task<Report?> SubmitReport(Report report);

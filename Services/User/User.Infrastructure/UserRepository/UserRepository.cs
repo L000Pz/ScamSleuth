@@ -22,6 +22,10 @@ public class UserRepository:IUserRepository
     {
         return _context.users.SingleOrDefault(user => user.email == email);
     }
+    public async Task<Users?> GetUserById(int user_id)
+    {
+        return _context.users.SingleOrDefault(user => user.user_id == user_id);
+    }
     public async Task<Users?> ChangePassword(Users users, string password)
     {
         users.password = password;
@@ -38,19 +42,12 @@ public class UserRepository:IUserRepository
 
     public async Task<List<Report_Media>> SubmitReportMedia(List<Report_Media> report_media_list)
     {
-        // Create a list to store successfully submitted media
         var submittedMedia = new List<Report_Media>();
-
-        // Add each media item to the context
         foreach (var report_media in report_media_list)
         {
             _context.report_media.Add(report_media);
         }
-
-        // Save all media items in a single database operation
         await _context.SaveChangesAsync();
-
-        // Return the list of submitted media
         return report_media_list;
     }
     public async Task<User_Report?> SubmitUserReport(User_Report user_report)
