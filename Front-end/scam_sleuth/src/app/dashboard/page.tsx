@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
-import { logout } from './actions';
+import { logout,getUserData } from './actions';
 import { report } from 'process';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 
 export default function UserDashboard() {
   const router = useRouter();
+  const [userName, setUserName] = useState('[User]');
 
   useEffect(() => {
     // Force reload on mount using hash strategy
@@ -23,7 +24,19 @@ export default function UserDashboard() {
     };
     
     reloadOnce();
+    fetchUserData();
   }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const userData = await getUserData();
+      if (userData && userData.name) {
+        setUserName(userData.name);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -41,7 +54,7 @@ export default function UserDashboard() {
         {/* Left Column - Dashboard Content */}
         <div className="w-3/5 p-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-[40px] font-bold">Welcome, [User]!</h2>
+            <h2 className="text-[40px] font-bold">Welcome, {userName}!</h2>
             <Button 
               variant="ghost" 
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800"

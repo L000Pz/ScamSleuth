@@ -31,6 +31,7 @@ export function middleware(request: NextRequest) {
       cleanupResponse.cookies.delete('token');
       cleanupResponse.cookies.delete('userType');
       cleanupResponse.cookies.delete('isVerified');
+      cleanupResponse.cookies.delete('userName');
       
       return cleanupResponse;
     }
