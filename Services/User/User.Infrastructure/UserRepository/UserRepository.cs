@@ -1,4 +1,5 @@
-﻿using User.Application.Common;
+﻿using Microsoft.EntityFrameworkCore;
+using User.Application.Common;
 using User.Domain;
 
 namespace User.Infrastructure.UserRepository;
@@ -64,5 +65,63 @@ public class UserRepository:IUserRepository
                 (x, r) => r
             )
             .ToList();
+    }
+    public async Task<bool> DeleteReport(int report_id)
+    {
+        try
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+        
+            try
+            {
+                var mediaAssociations = await _context.report_media
+                    .Where(rm => rm.report_id == report_id)
+                    .ToListAsync();
+                if (mediaAssociations.Any())
+                {
+                    _context.report_media.RemoveRange(mediaAssociations);
+                }
+
+                var userReports = await _context.user_report
+                    .Where(ur => ur.review_id == report_id)
+                    .ToListAsync();
+                if (userReports.Any())
+                {
+                    _context.user_report.RemoveRange(userReports);
+                }
+
+                var report = await _context.report
+                    .FirstOrDefaultAsync(r => r.report_id == report_id);
+                if (report != null)
+                {
+                    _context.report.Remove(report);
+                }
+                else
+                {
+                    return false;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    public async Task<List<int>?> FindMediaId(int report_id)
+    {
+        return await _context.report_media
+            .Where(rm => rm.report_id == report_id)
+            .Select(rm => rm.media_id)
+            .ToListAsync();
     }
 }

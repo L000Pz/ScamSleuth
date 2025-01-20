@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Data.SqlTypes;
 
-namespace User.Domain;
+namespace Admin.Domain;
 
 public class Report
 {

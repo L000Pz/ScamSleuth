@@ -5,8 +5,9 @@ using User.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using RabbitMQ.Client;
 
-namespace Core.Presentation.Controllers;
+namespace User.Presentation.Controllers;
 
 
 
@@ -18,17 +19,21 @@ public class UserController: ControllerBase
     private readonly IChangePassword _changePassword;
     private readonly IGetUserReports _getUserReports;
     private readonly ISubmitReport _submitReport;
+    private readonly IRemoveReport _removeReport;
     private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
     private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
     private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
     private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
 
-    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport)
+    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration)
     {
         _changePassword = changePassword;
         _httpClient = httpClient;
         _getUserReports = getUserReports;
         _submitReport = submitReport;
+        _removeReport = removeReport;
+        _configuration = configuration;
     }
     [HttpPut("ChangePassword")]
     [Authorize]

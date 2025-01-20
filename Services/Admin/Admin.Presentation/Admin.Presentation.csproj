@@ -8,6 +8,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.20"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="RabbitMQ.Client" Version="7.1.0-alpha.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
     </ItemGroup>
 
@@ -15,10 +17,6 @@
       <ProjectReference Include="..\Admin.Application\Admin.Application.csproj" />
       <ProjectReference Include="..\Admin.Domain\Admin.Domain.csproj" />
       <ProjectReference Include="..\Admin.Infrastructure\Admin.Infrastructure.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Controllers\" />
     </ItemGroup>
 
 </Project>

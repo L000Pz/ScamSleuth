@@ -13,16 +13,14 @@ namespace Public.Presentation.Controllers;
 public class PublicController: ControllerBase
 {
     
-   private readonly PostgreSqlContext _context;
    private readonly IShowAllReviews _showAllReviews;
    private readonly IShowRecentReviews _showRecentReviews;
    private readonly IReturnReviewById _returnReviewById;
    private readonly IGetScamTypes _getScamTypes;
    private const int RecentReviewsCount = 10; 
 
-   public PublicController(PostgreSqlContext context, IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews, IReturnReviewById returnReviewById,IGetScamTypes getScamTypes)
+   public PublicController(IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews, IReturnReviewById returnReviewById,IGetScamTypes getScamTypes)
     {
-        _context = context;
         _showAllReviews = showAllReviews;
         _showRecentReviews = showRecentReviews;
         _returnReviewById = returnReviewById;
@@ -44,7 +42,7 @@ public class PublicController: ControllerBase
    {
        var reviews = await _showAllReviews.Handle();
        if (reviews is null)
-           return BadRequest("No reviews found");
+           return BadRequest("No reviews were found!");
 
        return Ok(reviews);
    }
