@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { getSpecificReport } from './actions';
 
 interface ScamReport {
   id: string;
@@ -26,33 +27,22 @@ export default function ScamReportPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [report, setReport] = useState<ScamReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate fetching report data
-    // Replace this with your actual API call
     const fetchReport = async () => {
       try {
-        // Simulated API response
-        const dummyReport: ScamReport = {
-          id: params.id,
-          type: "Phishing",
-          name: "Email Scam Report",
-          description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.",
-          date: "2024/10/1",
-          reportedBy: "John Doe",
-          status: "Under Investigation",
-          details: {
-            platform: "Email",
-            location: "Singapore",
-            amount: "$5,000",
-            evidence: "Email screenshots and communication records"
-          }
-        };
-
-        setReport(dummyReport);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching report:', error);
+        setIsLoading(true);
+        const result = await getSpecificReport(params.id);
+        
+        if (result.success && result.data) {
+          setReport(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch report');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching the report');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -61,11 +51,27 @@ export default function ScamReportPage({ params }: { params: { id: string } }) {
   }, [params.id]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
   }
 
   if (!report) {
-    return <div>Report not found</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div>Report not found</div>
+      </div>
+    );
   }
 
   return (
