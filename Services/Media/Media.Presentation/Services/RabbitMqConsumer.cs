@@ -1,93 +1,81 @@
-﻿using System.Text;
-using KingMetal.MessageBus.RabbitMQ.MessageBus;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Microsoft.Extensions.Hosting;
+using System.Text;
+using System.Text.Json;
+using Media.Application.Media;
+using Media.Contracts;
 
 namespace Media.Presentation.Services;
 
-public class RabbitMqConsumer:BackgroundService
+public class RabbitMQConsumer : BackgroundService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConnection _connection;
+    private readonly IModel _channel;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<RabbitMQConsumer> _logger;
-    private readonly IConfiguration _configuration;
-    private IConnection _connection;
-    private IModel _channel;
+    private const string ExchangeName = "media_exchange";
+    private const string QueueName = "media_deletion_queue";
+    private const string RoutingKey = "media.deletion";
 
-    
-    public RabbitMqConsumer(IConfiguration configuration, ILogger<RabbitMQConsumer> logger, IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
+    public RabbitMQConsumer(IConfiguration configuration, IServiceProvider serviceProvider)
     {
-        _configuration = configuration;
-        _logger = logger;
-
         _serviceProvider = serviceProvider;
-        _httpClientFactory = httpClientFactory;
+        var factory = new ConnectionFactory
+        {
+            HostName = configuration["RabbitMQ:Host"] ?? "localhost",
+            Port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672"),
+            UserName = configuration["RabbitMQ:Username"] ?? "guest",
+            Password = configuration["RabbitMQ:Password"] ?? "guest"
+        };
 
-        var factory = new ConnectionFactory() { HostName = _configuration["RabbitMQ:Host"] };
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
-        _channel.QueueDeclare(queue: _configuration["RabbitMQ:Queue"],
-            durable: false,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+
+        _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
+        _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
+        _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
     }
-    
+
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += (model, ea) =>
+
+        consumer.Received += async (model, ea) =>
         {
-            try
+            try 
             {
                 var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                
-                // Parse the numeric ID from the message
-                if (int.TryParse(message.Split(" ")[1], out int id))
+                var message = JsonSerializer.Deserialize<MediaDeletion>(Encoding.UTF8.GetString(body));
+
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    _logger.LogInformation("Received delete request for media ID: {id}", id);
-                    CallControllerMethod(id);
+                    var deleteMedia = scope.ServiceProvider.GetRequiredService<IDeleteMedia>();
+                    await deleteMedia.Delete(message.media_id);
                 }
-                else
-                {
-                    _logger.LogError("Invalid media ID format received");
-                }
+
+                // Acknowledge the message
+                _channel.BasicAck(ea.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing message");
+                // Log the error
+                Console.WriteLine($"Error processing message: {ex}");
+                // Reject the message and requeue it
+                _channel.BasicNack(ea.DeliveryTag, false, true);
             }
         };
-        
-        _channel.BasicConsume(queue: _configuration["RabbitMQ:Queue"],
-            autoAck: true,
-            consumer: consumer);
+
+        _channel.BasicConsume(queue: QueueName,
+                            autoAck: false,
+                            consumer: consumer);
 
         return Task.CompletedTask;
     }
-    
-    private async Task CallControllerMethod(int id)
-    {
-        var client = _httpClientFactory.CreateClient();
-        var url = $"http://localhost:8080/Media/mediaManager/Delete/{id}";
 
-        var response = await client.DeleteAsync(url);
-        if (response.IsSuccessStatusCode)
-        {
-            _logger.LogInformation($"Successfully deleted media with ID: {id}");
-        }
-        else
-        {
-            _logger.LogError(await response.Content.ReadAsStringAsync());
-            _logger.LogError($"Failed to delete media with ID: {id}");
-        }
-    }
-    
     public override void Dispose()
     {
-        _channel.Close();
-        _connection.Close();
+        _channel?.Dispose();
+        _connection?.Dispose();
         base.Dispose();
     }
 }

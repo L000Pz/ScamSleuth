@@ -58,12 +58,7 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(c => c.review_content_id == review_content_id);
         return content;
     }
-    public async Task<Review_Banner?> GetReviewBanner(int review_id)
-    {
-        var banner = await _context.review_banner
-            .FirstOrDefaultAsync(c => c.review_id == review_id);
-        return banner;
-    }
+   
     public async Task<Admin_Review?> GetReviewWriter(int review_id)
     {
         var writer = await _context.admin_review
