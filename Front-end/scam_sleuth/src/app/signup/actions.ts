@@ -76,6 +76,16 @@ export async function signup(formData: {
       sameSite: 'strict',
       path: '/'
     });
+    
+    const userName = data.users.name;
+    cookieStore.set({
+      name: 'userName',
+      value: userName,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
 
     return {
       success: true,

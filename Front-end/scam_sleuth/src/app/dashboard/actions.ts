@@ -2,6 +2,24 @@
 
 import { cookies } from 'next/headers';
 
+export async function getUserData() {
+  try {
+    const cookieStore = await cookies();
+    const userNameCookie = cookieStore.get('userName');
+    
+    if (!userNameCookie) {
+      console.log('Cookie not found');
+      return { name: '[User]' };
+    }
+
+    console.log('Found userName cookie:', userNameCookie.value);
+    return { name: userNameCookie.value };
+  } catch (error) {
+    console.error('Error in getUserData:', error);
+    return { name: '[User]' };
+  }
+}
+
 export async function logout(): Promise<{ success: boolean; message?: string }> {
   try {
     const cookieStore = await cookies();
@@ -9,6 +27,8 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
     // Clear all authentication-related cookies
     cookieStore.delete('token');
     cookieStore.delete('userType'); // In case you add this later
+    cookieStore.delete('userName');
+    cookieStore.delete('isVerified')
     
     // Optional: Call backend logout endpoint if available
     try {

@@ -70,6 +70,17 @@ export async function login(formData: { email: string; password: string }): Prom
       path: '/'
     });
 
+    // Store the user's name
+    const userName = 'admin' in data ? data.admin.name : data.users.name;
+    cookiesStore.set({
+      name: 'userName',
+      value: userName,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+
     if ('admin' in data) {
       // Admin case
       cookiesStore.set({

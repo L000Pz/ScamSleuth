@@ -45,6 +45,8 @@ export async function authorize(code: string): Promise<{
       path: '/'
     });
 
+    
+
     return {
       success: true,
       message: 'Account verified successfully!',

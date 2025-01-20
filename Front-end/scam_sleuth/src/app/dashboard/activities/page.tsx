@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ActivityList } from '@/app/components/activityCard';
+import { getActivities } from './actions';
 
 interface ActivityItem {
   id: string;
@@ -18,70 +19,48 @@ interface ActivityItem {
 export default function ActivitiesPage() {
   const router = useRouter();
   const [sortBy, setSortBy] = useState('date');
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample data - replace with your actual data
-  const activities: ActivityItem[] = [
-    {
-      id: '1',
-      type: 'Phishing',
-      name: 'Email Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '2',
-      type: 'Investment',
-      name: 'Crypto Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '3',
-      type: 'Shopping',
-      name: 'Fake Store',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '4',
-      type: 'Romance',
-      name: 'Dating Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '5',
-      type: 'Job',
-      name: 'Employment Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '6',
-      type: 'Tech Support',
-      name: 'Phone Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '7',
-      type: 'Banking',
-      name: 'Account Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    },
-    {
-      id: '8',
-      type: 'Social Media',
-      name: 'Profile Scam',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam et efficitur ipsum, id hendrerit leo. Ut accumsan neque nunc.',
-      date: '2024/10/1'
-    }
-  ];
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setLoading(true);
+        const result = await getActivities();
+        
+        if (result.success && result.data) {
+          setActivities(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch activities');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching activities');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   const handleReview = (id: string) => {
     router.push(`/dashboard/activities/${id}`);
   };
+
+  // Sort activities based on selected criteria
+  const sortedActivities = [...activities].sort((a, b) => {
+    switch (sortBy) {
+      case 'date':
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case 'type':
+        return a.type.localeCompare(b.type);
+      case 'name':
+        return a.name.localeCompare(b.name);
+      default:
+        return 0;
+    }
+  });
 
   return (
     <div className="flex items-center justify-center p-[76px]">
@@ -113,7 +92,17 @@ export default function ActivitiesPage() {
           </div>
 
           <div className="space-y-4">
-            <ActivityList activities={activities} onReview={handleReview} />
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : error ? (
+              <div className="text-red-500 text-center py-4">{error}</div>
+            ) : activities.length === 0 ? (
+              <div className="text-center py-4">No activities found</div>
+            ) : (
+              <ActivityList activities={sortedActivities} onReview={handleReview} />
+            )}
           </div>
         </div>
 
