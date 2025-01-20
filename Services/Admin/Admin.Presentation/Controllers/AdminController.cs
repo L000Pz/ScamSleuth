@@ -66,14 +66,14 @@ public class AdminController: ControllerBase
         }
         try 
         {
-            HttpResponseMessage reportResponse = await _httpClient.GetAsync($"{reportUrl}id?={report_id}");
+            HttpResponseMessage reportResponse = await _httpClient.GetAsync($"{reportUrl}?report_id={report_id}");
             if (!reportResponse.IsSuccessStatusCode)
             {
                 Console.WriteLine(reportResponse);
                 return BadRequest("Failed find report's information!");
             }
         
-            var reportInfo = await reportResponse.Content.ReadAsStringAsync();
+            var reportInfo = reportResponse.Content.ReadAsStream();
             return Ok(reportInfo);
         }
         catch (Exception e)
@@ -142,7 +142,7 @@ public class AdminController: ControllerBase
         { 
             foreach (var media_id in reviewCreation.media)
             {
-                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}id?={media_id}");
+                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
         
                 // If any media ID fails verification, return a bad request
                 if (!mediaResponse.IsSuccessStatusCode)
