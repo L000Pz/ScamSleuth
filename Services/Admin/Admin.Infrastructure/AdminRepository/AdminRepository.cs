@@ -86,4 +86,95 @@ public class AdminRepository : IAdminRepository
             )
             .ToList();
     }
+    public async Task<Review?> GetReviewById(int review_id)
+    {
+        return await _context.review
+            .FirstOrDefaultAsync(r => r.review_id == review_id);
+    }
+
+    public async Task<List<int>?> GetReviewMediaIds(int review_content_id)
+    {
+        return await _context.review_content_media
+            .Where(rcm => rcm.review_content_id == review_content_id)
+            .Select(rcm => rcm.media_id)
+            .ToListAsync();
+    }
+
+    public async Task<bool> DeleteAdminReview(int review_id)
+    {
+        try
+        {
+            var adminReviews = await _context.admin_review
+                .Where(ar => ar.review_id == review_id)
+                .ToListAsync();
+
+            _context.admin_review.RemoveRange(adminReviews);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteReviewMedia(int review_content_id)
+    {
+        try
+        {
+            var reviewMedia = await _context.review_content_media
+                .Where(rcm => rcm.review_content_id == review_content_id)
+                .ToListAsync();
+
+            _context.review_content_media.RemoveRange(reviewMedia);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteReview(int review_id)
+    {
+        try
+        {
+            var review = await _context.review
+                .FirstOrDefaultAsync(r => r.review_id == review_id);
+
+            if (review != null)
+            {
+                _context.review.Remove(review);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteReviewContent(int review_content_id)
+    {
+        try
+        {
+            var content = await _context.review_content
+                .FirstOrDefaultAsync(rc => rc.review_content_id == review_content_id);
+
+            if (content != null)
+            {
+                _context.review_content.Remove(content);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 }

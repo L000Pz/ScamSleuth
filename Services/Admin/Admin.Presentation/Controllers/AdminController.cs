@@ -2,6 +2,7 @@
 using Admin.Application.AdminManagement;
 using Admin.Contracts;
 using Admin.Domain;
+using Admin.Presentation.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -19,18 +20,22 @@ public class AdminController: ControllerBase
     private readonly IShowAllReports _showAllReports;
     private readonly IGetAdminReviews _getAdminReviews;
     private readonly ICreateReview _createReview;
+    private readonly IDeleteReview _deleteReview;
     private readonly HttpClient _httpClient;
+    private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
     private const string reportUrl = "http://localhost:8080/User/userManagement/reportId";
     private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
     private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
 
-    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview)
+    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
         _getAdminReviews = getAdminReviews;
         _createReview = createReview;
+        _deleteReview = deleteReview;
+        _messagePublisher = messagePublisher;
     }
     [HttpPut("ViewReports")]
     [Authorize]
@@ -100,6 +105,39 @@ public class AdminController: ControllerBase
         return Ok(reviews);
     }
 
+    
+    [HttpDelete("DeleteReview")]
+    [Authorize]
+    public async Task<ActionResult> DeleteReview(int reviewId)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+
+        // Delete the review and get media IDs
+        var (status, mediaIds) = await _deleteReview.Handle(reviewId, token);
+        if (status != "ok")
+        {
+            return BadRequest($"Failed to delete review!");
+        }
+
+        // Publish messages to delete associated media
+        if (mediaIds != null && mediaIds.Any())
+        {
+            foreach (var mediaId in mediaIds)
+            {
+                _messagePublisher.PublishMediaDeletion(mediaId);
+            }
+        }
+
+        return Ok("Review deleted successfully.");
+    }
+    
     
     [HttpPost("SubmitReport")]
     [Authorize]

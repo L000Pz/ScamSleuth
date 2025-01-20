@@ -2,9 +2,11 @@
 using System.Text;
 using System.Text.Json;
 
+namespace Admin.Presentation.Services;
+
 public interface IMessagePublisher
 {
-    void PublishMediaDeletion(int media_id);
+    void PublishMediaDeletion(int mediaId);
 }
 
 public class RabbitMQPublisher : IMessagePublisher, IDisposable
@@ -33,16 +35,18 @@ public class RabbitMQPublisher : IMessagePublisher, IDisposable
         _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
     }
 
-    public void PublishMediaDeletion(int media_id)
+    public void PublishMediaDeletion(int mediaId)
     {
-        var json = JsonSerializer.Serialize(media_id);
-        var body = Encoding.UTF8.GetBytes(json);
+        // Convert the mediaId directly to bytes
+        var body = BitConverter.GetBytes(mediaId);
 
         _channel.BasicPublish(
             exchange: ExchangeName,
             routingKey: RoutingKey,
             basicProperties: null,
             body: body);
+    
+        Console.WriteLine($"Published deletion message for media ID: {mediaId}");
     }
 
     public void Dispose()

@@ -27,9 +27,11 @@ public class RabbitMQConsumer : BackgroundService
             UserName = configuration["RabbitMQ:Username"] ?? "guest",
             Password = configuration["RabbitMQ:Password"] ?? "guest"
         };
+        Console.WriteLine($"Attempting to connect to RabbitMQ at {factory.HostName}:{factory.Port}");
 
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
+        Console.WriteLine("Successfully connected to RabbitMQ");
 
         _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
         _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
@@ -42,36 +44,36 @@ public class RabbitMQConsumer : BackgroundService
 
         consumer.Received += async (model, ea) =>
         {
+            Console.WriteLine("Message received!");
             try 
             {
                 var body = ea.Body.ToArray();
-                var message = JsonSerializer.Deserialize<MediaDeletion>(Encoding.UTF8.GetString(body));
+                var mediaId = BitConverter.ToInt32(body, 0);
+                Console.WriteLine($"Trying to delete media ID: {mediaId}");
 
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var deleteMedia = scope.ServiceProvider.GetRequiredService<IDeleteMedia>();
-                    await deleteMedia.Delete(message.media_id);
+                    var result = await deleteMedia.Delete(mediaId);
+                    Console.WriteLine($"Delete result: {result}");
                 }
 
-                // Acknowledge the message
                 _channel.BasicAck(ea.DeliveryTag, false);
+                Console.WriteLine("Message processed and acknowledged");
             }
             catch (Exception ex)
             {
-                // Log the error
                 Console.WriteLine($"Error processing message: {ex}");
-                // Reject the message and requeue it
                 _channel.BasicNack(ea.DeliveryTag, false, true);
             }
         };
 
         _channel.BasicConsume(queue: QueueName,
-                            autoAck: false,
-                            consumer: consumer);
+            autoAck: false,
+            consumer: consumer);
 
         return Task.CompletedTask;
     }
-
     public override void Dispose()
     {
         _channel?.Dispose();

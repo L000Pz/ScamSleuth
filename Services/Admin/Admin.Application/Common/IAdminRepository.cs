@@ -12,4 +12,10 @@ public interface IAdminRepository
     public Task<List<Review_Content_Media>?> SubmitReviewMedia(List<Review_Content_Media> review_media_list);
     public Task<Admin_Review?> SubmitAdminReview(Admin_Review adminReview);
     public Task<List<Review>> GetAdminReviews(string email);
+    Task<Review?> GetReviewById(int review_id);
+    Task<List<int>?> GetReviewMediaIds(int review_content_id);
+    Task<bool> DeleteAdminReview(int review_id);
+    Task<bool> DeleteReviewMedia(int review_content_id);
+    Task<bool> DeleteReview(int review_id);
+    Task<bool> DeleteReviewContent(int review_content_id);
 }

@@ -7,5 +7,4 @@ public record ReviewCreation(
     string title,
     int scam_type_id,
     DateTime review_date,
-    int banner_id,
     List<int> media);

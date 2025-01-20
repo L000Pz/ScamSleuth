@@ -10,6 +10,7 @@ public static class DependencyInjection
         services.AddScoped<IShowAllReports, ShowAllReports>();
         services.AddScoped<IGetAdminReviews, GetAdminReviews>();
         services.AddScoped<ICreateReview, CreateReview>();
+        services.AddScoped<IDeleteReview, DeleteReview>();
         return services;
     }
 }

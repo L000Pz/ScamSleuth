@@ -2,6 +2,7 @@ using System.Text;
 using Admin.Application;
 using Admin.Infrastructure;
 using Admin.Presentation;
+using Admin.Presentation.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,7 +12,7 @@ builder.Services.AddPresentation(builder.Configuration).AddApplication().AddInfr
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddHostedService<RabbitMQConsumer>();
+builder.Services.AddSingleton<IMessagePublisher, RabbitMQPublisher>();
 builder.Services.AddCors(options =>{
     options.AddPolicy("AllowOrigin",builder => builder.WithOrigins("http://localhost:3000").AllowAnyMethod().AllowAnyHeader());
 
