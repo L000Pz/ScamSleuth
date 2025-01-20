@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
-import { fetchScamTypes, submitScamReport, uploadFile, type ScamType } from './actions';
+import { fetchScamTypes, submitScamReport, uploadFile, deleteFile, type ScamType } from './actions';
 import { z } from 'zod';
 
-// Schema remains the same
 const ReportSchema = z.object({
   title: z.string().min(1, { message: 'Title is required' }),
   scam_type_id: z.number().min(1, { message: 'Please select a scam type' }),
@@ -19,13 +18,18 @@ const ReportSchema = z.object({
 });
 
 export default function ReportScamPage() {
-  // State declarations remain the same
   const router = useRouter();
   const [scamTypes, setScamTypes] = useState<ScamType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  interface UploadedFile {
+    id: number;
+    name: string;
+  }
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -37,7 +41,6 @@ export default function ReportScamPage() {
     media: [] as number[]
   });
 
-  // All useEffect and handler functions remain the same
   useEffect(() => {
     const loadScamTypes = async () => {
       const { data, error } = await fetchScamTypes();
@@ -85,40 +88,82 @@ export default function ReportScamPage() {
     }
   };
 
+  const handleUploadFiles = async () => {
+    if (selectedFiles.length === 0) {
+      setFileUploadError('Please select files to upload first');
+      return;
+    }
+
+    setIsUploading(true);
+    setFileUploadError(null);
+    
+    for (const file of selectedFiles) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const { mediaId, error: uploadError } = await uploadFile(formData);
+        console.log('Upload response:', { mediaId, error: uploadError });
+        
+        if (uploadError) {
+          setFileUploadError(`Error uploading ${file.name}: ${uploadError}`);
+          continue;
+        }
+
+        if (mediaId !== null && mediaId !== undefined) {
+          const newFile = { id: mediaId, name: file.name };
+          console.log('Adding new file:', newFile);
+          setUploadedFiles(prev => [...prev, newFile]);
+          setFormData(prev => ({
+            ...prev,
+            media: [...prev.media, mediaId]
+          }));
+        } else {
+          setFileUploadError(`Failed to get media ID for ${file.name}`);
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        setFileUploadError(`Failed to upload ${file.name}`);
+      }
+    }
+    
+    setIsUploading(false);
+    setSelectedFiles([]);
+  };
+
+  const removeUploadedFile = async (id: number) => {
+    try {
+      const { success, error } = await deleteFile(id);
+      
+      if (success) {
+        setUploadedFiles(prev => prev.filter(file => file.id !== id));
+        setFormData(prev => ({
+          ...prev,
+          media: prev.media.filter(mediaId => mediaId !== id)
+        }));
+      } else {
+        setError(error || 'Failed to remove file');
+      }
+    } catch (err) {
+      console.error('Error removing file:', err);
+      setError('Failed to remove file');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     setFormErrors({});
-  
+
     try {
-      const mediaIds: number[] = [];
-      
-      for (const file of selectedFiles) {
-        const singleFileFormData = new FormData();
-        singleFileFormData.append('file', file);
-  
-        const { mediaId, error: uploadError } = await uploadFile(singleFileFormData);
-  
-        if (uploadError) {
-          setError(`Error uploading ${file.name}: ${uploadError}`);
-          setIsLoading(false);
-          return;
-        }
-  
-        if (mediaId) {
-          mediaIds.push(mediaId);
-        }
-      }
-  
       const updatedFormData = {
         ...formData,
-        scam_date: new Date(formData.scam_date).toISOString(), // Convert to UTC ISO string
-        media: mediaIds
+        scam_date: new Date(formData.scam_date).toISOString(),
       };
-  
+
       const validationResult = ReportSchema.safeParse(updatedFormData);
-  
+
       if (!validationResult.success) {
         const fieldErrors = validationResult.error.flatten().fieldErrors;
         setFormErrors(
@@ -130,9 +175,9 @@ export default function ReportScamPage() {
         setIsLoading(false);
         return;
       }
-  
+
       const { success, error: submitError } = await submitScamReport(updatedFormData);
-  
+
       if (success) {
         router.push('/scams');
       } else {
@@ -142,7 +187,7 @@ export default function ReportScamPage() {
       console.error('Submit error:', err);
       setError('An unexpected error occurred. Please try again.');
     }
-  
+
     setIsLoading(false);
   };
 
@@ -161,7 +206,6 @@ export default function ReportScamPage() {
   return (
     <div className="min-h-screen w-full p-4 md:p-8 lg:p-12">
       <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden max-w-6xl mx-auto flex flex-col lg:flex-row">
-        {/* Form Section */}
         <div className="w-full lg:w-3/5 p-4 md:p-6 lg:p-8">
           <h2 className="text-2xl md:text-3xl lg:text-4xl text-center font-bold mb-6">Report a Scam</h2>
           
@@ -189,7 +233,7 @@ export default function ReportScamPage() {
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
               >
-                <option value="">Select a scam type</option>
+                <option key="default" value="">Select a scam type</option>
                 {scamTypes.map((type) => (
                   <option key={type.scam_type_id} value={type.scam_type_id}>
                     {type.scam_type}
@@ -246,7 +290,7 @@ export default function ReportScamPage() {
 
             <div>
               <label className="block text-lg md:text-xl font-bold mb-1">Upload Evidence (Optional)</label>
-              <div className="relative">
+              <div className="space-y-2">
                 <input
                   type="file"
                   onChange={handleFileChange}
@@ -254,14 +298,35 @@ export default function ReportScamPage() {
                   accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
                   multiple
                 />
+                
+                <Button 
+                  type="button"
+                  onClick={handleUploadFiles}
+                  disabled={isUploading || selectedFiles.length === 0}
+                  className="w-full"
+                >
+                  {isUploading ? 'Uploading...' : 'Upload Selected Files'}
+                </Button>
+
                 {fileUploadError && <p className="text-red-500 text-sm mt-1">{fileUploadError}</p>}
-                {selectedFiles.length > 0 && (
-                  <div className="mt-2">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="text-sm text-gray-600">
-                        {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                      </div>
-                    ))}
+                
+                {uploadedFiles.length > 0 && (
+                  <div key="uploaded-files-section" className="mt-2">
+                    <p className="font-medium">Uploaded Files:</p>
+                    <ul key="uploaded-files-list" className="space-y-1">
+                      {uploadedFiles.map((file) => (
+                        <li key={`file-${file.id}`} className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeUploadedFile(file.id)}
+                            className="text-red-500 text-sm hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
@@ -282,7 +347,6 @@ export default function ReportScamPage() {
           </form>
         </div>
 
-        {/* Image Section - Hidden on mobile, visible on lg screens */}
         <div className="hidden lg:flex w-full lg:w-2/5 bg-gradient-to-t from-black via-black/40 via-40% to-red p-8 flex-col items-center justify-center">
           <div className="relative w-48 h-48 md:w-64 md:h-64 lg:w-72 lg:h-72">
             <Image

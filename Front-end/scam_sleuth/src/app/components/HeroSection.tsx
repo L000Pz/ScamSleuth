@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link'; // Import Link from next/link
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 
@@ -28,8 +29,19 @@ const HeroSection = () => {
             Scam Sleuth empowers you to stay informed by uncovering fraudulent activities in your area and beyond. Our community-driven reports help you navigate online and offline scams with confidence. Browse through existing reports or add your own to keep others safe.
           </p>
           <div className="flex space-x-4 justify-center md:justify-start">
-            <Button size='md' variant="outlineW" className='text-[16px]'>View all scams</Button>
-            <Button size='md' variant="outline" className='text-[16px] font-medium'>Report a scam</Button>
+            {/* Link to scams page */}
+            <Link href="/scams" passHref>
+              <Button size='md' variant="outlineW" className='text-[16px]'>
+                View all scams
+              </Button>
+            </Link>
+
+            {/* Link to report page */}
+            <Link href="/report" passHref>
+              <Button size='md' variant="outline" className='text-[16px] font-medium'>
+                Report a scam
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
