@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "src/app/admin-dashboard/reviews/[id]/page.tsx"  ],
   "exclude": [
     "node_modules"
   ]

@@ -67,7 +67,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
       <Button 
         variant="ghost" 
         className="mb-6 flex items-center gap-2" 
-        onClick={() => router.push('/scams')}
+        onClick={() => router.push('/admin-dashboard/reviews')}
       >
         <ArrowLeft size={20} />
         Back to Reviews

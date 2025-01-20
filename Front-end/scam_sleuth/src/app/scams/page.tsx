@@ -73,7 +73,6 @@ export default function ScamsPage() {
           </select>
         </div>
       </div>
-
       <div className="space-y-4">
         <ScamList scams={reports} onReview={handleReview} />
       </div>

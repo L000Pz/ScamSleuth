@@ -2,24 +2,51 @@
 import { useEffect, useState } from 'react';
 import ScamCard from './card';
 import ScamCardSkeleton from './ScamCardSkeleton';
-import { Scam } from '../../types/scam'; // Import the Scam type
+import { getRecentReviews } from './actions';
+import heroImage from '@/assets/images/hero.png';
+
+interface Review {
+  review_id: number;
+  title: string;
+  description: string;
+  review_date: string;
+  scam_type_id: number;
+  review_content_id: number;
+}
+
+interface TransformedScam {
+  id: number;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
 
 export default function RecentScams() {
-  const [scams, setScams] = useState<Scam[]>([]); // Type the state as an array of Scam
+  const [scams, setScams] = useState<TransformedScam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/scams'); // Mirage will intercept this request
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        const result = await getRecentReviews();
+        
+        if (result.success && result.data) {
+          const transformedScams: TransformedScam[] = result.data
+            .slice(0, 6) // Limit to 6 items
+            .map((review: Review) => ({
+              id: review.review_id,
+              name: review.title,
+              description: review.description || 'No description available',
+            }));
+          setScams(transformedScams);
+        } else {
+          setError(result.error || 'Failed to load recent scams');
         }
-        const data: Scam[] = await response.json(); // Type the data as an array of Scam
-        setScams(data);
       } catch (error) {
-        console.error('Error fetching scam data:', error);
+        console.error('Error fetching recent reviews:', error);
+        setError('Failed to load recent scams');
       } finally {
         setIsLoading(false);
       }
@@ -27,6 +54,14 @@ export default function RecentScams() {
 
     fetchData();
   }, []);
+
+  if (error) {
+    return (
+      <section className="py-12 bg-[#BBB8AF] px-4 md:px-[100px] md:py-16">
+        <div className="text-red-600 text-center">{error}</div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-12 bg-[#BBB8AF] px-4 md:px-[100px] md:py-16">
@@ -40,7 +75,7 @@ export default function RecentScams() {
                 id={scam.id}
                 name={scam.name}
                 description={scam.description}
-                imageUrl={scam.imageUrl}
+                imageUrl= {heroImage}
               />
             ))}
       </div>
