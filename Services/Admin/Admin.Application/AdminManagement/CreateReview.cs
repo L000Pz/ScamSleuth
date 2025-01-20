@@ -33,7 +33,7 @@ public class CreateReview:ICreateReview
         {
             return "writer";
         }
-        Admin_Review userReport = Admin_Review.Create(newReview.review_id, writer.admin_id);
+        Admin_Review userReport = Admin_Review.Create( writer.admin_id, newReview.review_id);
         await _adminRepository.SubmitAdminReview(userReport);
         return "ok";
     }
