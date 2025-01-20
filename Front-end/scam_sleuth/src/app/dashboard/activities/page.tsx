@@ -48,7 +48,6 @@ export default function ActivitiesPage() {
     router.push(`/dashboard/activities/${id}`);
   };
 
-  // Sort activities based on selected criteria
   const sortedActivities = [...activities].sort((a, b) => {
     switch (sortBy) {
       case 'date':
@@ -63,19 +62,20 @@ export default function ActivitiesPage() {
   });
 
   return (
-    <div className="flex items-center justify-center p-[76px]">
-      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
-        {/* Left Column - Activities Content */}
-        <div className="w-3/5 p-8 overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[40px] font-bold">Recent Activities</h2>
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={() => router.push('/dashboard')}
-            >
-              Back to Dashboard
-            </Button>
+    <div className="flex items-center justify-center p-4 md:p-[76px]">
+      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1240px] min-h-[610px]">
+        <div className="w-full lg:w-3/5 p-4 md:p-8 overflow-y-auto">
+          <div className="sticky top-0 bg-cardWhite z-10 mb-6">
+            <div className="flex flex-row justify-between items-center">
+              <h2 className="text-3xl md:text-[40px] font-bold">Recent Activities</h2>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => router.push('/dashboard')}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center mb-4">
@@ -106,8 +106,7 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Right Column - Gradient Background and Image */}
-        <div className="w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex flex-col items-center justify-center p-8">
+        <div className="hidden lg:flex w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex-col items-center justify-center p-8">
           <Image src={heroImage} alt="Detective Dog" width={278} height={319} className="mb-4" />
           <p className="text-[40px] font-bold text-white text-left">
             Track your <span style={{ color: "#E14048" }}>activities</span>
@@ -116,5 +115,4 @@ export default function ActivitiesPage() {
         </div>
       </div>
     </div>
-  );
-}
+  );}

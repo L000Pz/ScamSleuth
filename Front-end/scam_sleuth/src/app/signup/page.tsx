@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { signup } from './actions';
 
-// Define the Zod schema for form validation
 const SignupSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
   name: z.string().min(1, { message: 'Name is required' }),
@@ -32,7 +31,6 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate form data using Zod schema
     const result = SignupSchema.safeParse(formData);
 
     if (!result.success) {
@@ -47,7 +45,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Clear errors if validation passes
     setErrors({ email: '', name: '', username: '', password: '' });
     setApiError(null);
 
@@ -60,7 +57,6 @@ export default function SignupPage() {
         return;
       }
 
-      // Redirect to OTP page upon success
       router.push('/otp');
     } catch (error) {
       console.error('Error signing up:', error);
@@ -70,15 +66,14 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex items-center justify-center p-[76px]">
-      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex w-[1240px] h-[610px]">
-        {/* Left Column - Form */}
-        <div className="w-3/5 p-8">
-          <h2 className="text-[40px] text-center font-bold mb-6">Sign up now!</h2>
+    <div className="flex items-center justify-center p-4 sm:p-6 lg:p-[76px] min-h-screen">
+      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1240px]">
+        <div className="w-full lg:w-3/5 p-4 sm:p-6 lg:p-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-[40px] text-center font-bold mb-6">Sign up now!</h2>
           
-          <form className="space-y-4 mx-[30px]" onSubmit={handleSubmit}>
+          <form className="space-y-4 mx-2 sm:mx-4 lg:mx-[30px]" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-[20px] font-bold mb-1">Email</label>
+              <label className="block text-base sm:text-lg lg:text-[20px] font-bold mb-1">Email</label>
               <input
                 type="email"
                 name="email"
@@ -92,7 +87,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Name</label>
+              <label className="block text-base sm:text-lg lg:text-[20px] font-bold mb-1">Name</label>
               <input
                 type="text"
                 name="name"
@@ -106,7 +101,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Username</label>
+              <label className="block text-base sm:text-lg lg:text-[20px] font-bold mb-1">Username</label>
               <input
                 type="text"
                 name="username"
@@ -120,7 +115,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-[20px] font-bold mb-1">Password</label>
+              <label className="block text-base sm:text-lg lg:text-[20px] font-bold mb-1">Password</label>
               <input
                 type="password"
                 name="password"
@@ -135,11 +130,11 @@ export default function SignupPage() {
 
             {apiError && <p className="text-red-500 text-sm text-center">{apiError}</p>}
             
-            <div className="mt-[50px]">
+            <div className="mt-6 sm:mt-8 lg:mt-[50px]">
               <Button 
                 type="submit" 
                 variant="outline" 
-                className="block mx-auto w-[250px] h-[40px] py-2 text-[20px] leading-none font-bold"
+                className="block mx-auto w-full sm:w-[250px] h-[40px] py-2 text-base sm:text-lg lg:text-[20px] leading-none font-bold"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing up...' : 'Sign up'}
@@ -155,8 +150,7 @@ export default function SignupPage() {
           </p>
         </div>
 
-        {/* Right Column - Image and Text */}
-        <div className="w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex flex-col items-center justify-center p-8">
+        <div className="hidden lg:flex w-2/5 bg-gradient-to-t from-black via-black/40 via-40% via-cardWhite to-red flex-col items-center justify-center p-8">
           <Image src={heroImage} alt="Detective Dog" width={278} height={319} className="mb-4" />
           <p className="text-[40px] font-bold text-white text-left">
             The world needs more <span style={{ color: "#E14048" }}>Sleuths</span>.
