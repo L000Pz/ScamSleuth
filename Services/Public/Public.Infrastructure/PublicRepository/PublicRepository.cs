@@ -64,11 +64,24 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(c => c.review_id == review_id);
         return banner;
     }
+    public async Task<Admin_Review?> GetReviewWriter(int review_id)
+    {
+        var writer = await _context.admin_review
+            .FirstOrDefaultAsync(c => c.review_id == review_id);
+        return writer;
+    }
     public async Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_content_id)
     {
         var media = await _context.review_content_media
             .Where(m => m.review_content_id == review_content_id)
             .ToListAsync();
         return media;
+    }
+
+    public async Task<Scam_Type?> GetScamTypeById(int scam_type_id)
+    {
+        var scamType = await _context.scam_type
+            .FirstOrDefaultAsync(c => c.scam_type_id == scam_type_id);
+        return scamType;
     }
 }

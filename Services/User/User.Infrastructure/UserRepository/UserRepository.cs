@@ -124,4 +124,23 @@ public class UserRepository:IUserRepository
             .Select(rm => rm.media_id)
             .ToListAsync();
     }
+    public async Task<Report?> GetReportById(int report_id)
+    {
+        var review = await _context.report
+            .FirstOrDefaultAsync(r => r.report_id == report_id);
+        return review;
+    }
+    public async Task<List<Report_Media?>> GetReportMedia(int report_id)
+    {
+        var media = await _context.report_media
+            .Where(m => m.report_id == report_id)
+            .ToListAsync();
+        return media;
+    }
+    public async Task<User_Report?> GetReportWriter(int report_id)
+    {
+        var writer = await _context.user_report
+            .FirstOrDefaultAsync(c => c.review_id == report_id);
+        return writer;
+    }
 }

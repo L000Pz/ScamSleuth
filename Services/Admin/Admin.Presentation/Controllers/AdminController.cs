@@ -18,8 +18,8 @@ public class UserController: ControllerBase
     private readonly IShowAllReports _showAllReports;
     private readonly HttpClient _httpClient;
     private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
-    private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
-    private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
+    private const string reportUrl = "http://localhost:8080/User/userManagement/reportId";
+    private const string reviewUrl = "http://localhost:8080/Public/publicManager/reviewId";
 
     public UserController(HttpClient httpClient, IShowAllReports showAllReports)
     {
@@ -46,7 +46,35 @@ public class UserController: ControllerBase
         return Ok(reports);
     }
     
-    
+    [HttpGet("reportId")]
+    [Authorize]
+    public async Task<IActionResult> GetReportInformation(int report_id)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+        try 
+        {
+            HttpResponseMessage reportResponse = await _httpClient.GetAsync($"{reportUrl}/{report_id}");
+            if (!reportResponse.IsSuccessStatusCode)
+            {
+                return BadRequest("Failed find report's information!");
+            }
+        
+            var reportInfo = await reportResponse.Content.ReadAsStringAsync();
+            return Ok(reportInfo);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return BadRequest("Failed find report's information!");
+        }
+    }
     private async Task<String> CheckToken(String token)
     {
         try

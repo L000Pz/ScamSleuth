@@ -19,6 +19,7 @@ public class UserController: ControllerBase
     private readonly IChangePassword _changePassword;
     private readonly IGetUserReports _getUserReports;
     private readonly ISubmitReport _submitReport;
+    private readonly IReturnReportById _returnReportById;
     private readonly IRemoveReport _removeReport;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -26,7 +27,7 @@ public class UserController: ControllerBase
     private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
     private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
 
-    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration)
+    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration, IReturnReportById returnReportById)
     {
         _changePassword = changePassword;
         _httpClient = httpClient;
@@ -34,6 +35,7 @@ public class UserController: ControllerBase
         _submitReport = submitReport;
         _removeReport = removeReport;
         _configuration = configuration;
+        _returnReportById = returnReportById;
     }
     [HttpPut("ChangePassword")]
     [Authorize]
@@ -146,6 +148,17 @@ public class UserController: ControllerBase
         return Ok(reports);
     }
   
+    [HttpGet("reportId")]
+    public async Task<ActionResult> GetReviewById([FromBody] int report_id)
+    {
+        var reportInfo = await _returnReportById.Handle(report_id);
+        if (reportInfo == null)
+        {
+            return BadRequest("Report information could not be found!");
+        }
+        return Ok(reportInfo);
+    }
+    
     
     private async Task<String> CheckToken(String token)
     {

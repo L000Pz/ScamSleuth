@@ -10,6 +10,7 @@ public static class DependencyInjection
         services.AddScoped<IChangePassword, ChangePassword>();
         services.AddScoped<ISubmitReport, SubmitReport>();
         services.AddScoped<IRemoveReport, RemoveReport>();
+        services.AddScoped<IReturnReportById, ReturnReportById>();
         services.AddScoped<IGetUserReports, GetUserReports>();
         return services;
     }
