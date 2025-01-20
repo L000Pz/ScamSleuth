@@ -11,12 +11,12 @@ public class SaveMedia : ISaveMedia
         _mediaRepository = mediaRepository;
     }
 
-    public async Task<string> Handle(MediaFile file,String email)
+    public async Task<int> Handle(MediaFile file,String email)
     {
         // check the files type
         if (file.content_type.Split("/")[0] is not ("image" or "video"))
         {
-            return "wrong";
+            return -1;
         }
         
         // get the last id
@@ -27,9 +27,9 @@ public class SaveMedia : ISaveMedia
         string res = await _mediaRepository.Add(media);
         if (res.Equals("failed"))
         {
-            return "bad";
+            return -2;
         }
         // return the address to be saved in main database
-        return "ok";
+        return max;
     }
 }

@@ -67,25 +67,16 @@ public class MediaController: ControllerBase
             Content = file.OpenReadStream()
         };
         
-        String ou = await _saveMedia.Handle(mediaFile,token);
-        if (ou.Equals("failed"))
-        {
-            return BadRequest("Invalid token!");
-        }
-        if (ou.Equals("wrong"))
+        int ou = await _saveMedia.Handle(mediaFile,token);
+        if (ou==-1)
         {
             return BadRequest("Wrong data type!");
         }
-        if (ou.Equals("bad"))
+        if (ou==-2)
         {
             return BadRequest("An error has happened, please try again later.");
         }
-
-        if (ou.Equals("invalid"))
-        {
-            return BadRequest("User does not exist!");
-        }
-        return Ok("File has been saved successfully!");
+        return Ok(ou);
     }
 
     [HttpGet("Get")]
