@@ -6,7 +6,6 @@ import heroImage from '@/assets/images/hero.png'
 interface ScamItem {
   id: string;
   name: string;
-  description: string;
   date: string;
   imageUrl: string;
 }
@@ -33,7 +32,7 @@ export const ScamCard = ({ scam, onReview }: ScamCardProps) => {
       <div className="flex-grow p-4 flex justify-between items-center">
         <div className="flex-grow pr-4">
           <h3 className="text-xl font-bold mb-2">{scam.name}</h3>
-          <p className="text-gray-600 text-sm">{scam.description}</p>
+          
         </div>
 
         {/* Right side with date and button */}
