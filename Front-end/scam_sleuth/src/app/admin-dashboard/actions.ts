@@ -1,39 +1,92 @@
-'use server';
+"use server";
 
 import { cookies } from 'next/headers';
 
-export async function logout(): Promise<{ success: boolean; message?: string }> {
+interface TransformedReport {
+  id: string;
+  type: string;
+  name: string;
+  description: string;
+  date: string;
+  financial_loss: number;
+}
+
+export async function getReports() {
   try {
     const cookieStore = await cookies();
-    
-    // Clear all authentication-related cookies
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return { success: false, error: 'Authentication required' };
+    }
+
+    // First API call - Get scam types
+    const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'accept': '*/*'
+      }
+    });
+
+    // Second API call - Get reports
+    const reportsRes = await fetch('http://localhost:8080/Admin/adminManagement/ViewReports', {
+      method: 'PUT', // Changed to PUT as per your API
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'accept': '*/*'
+      }
+    });
+    console.log(reportsRes)
+
+    const [scamTypes, reports] = await Promise.all([
+      scamTypesRes.json(),
+      reportsRes.json()
+    ]);
+
+    const scamTypeMap = new Map(
+      scamTypes.map((type: any) => [type.scam_type_id, type.scam_type])
+    );
+
+    const transformedData: TransformedReport[] = reports.map((report: any) => ({
+      id: report.report_id.toString(),
+      type: scamTypeMap.get(report.scam_type_id) || 'Unknown',
+      name: report.title,
+      description: report.description,
+      date: new Date(report.scam_date).toLocaleDateString(),
+      financial_loss: report.financial_loss
+    }));
+
+    return { success: true, data: transformedData };
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    return { success: false, error: 'Failed to fetch reports' };
+  }
+}
+
+export async function logout() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (token) {
+      try {
+        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.warn('Backend logout failed, proceeding with cookie cleanup');
+      }
+    }
+
     cookieStore.delete('token');
     cookieStore.delete('userType');
 
-    // Optional: Call backend logout endpoint if you need to invalidate the token server-side
-    try {
-      const response = await fetch('http://localhost:8080/IAM/authentication/Logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cookieStore.get('token')?.value}`,
-        },
-      });
-
-      if (!response.ok) {
-        console.warn('Backend logout failed, but cookies were cleared');
-      }
-    } catch (error) {
-      console.warn('Could not reach logout endpoint, but cookies were cleared');
-    }
-
-    return {
-      success: true
-    };
+    return { success: true };
   } catch (error) {
     console.error('Logout error:', error);
-    return {
-      success: false,
-      message: 'Failed to logout. Please try again.'
-    };
+    return { success: false, message: 'Failed to logout' };
   }
 }

@@ -10,8 +10,7 @@ import { logout } from './actions';
 import { useEffect, useCallback } from 'react';
 
 const navItems = [
-  { name: 'Edit Info', href: '/admin-dashboard' },
-  { name: 'Scam Reports', href: '/admin-dashboard/scam-reports' },
+  { name: 'Scam Reports', href: '/admin-dashboard' },
   { name: 'Reviews', href: '/admin-dashboard/reviews' },
   { name: 'Write a Review', href: '/admin-dashboard/write-review' },
 ];

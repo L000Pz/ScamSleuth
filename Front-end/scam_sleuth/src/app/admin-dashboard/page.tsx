@@ -1,188 +1,136 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { getReports } from './actions';
 
+interface ScamReport {
+  id: string;
+  type: string;
+  name: string;
+  description: string;
+  date: string;
+}
 
-// Define the Zod schema for form validation
-const EditInfoSchema = z.object({
-  email: z.string()
-    .email({ message: 'Invalid email address' })
-    .optional()
-    .or(z.literal('')),
-  lastPassword: z.string()
-    .min(1, { message: 'Current password is required' }),
-  newPassword: z.string()
-    .min(6, { message: 'New password must be at least 6 characters long' })
-    .optional()
-    .or(z.literal(''))
-}).refine((data) => {
-  // If email is provided, new password must be provided
-  if (data.email && !data.newPassword) {
-    return false;
-  }
-  return true;
-}, {
-  message: "New password is required when changing email",
-  path: ["newPassword"]
-});
-
-export default function AdminPage() {
+export default function ScamReportsPage() {
   const router = useRouter();
-
-  const [formData, setFormData] = useState({
-    email: '',
-    lastPassword: '',
-    newPassword: ''
-  });
-  
-  const [errors, setErrors] = useState({
-    email: '',
-    lastPassword: '',
-    newPassword: ''
-  });
+  const [sortBy, setSortBy] = useState('date');
+  const [isLoading, setIsLoading] = useState(true);
+  const [reports, setReports] = useState<ScamReport[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Force reload on mount
-    const reloadOnce = () => {
-      if (!window.location.hash) {
-        window.location.hash = 'loaded';
-        window.location.reload();
+    const fetchReports = async () => {
+      try {
+        setIsLoading(true);
+        const result = await getReports();
+        
+        if (result.success && result.data) {
+          setReports(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch reports');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching Reports');
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    reloadOnce();
+
+    fetchReports();
   }, []);
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    setErrors(prev => ({ ...prev, [name]: '' }));
-    setApiError(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setApiError(null);
-
-    try {
-      // Validate form data
-      const result = EditInfoSchema.safeParse(formData);
-
-      if (!result.success) {
-        const fieldErrors = result.error.flatten().fieldErrors;
-        setErrors({
-          email: fieldErrors.email?.[0] || '',
-          lastPassword: fieldErrors.lastPassword?.[0] || '',
-          newPassword: fieldErrors.newPassword?.[0] || ''
-        });
-        setIsSubmitting(false);
-        return;
+  const handleSort = (criteria: string) => {
+    setSortBy(criteria);
+    const sortedReports = [...reports].sort((a, b) => {
+      switch (criteria) {
+        case 'date':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'type':
+          return a.type.localeCompare(b.type);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
       }
-
-      // Clear validation errors
-      setErrors({
-        email: '',
-        lastPassword: '',
-        newPassword: ''
-      });
-
-      // Add your API call here
-      // const response = await updateAdminInfo(formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Reset form on success
-      setFormData({
-        email: '',
-        lastPassword: '',
-        newPassword: ''
-      });
-      
-    } catch (error) {
-      console.error('Error updating info:', error);
-      setApiError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
+    setReports(sortedReports);
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-full">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-full text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <>
-      <h2 className="text-[40px] font-bold mb-8">Edit Information</h2>
-      
-      <form className="space-y-6 max-w-4xl mx-auto" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-[20px] font-bold mb-2">New Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-            placeholder="Enter new email"
-            disabled={isSubmitting}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-[20px] font-bold mb-2">Last Password</label>
-          <input
-            type="password"
-            name="lastPassword"
-            value={formData.lastPassword}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-            placeholder="Enter current password"
-            disabled={isSubmitting}
-          />
-          {errors.lastPassword && (
-            <p className="text-red-500 text-sm mt-1">{errors.lastPassword}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-[20px] font-bold mb-2">New Password</label>
-          <input
-            type="password"
-            name="newPassword"
-            value={formData.newPassword}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-            placeholder="Enter new password"
-            disabled={isSubmitting}
-          />
-          {errors.newPassword && (
-            <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>
-          )}
-        </div>
-
-        {apiError && (
-          <p className="text-red-500 text-sm text-center">{apiError}</p>
-        )}
-
-        <div className="pt-4">
-          <Button 
-            type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold py-3"
-            disabled={isSubmitting}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-[40px] font-bold">Scam Reports</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-xl">Sort by:</span>
+          <select 
+            value={sortBy}
+            onChange={(e) => handleSort(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
           >
-            {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
-          </Button>
+            <option value="date">Date</option>
+            <option value="type">Type</option>
+            <option value="name">Name</option>
+          </select>
         </div>
-      </form>
+      </div>
+
+      {reports.length === 0 ? (
+        <div className="text-center text-gray-500 mt-8">
+          No scam reports found.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reports.map((report) => (
+            <div 
+              key={report.id}
+              className="flex items-stretch bg-background rounded-xl overflow-hidden shadow-md"
+            >
+              {/* Left black label */}
+              <div className="bg-black text-white sm:p-4 w-full sm:w-40 sm:max-w-[100px] flex items-center justify-center">
+                <span className="text-sm font-medium text-center sm:[writing-mode:vertical-rl] sm:h-[98px] sm:rotate-180 sm:max-h-[90px] whitespace-pre-wrap break-words">
+                  {report.type}
+                </span>
+              </div>
+
+              {/* Main content */}
+              <div className="flex-grow p-4 flex justify-between items-center">
+                <div className="flex-grow">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold">{report.name}</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm line-clamp-2">{report.description}</p>
+                </div>
+
+                {/* Right side with date and button */}
+                <div className="ml-4 flex flex-col items-end gap-2">
+                  <span className="text-gray-500">{report.date}</span>
+                  <Button 
+                    variant="outline"
+                    onClick={() => router.push(`/admin-dashboard/${report.id}`)}
+                    className="rounded-full px-6 font-bold"
+                  >
+                    Review
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
