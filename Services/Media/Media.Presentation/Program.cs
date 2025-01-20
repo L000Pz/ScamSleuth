@@ -15,7 +15,7 @@ builder.Services.AddPresentation(builder.Configuration).AddApplication().AddInfr
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddHostedService<RabbitMqConsumer>();
+builder.Services.AddHostedService<RabbitMQConsumer>();
 builder.Services.AddCors(options =>{
     options.AddPolicy("AllowOrigin",builder => builder.WithOrigins("http://localhost:3000").AllowAnyMethod().AllowAnyHeader());
 

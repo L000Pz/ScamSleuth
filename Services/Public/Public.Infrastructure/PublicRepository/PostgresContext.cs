@@ -10,7 +10,6 @@ public class PostgreSqlContext : DbContext
         
     }
     public DbSet<Review> review { get; set; }
-    public DbSet<Review_Banner> review_banner { get; set; }
     public DbSet<Admin_Review> admin_review { get; set; }
     public DbSet<Review_Content> review_content { get; set; }
     public DbSet<Review_Content_Media> review_content_media { get; set; }
@@ -22,8 +21,6 @@ public class PostgreSqlContext : DbContext
             .HasKey(r => new { r.review_id});
         modelBuilder.Entity<Scam_Type>()
             .HasKey(st => new { st.scam_type_id});
-        modelBuilder.Entity<Review_Banner>()
-            .HasKey(rb => new { rb.review_id,rb.media_id});
         modelBuilder.Entity<Admin_Review>()
             .HasKey(ar => new { ar.admin_id, ar.review_id });
         modelBuilder.Entity<Review_Content>()

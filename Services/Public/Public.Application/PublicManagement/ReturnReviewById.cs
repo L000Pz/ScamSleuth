@@ -19,11 +19,6 @@ public class ReturnReviewById : IReturnReviewById
         {
             return null;
         }
-        var banner = await _publicRepository.GetReviewBanner(review_id);
-        if (banner is null)
-        {
-            return null;
-        }
         var content = await _publicRepository.GetReviewContent(review.review_content_id);
         if (content is null)
         {
@@ -38,7 +33,6 @@ public class ReturnReviewById : IReturnReviewById
         return new ReviewDetails
         {
             Review = review,
-            Banner = banner,
             Content = content,
             Admin_Review = writer,
             Media = media
