@@ -108,7 +108,8 @@ public class UserController: ControllerBase
         { 
             foreach (var media_id in reportSubmission.media)
             {
-                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}/{media_id}");
+                Console.WriteLine(media_id);
+                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
         
                 // If any media ID fails verification, return a bad request
                 if (!mediaResponse.IsSuccessStatusCode)

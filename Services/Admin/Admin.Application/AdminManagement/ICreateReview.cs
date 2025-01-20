@@ -1,6 +1,8 @@
-﻿namespace Admin.Application.AdminManagement;
+﻿using Admin.Contracts;
+
+namespace Admin.Application.AdminManagement;
 
 public interface ICreateReview
 {
-    public Task<string> Handle(ReportSubmission reportSubmission,string token);
+    public Task<string> Handle(ReviewCreation reviewCreation,string token);
 }
