@@ -36,11 +36,22 @@ public class UserRepository:IUserRepository
         return report;
     }
 
-    public async Task<Report_Media?> SubmitReportMedia(Report_Media report_media)
+    public async Task<List<Report_Media>> SubmitReportMedia(List<Report_Media> report_media_list)
     {
-        _context.report_media.Add(report_media);
+        // Create a list to store successfully submitted media
+        var submittedMedia = new List<Report_Media>();
+
+        // Add each media item to the context
+        foreach (var report_media in report_media_list)
+        {
+            _context.report_media.Add(report_media);
+        }
+
+        // Save all media items in a single database operation
         await _context.SaveChangesAsync();
-        return report_media;
+
+        // Return the list of submitted media
+        return report_media_list;
     }
     public async Task<User_Report?> SubmitUserReport(User_Report user_report)
     {

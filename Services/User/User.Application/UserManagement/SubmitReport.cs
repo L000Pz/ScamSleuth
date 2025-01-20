@@ -21,7 +21,7 @@ public class SubmitReport : ISubmitReport
         {
             return "report";
         }
-        Report_Media reportMedia = Report_Media.Create(newReport.report_id, reportSubmission.media_id);
+        List<Report_Media> reportMedia = Report_Media.Create(newReport.report_id, reportSubmission.media);
         await _userRepository.SubmitReportMedia(reportMedia);
         Users? writer = await _userRepository.GetUserByEmail(token);
         if (writer is null)

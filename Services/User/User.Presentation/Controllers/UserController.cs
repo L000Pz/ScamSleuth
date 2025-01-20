@@ -106,10 +106,15 @@ public class UserController: ControllerBase
         // Validate media
         try 
         { 
-            HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={reportSubmission.media_id}");
-            if (!mediaResponse.IsSuccessStatusCode)
+            foreach (var media_id in reportSubmission.media)
             {
-                return BadRequest("Could not find the media!");
+                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
+        
+                // If any media ID fails verification, return a bad request
+                if (!mediaResponse.IsSuccessStatusCode)
+                {
+                    return BadRequest($"Failed to verify media!");
+                }
             }
         }
         catch (Exception e) 

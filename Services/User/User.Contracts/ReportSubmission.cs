@@ -8,4 +8,4 @@ public record ReportSubmission(
     DateTime scam_date,
     decimal financial_loss,
     string description,
-    int media_id);
+    List<int> media);
