@@ -1,51 +1,69 @@
 version: '3.8'
 
 services:
-  api-gateway:
+  gateway-api:
+    container_name: gateway-api
     build:
-      context: ./Gateway/Gateway.API
+      context: ./Gateway/Gateway.API/Gateway.API
       dockerfile: Dockerfile
     ports:
       - "8080:80"
       - "8081:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      - ./Gateway/Gateway.API:/src
-      - /src/bin
-      - /src/obj
     networks:
-      - microservices-network
-    depends_on:
-      - iam-service
-      - media-service
+      - scamsleuth-network
 
-  iam-service:
+  scamsleuth-iam:
+    container_name: scamsleuth-iam
     build:
       context: ./Services/IAM
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      - ./Services/IAM:/src
-      - /src/bin
-      - /src/obj
     networks:
-      - microservices-network
+      - scamsleuth-network
 
-  media-service:
+  scamsleuth-media:
+    container_name: scamsleuth-media
     build:
       context: ./Services/Media
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      - ./Services/Media:/src
-      - /src/bin
-      - /src/obj
     networks:
-      - microservices-network
+      - scamsleuth-network
+
+  scamsleuth-user:
+    container_name: scamsleuth-user
+    build:
+      context: ./Services/User
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - scamsleuth-network
+
+  scamsleuth-admin:
+    container_name: scamsleuth-admin
+    build:
+      context: ./Services/Admin
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - scamsleuth-network
+
+  scamsleuth-public:
+    container_name: scamsleuth-public
+    build:
+      context: ./Services/Public
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - scamsleuth-network
 
 networks:
-  microservices-network:
-    driver: bridge
+  scamsleuth-network:
+    external: true
