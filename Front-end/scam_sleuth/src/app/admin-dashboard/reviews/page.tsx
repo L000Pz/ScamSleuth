@@ -78,7 +78,7 @@ export default function ReviewsPage() {
         <div className="flex items-end flex-col gap-2">
           <div
             className="p-2 rounded-full hover:bg-gray-200 cursor-pointer"
-            onClick={() => router.push('/admin/reviews/new')}
+            onClick={() => router.push('/admin-dashboard/write-review')}
           >
             <Plus className="h-5 w-5" />
           </div>
@@ -110,8 +110,8 @@ export default function ReviewsPage() {
               className="flex items-stretch bg-background rounded-xl overflow-hidden shadow-md"
             >
               {/* Left black label */}
-              <div className="bg-black text-white p-4 w-32 flex items-center justify-center">
-                <span className="text-sm font-medium rotate-180 text-center" style={{ writingMode: 'vertical-rl' }}>
+              <div className="bg-black text-white sm:p-4 w-full sm:w-40 sm:max-w-[100px] flex items-center justify-center">
+                <span className="text-sm font-medium text-center sm:[writing-mode:vertical-rl] sm:h-[98px] sm:rotate-180 sm:max-h-[90px] whitespace-pre-wrap break-words" style={{ writingMode: 'vertical-rl' }}>
                   {review.type}
                 </span>
               </div>

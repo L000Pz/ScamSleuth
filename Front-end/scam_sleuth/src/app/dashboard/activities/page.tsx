@@ -63,10 +63,10 @@ export default function ActivitiesPage() {
 
   return (
     <div className="flex items-center justify-center p-4 md:p-[76px]">
-      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1240px] min-h-[610px]">
-        <div className="w-full lg:w-3/5 p-4 md:p-8 overflow-y-auto">
-          <div className="sticky top-0 bg-cardWhite z-10 mb-6">
-            <div className="flex flex-row justify-between items-center">
+      <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1240px] min-h-[610px] relative">
+        <div className="w-full lg:w-3/5 flex flex-col lg:h-[610px]">
+          <div className="p-4 md:p-8 bg-cardWhite">
+            <div className="flex flex-row justify-between items-center mb-6">
               <h2 className="text-3xl md:text-[40px] font-bold">Recent Activities</h2>
               <Button 
                 variant="outline" 
@@ -76,33 +76,35 @@ export default function ActivitiesPage() {
                 Back to Dashboard
               </Button>
             </div>
+
+            <div className="flex items-center mb-4">
+              <span className="text-lg font-semibold mr-4">Sort by:</span>
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              >
+                <option value="date">Date</option>
+                <option value="type">Type</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center mb-4">
-            <span className="text-lg font-semibold mr-4">Sort by:</span>
-            <select 
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-            >
-              <option value="date">Date</option>
-              <option value="type">Type</option>
-              <option value="name">Name</option>
-            </select>
-          </div>
-
-          <div className="space-y-4">
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              </div>
-            ) : error ? (
-              <div className="text-red-500 text-center py-4">{error}</div>
-            ) : activities.length === 0 ? (
-              <div className="text-center py-4">No activities found</div>
-            ) : (
-              <ActivityList activities={sortedActivities} onReview={handleReview} />
-            )}
+          <div className="flex-1 lg:overflow-y-auto px-4 md:px-8 scroll-smooth">
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : error ? (
+                <div className="text-red-500 text-center py-4">{error}</div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-4">No activities found</div>
+              ) : (
+                <ActivityList activities={sortedActivities} onReview={handleReview} />
+              )}
+            </div>
           </div>
         </div>
 
@@ -115,4 +117,5 @@ export default function ActivitiesPage() {
         </div>
       </div>
     </div>
-  );}
+  );
+}

@@ -59,3 +59,32 @@ export async function getPublicReview(id: string) {
     return { success: false, error: 'Failed to fetch review' };
   }
 }
+export async function deleteReview(id: string) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+ 
+    if (!token) {
+      return { success: false, error: 'No token found' };
+    }
+ 
+    const deleteRes = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteReview?reviewId=${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': '*/*'
+      }
+    });
+ 
+    if (!deleteRes.ok) {
+      console.error('Delete API call failed:', deleteRes.status);
+      return { success: false, error: 'Failed to delete review' };
+    }
+ 
+    return { success: true };
+ 
+  } catch (error) {
+    console.error('Error in deleteReview:', error);
+    return { success: false, error: 'Failed to delete review' };
+  }
+ }

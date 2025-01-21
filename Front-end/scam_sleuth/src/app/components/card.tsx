@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 interface CardProps {
@@ -37,9 +38,11 @@ export default function ScamCard({ id, name, description, imageUrl }: CardProps)
 
       {/* Button */}
       <div className="flex justify-center">
-        <Button variant="outline" className="text-md font-medium">
-          View more
-        </Button>
+        <Link href={`/scams/${id}`}>
+          <Button variant="outline" className="text-md font-medium">
+            View more
+          </Button>
+        </Link>
       </div>
     </div>
   );

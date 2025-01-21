@@ -63,14 +63,13 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
 
   const handleStatusUpdate = async (newStatus: 'resolved' | 'pending') => {
     try {
-      // Simulate API call - replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (report) {
         setReport({ ...report, status: newStatus });
       }
       
-      setTimeout(() => router.push('/admin-dashboard/scam-reports'), 500);
+      setTimeout(() => router.push('/admin-dashboard/write-review'), 500);
     } catch (error) {
       console.error('Error updating status:', error);
     }
@@ -119,9 +118,9 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -130,20 +129,20 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h2 className="text-[40px] font-bold">Review Scam Report</h2>
+          <h2 className="text-2xl md:text-[40px] font-bold">Review Scam Report</h2>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-fit">
           <Button
             variant="outline"
             onClick={() => handleStatusUpdate('pending')}
-            className="rounded-full font-bold"
+            className="rounded-full font-bold whitespace-nowrap"
           >
             <Pencil className="mr-2 h-4 w-4" />
             Write a Review
           </Button>
           <Button
             onClick={() => handleStatusUpdate('resolved')}
-            className="rounded-full px-6 font-bold bg-black hover:bg-gray-800"
+            className="rounded-full px-6 font-bold bg-black hover:bg-gray-800 whitespace-nowrap"
           >
             <Check className="mr-2 h-4 w-4" />
             Resolved
@@ -152,19 +151,19 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Basic Info */}
-        <div className="col-span-2 space-y-6">
-          <div className="bg-background rounded-xl p-6 shadow-md">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-background rounded-xl p-4 md:p-6 shadow-md">
             <h3 className="text-xl font-bold mb-4">Basic Information</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-500">Type</label>
-                <p className="text-lg">{report.type}</p>
+                <p className="text-lg break-words">{report.type}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Name</label>
-                <p className="text-lg">{report.name}</p>
+                <p className="text-lg break-words">{report.name}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Description</label>
@@ -172,28 +171,28 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Timeline</label>
-                <p className="text-lg">{report.timeline}</p>
+                <p className="text-lg break-words">{report.timeline}</p>
               </div>
             </div>
           </div>
 
           {/* Media Attachments Section */}
           {report.media && report.media.length > 0 && (
-            <div className="bg-background rounded-xl p-6 shadow-md">
+            <div className="bg-background rounded-xl p-4 md:p-6 shadow-md">
               <h3 className="text-xl font-bold mb-4">Media Evidence</h3>
               <div className="space-y-4">
                 {report.media.map((media, index) => (
-                  <div key={media.media_id} className="border rounded-lg p-4">
+                  <div key={media.media_id} className="border rounded-lg p-3 md:p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-gray-500" />
-                        <span>Attachment {index + 1}</span>
+                        <span className="text-sm md:text-base">Attachment {index + 1}</span>
                       </div>
                       <div className="flex gap-2 w-full sm:w-auto">
                         <Button
                           variant="outline"
                           onClick={() => togglePreview(media.media_id)}
-                          className="flex items-center gap-2 flex-1 sm:flex-initial"
+                          className="flex items-center gap-2 flex-1 sm:flex-initial text-sm md:text-base"
                         >
                           {previewingIds.has(media.media_id) ? (
                             <>
@@ -211,7 +210,7 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
                           variant="outline"
                           onClick={() => handleMediaDownload(media.media_id)}
                           disabled={downloadingIds.has(media.media_id)}
-                          className="flex items-center gap-2 flex-1 sm:flex-initial"
+                          className="flex items-center gap-2 flex-1 sm:flex-initial text-sm md:text-base"
                         >
                           {downloadingIds.has(media.media_id) ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900" />
@@ -242,20 +241,20 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
 
         {/* Right Column - Reporter Info */}
         <div className="space-y-6">
-          <div className="bg-background rounded-xl p-6 shadow-md">
+          <div className="bg-background rounded-xl p-4 md:p-6 shadow-md">
             <h3 className="text-xl font-bold mb-4">Reporter Information</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-500">Name</label>
-                <p className="text-lg">{report.writer.name}</p>
+                <p className="text-lg break-words">{report.writer.name}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Username</label>
-                <p className="text-lg">{report.writer.username}</p>
+                <p className="text-lg break-words">{report.writer.username}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Email</label>
-                <p className="text-lg">{report.writer.email}</p>
+                <p className="text-lg break-words">{report.writer.email}</p>
               </div>
             </div>
           </div>

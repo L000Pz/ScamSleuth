@@ -37,7 +37,13 @@ export default function ScamReportsPage() {
         setIsLoading(false);
       }
     };
-
+    const reloadOnce = () => {
+      if (!window.location.hash) {
+        window.location.hash = "loaded";
+        window.location.reload();
+      }
+    };
+    reloadOnce();
     fetchReports();
   }, []);
 
@@ -58,6 +64,17 @@ export default function ScamReportsPage() {
     setReports(sortedReports);
   };
 
+  const formatScamType = (type: string) => {
+    if (type.toLowerCase().includes('crypto')) {
+      return 'Crypto Scam';
+    }
+    const words = type.split(',');
+    if (words.length > 1) {
+      return words.map(word => word.trim()).join('\n');
+    }
+    return type;
+  };
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-full">Loading...</div>;
   }
@@ -71,15 +88,15 @@ export default function ScamReportsPage() {
   }
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[40px] font-bold">Scam Reports</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-xl">Sort by:</span>
+    <div className="p-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Scam Reports</h2>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-lg sm:text-xl">Sort by:</span>
           <select 
             value={sortBy}
             onChange={(e) => handleSort(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 w-full sm:w-auto"
           >
             <option value="date">Date</option>
             <option value="type">Type</option>
@@ -97,40 +114,41 @@ export default function ScamReportsPage() {
           {reports.map((report) => (
             <div 
               key={report.id}
-              className="flex items-stretch bg-background rounded-xl overflow-hidden shadow-md"
+              className="flex flex-col sm:flex-row items-stretch bg-background rounded-xl overflow-hidden shadow-md min-h-[160px] sm:h-32"
             >
-              {/* Left black label */}
-              <div className="bg-black text-white sm:p-4 w-full sm:w-40 sm:max-w-[100px] flex items-center justify-center">
-                <span className="text-sm font-medium text-center sm:[writing-mode:vertical-rl] sm:h-[98px] sm:rotate-180 sm:max-h-[90px] whitespace-pre-wrap break-words">
-                  {report.type}
+              <div className="bg-black text-white py-2 px-4 sm:p-4 w-full sm:w-24 flex items-center justify-center min-h-[40px] sm:min-h-full">
+                <span className="text-xs font-medium text-center whitespace-pre-line sm:[writing-mode:vertical-rl] sm:rotate-180 sm:h-20 leading-tight">
+                  {formatScamType(report.type)}
                 </span>
               </div>
 
-              {/* Main content */}
-              <div className="flex-grow p-4 flex justify-between items-center">
-                <div className="flex-grow">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold">{report.name}</h3>
+              <div className="flex-grow p-4">
+                <div className="flex flex-col justify-between h-full gap-4">
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h3 className="text-lg font-bold truncate max-w-[calc(100%-100px)]">
+                        {report.name.length > 50 ? `${report.name.substring(0, 50)}...` : report.name}
+                      </h3>
+                      <span className="text-gray-500 text-sm whitespace-nowrap">{report.date}</span>
+                    </div>
+                    <p className="text-gray-600 text-sm line-clamp-2 max-w-xl">{report.description}</p>
                   </div>
-                  <p className="text-gray-600 text-sm line-clamp-2">{report.description}</p>
-                </div>
 
-                {/* Right side with date and button */}
-                <div className="ml-4 flex flex-col items-end gap-2">
-                  <span className="text-gray-500">{report.date}</span>
-                  <Button 
-                    variant="outline"
-                    onClick={() => router.push(`/admin-dashboard/${report.id}`)}
-                    className="rounded-full px-6 font-bold"
-                  >
-                    Review
-                  </Button>
+                  <div className="flex justify-end">
+                    <Button 
+                      variant="outline"
+                      onClick={() => router.push(`/admin-dashboard/${report.id}`)}
+                      className="rounded-full px-4 sm:px-6 text-sm font-bold"
+                    >
+                      Review
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
