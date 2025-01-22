@@ -15,9 +15,7 @@ export async function fetchScamReports() {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    if (!token) {
-      return { error: 'Authentication required' };
-    }
+    
 
     // Fetch scam types for mapping
     const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {

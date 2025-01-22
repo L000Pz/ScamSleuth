@@ -26,9 +26,6 @@ export async function getPublicReview(id: string) {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    if (!token) {
-      return { success: false, error: 'No token found' };
-    }
 
     const reviewRes = await fetch(`http://localhost:8080/Public/publicManager/reviewId?review_id=${id}`, {
       headers: { 

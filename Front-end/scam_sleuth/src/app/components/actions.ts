@@ -24,9 +24,9 @@ export async function getRecentReviews() {
     const cookieStore =await cookies();
     const token = cookieStore.get('token')?.value;
 
-    if (!token) {
-      return { success: false, error: 'Authentication required' };
-    }
+    // if (!token) {
+    //   return { success: false, error: 'Authentication required' };
+    // }
 
     const response = await fetch('http://localhost:8080/Public/publicManager/recentReviews', {
       headers: {
