@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Media.Infrastructure", "Med
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Media.Contracts", "Media.Contracts\Media.Contracts.csproj", "{FF96A040-EA60-427E-84CE-FDA4E3D06EA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Media.Tests", "Media.Tests\Media.Tests.csproj", "{CED27EB9-E0A1-41F3-840C-44E492F6CB7D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{FF96A040-EA60-427E-84CE-FDA4E3D06EA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF96A040-EA60-427E-84CE-FDA4E3D06EA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF96A040-EA60-427E-84CE-FDA4E3D06EA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CED27EB9-E0A1-41F3-840C-44E492F6CB7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CED27EB9-E0A1-41F3-840C-44E492F6CB7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CED27EB9-E0A1-41F3-840C-44E492F6CB7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CED27EB9-E0A1-41F3-840C-44E492F6CB7D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

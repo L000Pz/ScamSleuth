@@ -4,18 +4,47 @@ namespace IAM.Infrastructure.RedisRepository;
 
 public class RedisCache : IRedisCache
 {
-    static ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost:6379,password=admin,abortConnect=false"
-    );
-    static IDatabase db = redis.GetDatabase();
+    private readonly IDatabase db;
+    private readonly ConnectionMultiplexer redis;
+
+    public RedisCache()
+    {
+        var retryCount = 0;
+        const int maxRetries = 5;
+
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                redis = ConnectionMultiplexer.Connect("redis:6379,password=admin,abortConnect=false");
+                db = redis.GetDatabase();
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                if (retryCount == maxRetries)
+                    throw new Exception($"Could not connect to Redis after {maxRetries} attempts", ex);
+                
+                Console.WriteLine($"Failed to connect to Redis (Attempt {retryCount}). Retrying in 5 seconds...");
+                Thread.Sleep(5000);
+            }
+        }
+    }
+
     public async Task Set(string key, string value)
     {
         TimeSpan timeSpan = TimeSpan.FromMinutes(3);
-        db.StringSet(key, value,timeSpan);
+        await db.StringSetAsync(key, value, timeSpan);
     }
 
     public async Task<String?> Get(string key)
     {
-        String? check = db.StringGet(key);
-        return check;
+        return await db.StringGetAsync(key);
+    }
+
+    public void Dispose()
+    {
+        redis?.Dispose();
     }
 }

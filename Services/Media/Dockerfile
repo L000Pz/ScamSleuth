@@ -1,18 +1,26 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 
-# Copy csproj files for all projects in the service
-COPY ["Media.Presentation/*.csproj", "Media.Presentation/"]
-COPY ["Media.Application/*.csproj", "Media.Application/"]
-COPY ["Media.Infrastructure/*.csproj", "Media.Infrastructure/"]
-COPY ["Media.Domain/*.csproj", "Media.Domain/"]
-COPY ["Media.Contracts/*.csproj", "Media.Contracts/"]
+COPY ["Media.Application/Media.Application.csproj", "Media.Application/"]
+COPY ["Media.Domain/Media.Domain.csproj", "Media.Domain/"]
+COPY ["Media.Contracts/Media.Contracts.csproj", "Media.Contracts/"]
+COPY ["Media.Infrastructure/Media.Infrastructure.csproj", "Media.Infrastructure/"]
+COPY ["Media.Presentation/Media.Presentation.csproj", "Media.Presentation/"]
 
-# Restore as distinct layers
 RUN dotnet restore "Media.Presentation/Media.Presentation.csproj"
-
-# Copy everything else
 COPY . .
+WORKDIR "/src/Media.Presentation"
+RUN dotnet build "Media.Presentation.csproj" -c Release -o /app/build
 
-# Use dotnet watch for development
-ENTRYPOINT ["dotnet", "watch", "run", "--no-restore", "--project", "Media.Presentation/Media.Presentation.csproj"]
+FROM build AS publish
+RUN dotnet publish "Media.Presentation.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Media.Presentation.dll"]

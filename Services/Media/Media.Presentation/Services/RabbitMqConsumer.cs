@@ -22,20 +22,39 @@ public class RabbitMQConsumer : BackgroundService
         _serviceProvider = serviceProvider;
         var factory = new ConnectionFactory
         {
-            HostName = configuration["RabbitMQ:Host"] ?? "localhost",
+            HostName = configuration["RabbitMQ:Host"] ?? "rabbitmq",
             Port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672"),
             UserName = configuration["RabbitMQ:Username"] ?? "guest",
             Password = configuration["RabbitMQ:Password"] ?? "guest"
         };
-        Console.WriteLine($"Attempting to connect to RabbitMQ at {factory.HostName}:{factory.Port}");
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
-        Console.WriteLine("Successfully connected to RabbitMQ");
+        // Add retry logic for initial connection
+        int retryCount = 0;
+        const int maxRetries = 5;
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                Console.WriteLine($"Attempting to connect to RabbitMQ at {factory.HostName}:{factory.Port} (Attempt {retryCount + 1})");
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+                Console.WriteLine("Successfully connected to RabbitMQ");
 
-        _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
-        _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
-        _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
+                _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
+                _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
+                _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                if (retryCount == maxRetries)
+                    throw new Exception($"Could not connect to RabbitMQ after {maxRetries} attempts", ex);
+            
+                Console.WriteLine($"Failed to connect to RabbitMQ (Attempt {retryCount}). Retrying in 5 seconds...");
+                Thread.Sleep(5000); // Wait 5 seconds before retrying
+            }
+        }
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)

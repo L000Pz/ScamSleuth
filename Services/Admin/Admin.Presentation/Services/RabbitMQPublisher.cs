@@ -21,37 +21,78 @@ public class RabbitMQPublisher : IMessagePublisher, IDisposable
     {
         var factory = new ConnectionFactory
         {
-            HostName = configuration["RabbitMQ:Host"] ?? "localhost",
+            HostName = configuration["RabbitMQ:Host"] ?? "rabbitmq",
             Port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672"),
             UserName = configuration["RabbitMQ:Username"] ?? "guest",
             Password = configuration["RabbitMQ:Password"] ?? "guest"
         };
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        // Add retry logic for initial connection
+        int retryCount = 0;
+        const int maxRetries = 5;
+        Exception? lastException = null;
 
-        _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
-        _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
-        _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                Console.WriteLine($"Attempting to connect to RabbitMQ at {factory.HostName}:{factory.Port} (Attempt {retryCount + 1})");
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+
+                _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: true);
+                _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false);
+                _channel.QueueBind(QueueName, ExchangeName, RoutingKey);
+                
+                Console.WriteLine("Successfully connected to RabbitMQ publisher");
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                retryCount++;
+                if (retryCount < maxRetries)
+                {
+                    Console.WriteLine($"Failed to connect to RabbitMQ (Attempt {retryCount}). Retrying in 5 seconds...");
+                    Thread.Sleep(5000); // Wait 5 seconds before retrying
+                }
+            }
+        }
+
+        throw new Exception($"Failed to connect to RabbitMQ after {maxRetries} attempts", lastException);
     }
 
     public void PublishMediaDeletion(int mediaId)
     {
-        // Convert the mediaId directly to bytes
-        var body = BitConverter.GetBytes(mediaId);
+        try
+        {
+            var body = BitConverter.GetBytes(mediaId);
 
-        _channel.BasicPublish(
-            exchange: ExchangeName,
-            routingKey: RoutingKey,
-            basicProperties: null,
-            body: body);
-    
-        Console.WriteLine($"Published deletion message for media ID: {mediaId}");
+            _channel.BasicPublish(
+                exchange: ExchangeName,
+                routingKey: RoutingKey,
+                basicProperties: null,
+                body: body);
+        
+            Console.WriteLine($"Published deletion message for media ID: {mediaId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error publishing message for media ID {mediaId}: {ex.Message}");
+            throw; // Re-throw to let the caller handle the error
+        }
     }
 
     public void Dispose()
     {
-        _channel?.Dispose();
-        _connection?.Dispose();
+        try
+        {
+            _channel?.Dispose();
+            _connection?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error disposing RabbitMQ connections: {ex.Message}");
+        }
     }
 }
