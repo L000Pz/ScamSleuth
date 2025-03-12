@@ -33,6 +33,6 @@ public class PostgreSqlContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseNpgsql(
-            "Host=postgres_container;Database=ScamSleuth_db;Username=postgres;Password=admin");
+            "Host=localhost;Database=ScamSleuth_db;Username=postgres;Password=admin");
     }
 }

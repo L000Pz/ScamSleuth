@@ -17,7 +17,7 @@ public class MediaController: ControllerBase
     private readonly IGetMedia _getMedia;
     private readonly HttpClient _httpClient;
     private readonly IDeleteMedia _deleteMedia;
-    private string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
+    private string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
 
     public MediaController(ISaveMedia saveMedia, IGetMedia getMedia, HttpClient httpClient, IDeleteMedia deleteMedia)
     {

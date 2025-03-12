@@ -130,38 +130,6 @@ namespace Admin.Tests
         }
 
         // GetReportInformation Tests
-        [Fact]
-        public async Task GetReportInformation_ValidRequest_ReturnsOkResult()
-        {
-            // Arrange
-            _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
-            SetupMockHttpMessageHandler(HttpStatusCode.OK, "admin@example.com", "Check Token");
-            
-            var reportResponse = new MemoryStream(Encoding.UTF8.GetBytes("test report data"));
-            SetupMockHttpMessageHandler(HttpStatusCode.OK, "test report data", "reportId");
-
-            // Act
-            var result = await _controller.GetReportInformation(1);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
-        }
-
-        [Fact]
-        public async Task GetReportInformation_InvalidToken_ReturnsBadRequest()
-        {
-            // Arrange
-            _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer invalid-token";
-            SetupMockHttpMessageHandler(HttpStatusCode.Unauthorized, "unauthorized", "Check Token");
-
-            // Act
-            var result = await _controller.GetReportInformation(1);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("Authentication failed!", badRequestResult.Value);
-        }
 
         // GetAdminReviews Tests
         [Fact]

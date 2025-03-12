@@ -16,7 +16,7 @@ public class RedisCache : IRedisCache
         {
             try
             {
-                redis = ConnectionMultiplexer.Connect("redis:6379,password=admin,abortConnect=false");
+                redis = ConnectionMultiplexer.Connect("localhost:6379,password=admin,abortConnect=false");
                 db = redis.GetDatabase();
                 break;
             }

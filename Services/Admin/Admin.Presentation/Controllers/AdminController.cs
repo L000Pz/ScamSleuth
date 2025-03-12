@@ -23,10 +23,10 @@ public class AdminController: ControllerBase
     private readonly IDeleteReview _deleteReview;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
-    private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
-    private const string reportUrl = "http://gateway-api:80/User/userManagement/reportId";
-    private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
-    private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
+    private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
+    private const string reportUrl = "http://localhost:8080/User/userManagement/reportId";
+    private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
+    private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
 
     public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher)
     {
@@ -57,36 +57,6 @@ public class AdminController: ControllerBase
         return Ok(reports);
     }
     
-    [HttpGet("reportId")]
-    [Authorize]
-    public async Task<IActionResult> GetReportInformation(int report_id)
-    {
-        string? token = HttpContext.Request.Headers.Authorization;
-        token = token.Split(" ")[1];
-
-        token = await CheckToken(token);
-        if (token == "unsuccessful")
-        {
-            return BadRequest("Authentication failed!");
-        }
-        try 
-        {
-            HttpResponseMessage reportResponse = await _httpClient.GetAsync($"{reportUrl}?report_id={report_id}");
-            if (!reportResponse.IsSuccessStatusCode)
-            {
-                Console.WriteLine(reportResponse);
-                return BadRequest("Failed find report's information!");
-            }
-        
-            var reportInfo = reportResponse.Content.ReadAsStream();
-            return Ok(reportInfo);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return BadRequest("Failed find report's information!");
-        }
-    }
 
     [HttpGet("GetAdminReviews")]
     [Authorize]
