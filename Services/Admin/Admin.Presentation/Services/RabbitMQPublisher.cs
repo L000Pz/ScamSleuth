@@ -21,7 +21,7 @@ public class RabbitMQPublisher : IMessagePublisher, IDisposable
     {
         var factory = new ConnectionFactory
         {
-            HostName = configuration["RabbitMQ:Host"] ?? "localhost",
+            HostName = configuration["RabbitMQ:Host"] ?? "rabbitmq_container",
             Port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672"),
             UserName = configuration["RabbitMQ:Username"] ?? "guest",
             Password = configuration["RabbitMQ:Password"] ?? "guest"

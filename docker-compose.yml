@@ -6,6 +6,9 @@ services:
     build:
       context: ./Gateway/Gateway.API/Gateway.API
       dockerfile: Dockerfile
+    volumes:
+      - ./Gateway/Gateway.API/Gateway.API:/app
+    command: dotnet watch --project Gateway.API.csproj run --urls=http://0.0.0.0:80
     ports:
       - "8080:80"
       - "8081:443"
@@ -19,8 +22,16 @@ services:
     build:
       context: ./Services/IAM
       dockerfile: Dockerfile
+    volumes:
+      - ./Services/IAM:/app
+    command: dotnet watch --project IAM.Presentation/IAM.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5001:80"
+    depends_on:
+      - postgres_container
+      - redis_container
     networks:
       - scamsleuth-network
 
@@ -29,8 +40,16 @@ services:
     build:
       context: ./Services/Media
       dockerfile: Dockerfile
+    volumes:
+      - ./Services/Media:/app
+    command: dotnet watch --project Media.Presentation/Media.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5002:80"
+    depends_on:
+    - rabbitmq_container
+    - mongodb_container
     networks:
       - scamsleuth-network
 
@@ -39,8 +58,16 @@ services:
     build:
       context: ./Services/User
       dockerfile: Dockerfile
+    volumes:
+      - ./Services/User:/app
+    command: dotnet watch --project User.Presentation/User.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5003:80"
+    depends_on:
+      - postgres_container
+      - scamsleuth-iam
     networks:
       - scamsleuth-network
 
@@ -49,8 +76,17 @@ services:
     build:
       context: ./Services/Admin
       dockerfile: Dockerfile
+    volumes:
+      - ./Services/Admin:/app
+    command: dotnet watch --project Admin.Presentation/Admin.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5004:80"
+    depends_on:
+      - postgres_container
+      - scamsleuth-iam
+      - rabbitmq_container
     networks:
       - scamsleuth-network
 
@@ -59,11 +95,101 @@ services:
     build:
       context: ./Services/Public
       dockerfile: Dockerfile
+    volumes:
+      - ./Services/Public:/app
+    command: dotnet watch --project Public.Presentation/Public.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5005:80"
+    depends_on:
+      - postgres_container
     networks:
       - scamsleuth-network
 
+  db-handler:
+    container_name: db-handler
+    build:
+      context: ./Services/DB_Handler
+      dockerfile: Dockerfile
+    volumes:
+      - ./Services/DB_Handler:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:admin@postgres_container:5432/ScamSleuth_db
+    depends_on:
+      - postgres_container
+    networks:
+      - scamsleuth-network
+
+  postgres_container:
+    image: postgres:16
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - scamsleuth-network
+
+  mongodb_container:
+    image: mongo:6
+    container_name: mongodb_container
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - scamsleuth-network
+
+  redis_container:
+    image: redis:7
+    container_name: redis_container
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - scamsleuth-network
+
+  rabbitmq_container:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_container
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - scamsleuth-network
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@scamsleuth.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - scamsleuth-network
+
+
+
 networks:
   scamsleuth-network:
-    external: true
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  pgadmin-data:

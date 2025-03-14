@@ -22,7 +22,7 @@ public class RabbitMQConsumer : BackgroundService
         _serviceProvider = serviceProvider;
         var factory = new ConnectionFactory
         {
-            HostName = configuration["RabbitMQ:Host"] ?? "localhost",
+            HostName = configuration["RabbitMQ:Host"] ?? "rabbitmq_container",
             Port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672"),
             UserName = configuration["RabbitMQ:Username"] ?? "guest",
             Password = configuration["RabbitMQ:Password"] ?? "guest"
@@ -52,7 +52,7 @@ public class RabbitMQConsumer : BackgroundService
                     throw new Exception($"Could not connect to RabbitMQ after {maxRetries} attempts", ex);
             
                 Console.WriteLine($"Failed to connect to RabbitMQ (Attempt {retryCount}). Retrying in 5 seconds...");
-                Thread.Sleep(5000); // Wait 5 seconds before retrying
+                Thread.Sleep(5000);
             }
         }
     }

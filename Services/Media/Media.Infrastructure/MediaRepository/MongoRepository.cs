@@ -6,7 +6,7 @@ namespace Media.Infrastructure.MediaRepository;
 
 public class MongoRepository : IMongoRepository
 {
-    private static MongoClient client = new MongoClient("mongodb://admin:admin@localhost:27017");
+    private static MongoClient client = new MongoClient("mongodb://admin:admin@mongodb_container:27017");
     private static IMongoDatabase database = client.GetDatabase("ScamSleuth_db");
     private static IMongoCollection<BsonDocument> collection = database.GetCollection<BsonDocument>("Media");
 

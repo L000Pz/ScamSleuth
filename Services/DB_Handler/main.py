@@ -9,7 +9,7 @@ from alembic import command
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:admin@localhost:5432/ScamSleuth_db"
+    "postgresql://postgres:admin@postgres_container:5432/ScamSleuth_db"
 )
 
 

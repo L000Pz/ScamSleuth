@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Postgres",
+      "Group": "Servers",
+      "Host": "postgres_container",
+      "Port": 5432,
+      "MaintenanceDB": "ScamSleuth_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}

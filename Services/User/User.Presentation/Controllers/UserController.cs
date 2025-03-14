@@ -23,9 +23,9 @@ public class UserController: ControllerBase
     private readonly IRemoveReport _removeReport;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
-    private const string checkUrl = "http://localhost:8080/IAM/authentication/Check Token";
-    private const string mediaUrl = "http://localhost:8080/Media/mediaManager/Get";
-    private const string scamTypeUrl = "http://localhost:8080/Public/publicManager/scamTypes";
+    private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
+    private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
+    private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
 
     public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration, IReturnReportById returnReportById)
     {

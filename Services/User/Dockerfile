@@ -1,26 +1,17 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM mcr.microsoft.com/dotnet/sdk:7.0
+
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
+COPY User.Presentation/*.csproj ./User.Presentation/
+COPY User.Application/*.csproj ./User.Application/
+COPY User.Infrastructure/*.csproj ./User.Infrastructure/
+COPY User.Domain/*.csproj ./User.Domain/
 
-COPY ["User.Application/User.Application.csproj", "User.Application/"]
-COPY ["User.Domain/User.Domain.csproj", "User.Domain/"]
-COPY ["User.Contracts/User.Contracts.csproj", "User.Contracts/"]
-COPY ["User.Infrastructure/User.Infrastructure.csproj", "User.Infrastructure/"]
-COPY ["User.Presentation/User.Presentation.csproj", "User.Presentation/"]
+RUN dotnet restore User.Presentation/User.Presentation.csproj
 
-RUN dotnet restore "User.Presentation/User.Presentation.csproj"
 COPY . .
-WORKDIR "/src/User.Presentation"
-RUN dotnet build "User.Presentation.csproj" -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish "User.Presentation.csproj" -c Release -o /app/publish
+RUN dotnet tool install --global dotnet-watch
+ENV PATH="${PATH}:/root/.dotnet/tools"
 
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "User.Presentation.dll"]
+CMD ["dotnet", "watch", "--project", "User.Presentation/User.Presentation.csproj", "run", "--urls=http://0.0.0.0:80"]
