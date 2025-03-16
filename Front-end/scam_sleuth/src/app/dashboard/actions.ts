@@ -8,11 +8,9 @@ export async function getUserData() {
     const userNameCookie = cookieStore.get('userName');
     
     if (!userNameCookie) {
-      console.log('Cookie not found');
       return { name: '[User]' };
     }
 
-    console.log('Found userName cookie:', userNameCookie.value);
     return { name: userNameCookie.value };
   } catch (error) {
     console.error('Error in getUserData:', error);

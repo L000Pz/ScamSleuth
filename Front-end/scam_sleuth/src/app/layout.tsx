@@ -53,6 +53,12 @@ const Montserrat = localFont({
 export const metadata: Metadata = {
   title: "‌Scam Sleuth",
   description: "Uncovering Scams, One Report at a Time.",
+  icons: {
+    icon: "../../public/favicon.ico", 
+    shortcut: "../../public/favicon-32x32.png", 
+    apple: "../../public/apple-touch-icon.png", 
+  },
+  manifest: "../../public/site.webmanifest",
 };
 
 export default function RootLayout({

@@ -162,7 +162,7 @@ export async function submitScamReport(report: ScamReportPayload): Promise<{
       };
     }
 
-    const response = await fetch('http://localhost:5276/userManagement/SubmitReport', {
+    const response = await fetch('http://localhost:8080/user/userManagement/SubmitReport', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
