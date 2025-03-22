@@ -12,13 +12,13 @@ export default function AboutPage() {
           <div className="space-y-6">
             <p className="text-base md:text-lg">
               At Scam Sleuth, our mission is simple: to help people protect themselves from scams by providing a platform where users can report and uncover fraudulent activities. In an increasingly digital world, scams are becoming more common, affecting millions of people worldwide. Our goal is to create a safer environment by equipping individuals with the knowledge and tools needed to avoid falling victim to fraud.
-              Our platform is powered by a community of vigilant users who share their experiences to help others stay informed. From online scams to in-person fraud, we're committed to building a comprehensive database that's easy to access and navigate.
+              Our platform is powered by a community of vigilant users who share their experiences to help others stay informed. From online scams to in-person fraud, we&apos;re committed to building a comprehensive database that&apos;s easy to access and navigate.
             </p>
 
             <div className="space-y-4">
               <h3 className="text-lg font-bold">With Scam Sleuth, you can:</h3>
               <ul className="space-y-2 list-disc pl-6">
-                <li className="text-base md:text-lg">Report scams you've encountered</li>
+                <li className="text-base md:text-lg">Report scams you&apos;ve encountered</li>
                 <li className="text-base md:text-lg">Browse reports submitted by others</li>
                 <li className="text-base md:text-lg">Learn about the latest trends in fraudulent activities</li>
                 <li className="text-base md:text-lg">Take steps to protect yourself and your loved ones</li>
