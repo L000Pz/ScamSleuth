@@ -45,12 +45,9 @@ public static class DependencyInjection
     {
         services.AddSwaggerGen(options =>
         {
-            options.SwaggerDoc("v1", new OpenApiInfo
-            {
-                Version = "v1",
-                Title = "Scam Sleuth",
-                Description = "An ASP.NET Core Web API for Scam Sleuth website.",
-            });
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "Admin API", Version = "v1" });
+
+            options.AddServer(new OpenApiServer { Url = "/Admin" });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
