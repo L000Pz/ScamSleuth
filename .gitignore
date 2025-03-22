@@ -181,6 +181,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.pyc
+*.pyo
+*.pyd
+
 # C extensions
 *.so
 
@@ -297,3 +301,4 @@ Pipfile.lock
 
 # End of .gitignore
 
+Services/DB_Handler/alembic/__pycache__/env.cpython-311.pyc
