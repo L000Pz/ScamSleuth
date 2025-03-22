@@ -94,9 +94,7 @@ $RECYCLE.BIN/
 .AppleDouble
 .LSOverride
 
-
 appsettings.Development.json
-
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -175,3 +173,127 @@ pnpm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# --- PYTHON-SPECIFIC IGNORES BELOW ---
+
+# Byte-compiled / optimized / DLL files
+/__pycache__
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+.venv.bak/
+env.bak/
+env_old/
+.venv_old/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually contains the pyinstaller binary result
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Pyre type checker
+.pyre/
+
+# Pytype
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# VS Code Python settings
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Pyright type checker
+pyrightconfig.json
+
+# PEP 582; used by some Python package managers
+__pypackages__/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Bandit security linter
+bandit.yaml
+
+# pipenv
+Pipfile.lock
+
+# pip-tools
+*.txt # generated requirements
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# End of .gitignore
+
