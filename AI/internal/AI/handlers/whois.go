@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"fmt"
+	//"fmt"
 	"net/http"
+	"encoding/json"
 
 	"github.com/gorilla/mux"
 	"github.com/likexian/whois"
@@ -34,5 +35,17 @@ func GetWhoisData(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	fmt.Fprintf(w, "%s", result)
+	jsonResult, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// Set content type and write JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResult)
+
+
+
+
 }
