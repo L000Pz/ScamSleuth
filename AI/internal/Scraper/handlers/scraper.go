@@ -5,37 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/models"
 	"github.com/gocolly/colly/v2"
 )
 
-//type req_body struct {
-//	Domain string `json:"domain"`
-//}
+func Do_scrape(domain string) string {
 
-
-
-
-func Scrape(w http.ResponseWriter, r *http.Request) {
-	// vars := mux.Vars(r)
-	// //var indicators models.FraudIndicators
-	// url, ok := vars["url"]
-	// if !ok {
-	// 	http.Error(w, "Missing url term in the request", http.StatusBadRequest)
-	// 	return
-	// }
-	var requestBody models.Req_body
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	if err != nil {
-		log.Println(err)
-	}
-
-	if requestBody.Domain == "" {
-		http.Error(w, "Domain required ", http.StatusBadRequest)
-		return 
-	}
-	fmt.Fprintf(w, "this is scrap endpoint %s", requestBody.Domain)
-
+	var myhtml string
 	// creating a collector
 	c := colly.NewCollector()
 
@@ -44,22 +21,40 @@ func Scrape(w http.ResponseWriter, r *http.Request) {
 		html, err := e.DOM.Html()
 		if err != nil {
 			log.Println(err)
-			http.Error(w, "Invalid Request Body", http.StatusBadRequest)
+			//http.Error(w, "Invalid Request Body", http.StatusBadRequest)
 			return
 		}
 
-		fmt.Fprintf(w, "%s", html)
+		//fmt.Fprintf(w, "%s", html)
+		myhtml = html
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
 		log.Println("Request failed:", err)
 	})
 
-	err = c.Visit(requestBody.Domain)
+	err := c.Visit(domain)
 	if err != nil {
 		log.Println(err)
 	}
 
 	c.Wait()
+	return myhtml
+}
 
+func Scrape(w http.ResponseWriter, r *http.Request) {
+
+	var requestBody models.Req_body
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if requestBody.Domain == "" {
+		http.Error(w, "Domain required ", http.StatusBadRequest)
+		return
+	}
+
+	html := Do_scrape(requestBody.Domain)
+	fmt.Fprintf(w, "%s", html)
 }

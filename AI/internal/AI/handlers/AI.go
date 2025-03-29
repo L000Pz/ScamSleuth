@@ -18,7 +18,7 @@ func SendToAI(site string) models.CompletionResponse {
 
 	var response models.CompletionResponse
 	url := "https://openrouter.ai/api/v1/chat/completions"
-	//apiKey := os.Getenv("APIKEY") //"<OPENROUTER_API_KEY>"
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalln("Error loading .env file")
@@ -86,7 +86,7 @@ func Scan(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing url term in the request", http.StatusBadRequest)
 		return
 	}
-	fmt.Fprintf(w, "salam %s\n", urlterm)
+	//fmt.Fprintf(w, "salam %s\n", urlterm)
 	response = SendToAI(urlterm)
 	fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
 }
