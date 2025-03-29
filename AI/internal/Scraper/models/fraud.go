@@ -2,6 +2,7 @@ package models
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -27,7 +28,58 @@ type FraudIndicators struct {
 	Findings      map[string]interface{} `json:"findings"`
 }
 
-func (fi *FraudIndicators) detectHiddenElement(html string) {}
+func NewDefaultFraudIndicators() *FraudIndicators {
+	return &FraudIndicators{
+		SuspiciousKeywords: []string{
+			"100% safe", "guaranteed profit", "limited offer",
+			"won't believe", "click here", "instant money",
+			"risk-free", "double your", "earn cash",
+		},
+		HiddenElements: []string{
+			"display:none", "visibility:hidden", "opacity:0",
+			"height:0", "width:0", "position:absolute",
+			"clip:rect(0,0,0,0)", "hidden", "aria-hidden",
+		},
+		SuspiciousHeaders: []string{"User-Agent", "Accept-Language", "Accept-Encoding",
+			"Referer", "DNT", "X-Requested-With",
+		},
+		DomainAge: 30, // Minimum age in days to be considered trustworthy
+		Findings:  make(map[string]interface{}),
+	}
+}
+
+// this function will return values decpite of storing in object
+func (fi *FraudIndicators) detectHiddenElement(html string) (bool, []string) {
+
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader([]byte(html)))
+	if err != nil {
+		return false, nil
+	}
+
+	var foundElements []string
+	found := false
+
+	for _, selector := range fi.HiddenElements {
+		doc.Find("*").Each(func(i int, s *goquery.Selection) {
+			if style, exists := s.Attr("style"); exists {
+				if strings.Contains(strings.ToLower(style), strings.ToLower(selector)) {
+					foundElements = append(foundElements, fmt.Sprintf("Hidden by style: %s", selector))
+					found = true
+				}
+			}
+
+			if class, exists := s.Attr("class"); exists {
+				if strings.Contains(strings.ToLower(class), strings.ToLower(selector)) {
+					foundElements = append(foundElements, fmt.Sprintf("Hidden by class: %s", selector))
+					found = true
+				}
+			}
+		})
+	}
+
+	return found, foundElements
+
+}
 
 func (fi *FraudIndicators) checkDomianAge(whois whoisparser.WhoisInfo) (int, error) {
 
@@ -59,6 +111,7 @@ func (fi *FraudIndicators) checkSecurity(req *colly.Request) {
 
 }
 
+// this object will return valuse outisde if fraud indicator function
 func (fi *FraudIndicators) checkContactInfo(html string) []string {
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader([]byte(html)))
 	if err != nil {
