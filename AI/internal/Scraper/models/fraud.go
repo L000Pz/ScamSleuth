@@ -8,6 +8,7 @@ import (
 
 	//"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/gocolly/colly/v2"
 	whoisparser "github.com/likexian/whois-parser"
 )
 
@@ -21,9 +22,12 @@ type FraudIndicators struct {
 	SuspiciousHeaders  []string `json:"suspicious_headers"` // Missing or fake headers
 
 	// Structural indicators
-	NoContactInfo bool `json:"no_contact_info"`
-	DomainAge     int  `json:"domain_age"` // Days since domain registration
+	NoContactInfo bool                   `json:"no_contact_info"`
+	DomainAge     int                    `json:"domain_age"` // Days since domain registration
+	Findings      map[string]interface{} `json:"findings"`
 }
+
+func (fi *FraudIndicators) detectHiddenElement(html string) {}
 
 func (fi *FraudIndicators) checkDomianAge(whois whoisparser.WhoisInfo) (int, error) {
 
@@ -35,6 +39,24 @@ func (fi *FraudIndicators) checkDomianAge(whois whoisparser.WhoisInfo) (int, err
 	ageInDays := int(time.Since(creationDate).Hours() / 24)
 
 	return ageInDays, nil
+}
+
+func (fi *FraudIndicators) checkSecurity(req *colly.Request) {
+
+	if !strings.HasPrefix(req.URL.String(), "https://") {
+		fi.UnsecureConnection = true
+		fi.Findings["UnsecureConnection"] = true
+	}
+	// check headers
+
+	for _, header := range fi.SuspiciousHeaders {
+
+		headers := *req.Headers
+		if _, exists := headers[header]; !exists {
+			fi.Findings["missing_header_"+header] = true
+		}
+	}
+
 }
 
 func (fi *FraudIndicators) checkContactInfo(html string) []string {

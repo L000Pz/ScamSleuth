@@ -26,6 +26,7 @@ func NewDefaultFraudIndicators() *models.FraudIndicators {
 			"Referer", "DNT", "X-Requested-With",
 		},
 		DomainAge: 30, // Minimum age in days to be considered trustworthy
+		Findings:  make(map[string]interface{}),
 	}
 }
 
