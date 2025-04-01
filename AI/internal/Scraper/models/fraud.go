@@ -45,7 +45,7 @@ func NewDefaultFraudIndicators() *FraudIndicators {
 		SuspiciousHeaders: []string{"User-Agent", "Accept-Language", "Accept-Encoding",
 			"Referer", "DNT", "X-Requested-With",
 		},
-		DomainAge: 30, // Minimum age in days to be considered trustworthy
+		DomainAge: 120, // Minimum age in days to be considered trustworthy
 		Findings:  make(map[string]interface{}),
 	}
 }
@@ -65,8 +65,6 @@ func extractMainDomain(rawURL string) (string, error) {
 		return "", fmt.Errorf("invalid domain: %s", host)
 	}
 
-	// Handle cases like "co.uk" (second-level domains)
-	// This is a simplified approach - you might need a proper TLD list for full accuracy
 	if len(parts) > 2 {
 		// For most cases, take the last two parts
 		return parts[len(parts)-2] + "." + parts[len(parts)-1], nil
