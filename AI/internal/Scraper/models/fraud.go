@@ -8,6 +8,7 @@ import (
 	"time"
 
 	//"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
+	"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
 	whoisparser "github.com/likexian/whois-parser"
@@ -48,8 +49,34 @@ func NewDefaultFraudIndicators() *FraudIndicators {
 	}
 }
 
+func (fi *FraudIndicators) AnalyzeResponse(resp *colly.Response) {
+	html := string(resp.Body)
+	req := resp.Request
+	urlObj := req.URL.Host
+	//fmt.Println(urlObj)
+
+	// 1. Check for suspicious keywords
+	fi.Findings["keywords"] = fi.detectKeyWords(html)
+
+	// 2. Check for hidden elements
+	hasHidden, hiddenElements := fi.detectHiddenElements(html)
+	fi.Findings["has_hidden_elements"] = hasHidden
+	fi.Findings["hidden_elements"] = hiddenElements
+
+	// 3. Check security
+	fi.checkSecurity(req)
+
+	// 4. Check contact info
+	contactInfo := fi.checkContactInfo(html)
+	fi.Findings["has_contact_info"] = len(contactInfo) > 0
+	fi.Findings["contact_info"] = contactInfo
+	// 5. Check domain age (mock)
+	fi.Findings["new_domain"] = fi.checkDomainAge(handlers.Whois(urlObj))
+	//return results
+}
+
 // this function will return values decpite of storing in object
-func (fi *FraudIndicators) detectHiddenElement(html string) (bool, []string) {
+func (fi *FraudIndicators) detectHiddenElements(html string) (bool, []string) {
 
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader([]byte(html)))
 	if err != nil {
@@ -81,7 +108,7 @@ func (fi *FraudIndicators) detectHiddenElement(html string) (bool, []string) {
 
 }
 
-func (fi *FraudIndicators) checkDomianAge(whois whoisparser.WhoisInfo) (int, error) {
+func (fi *FraudIndicators) checkDomainAge(whois whoisparser.WhoisInfo) int {
 
 	creationDate, err := time.Parse(time.RFC3339, whois.Domain.CreatedDate)
 	if err != nil {
@@ -90,7 +117,7 @@ func (fi *FraudIndicators) checkDomianAge(whois whoisparser.WhoisInfo) (int, err
 
 	ageInDays := int(time.Since(creationDate).Hours() / 24)
 
-	return ageInDays, nil
+	return ageInDays
 }
 
 func (fi *FraudIndicators) checkSecurity(req *colly.Request) {

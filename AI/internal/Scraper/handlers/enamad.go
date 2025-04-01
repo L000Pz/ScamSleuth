@@ -9,10 +9,9 @@ import (
 	"net/http"
 
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/models"
-	"github.com/gocolly/colly/v2"
 )
 
-func enamd_GetData(domain string) (*models.Enamad_Data, error) {
+func enamad_GetData(domain string) (*models.Enamad_Data, error) {
 
 	var enamad_data models.Enamad_Data
 
@@ -58,9 +57,11 @@ func enamd_GetData(domain string) (*models.Enamad_Data, error) {
 	return &enamad_data, nil
 }
 
+// uncall this function
+/*
 func scrape_enamad(url string) [][]string {
 
-	enamad_get_data, err := enamd_GetData(url)
+	enamad_get_data, err := enamad_GetData(url)
 	if err != nil {
 		log.Println(err)
 	}
@@ -94,7 +95,7 @@ func scrape_enamad(url string) [][]string {
 
 	return rows
 }
-
+*/
 func EnamadHandler(w http.ResponseWriter, r *http.Request) {
 	val := "~!"
 	fmt.Fprintf(w, "something is going to happen %s \n", val)
@@ -109,7 +110,15 @@ func EnamadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows := scrape_enamad(requestBody.Domain)
-	fmt.Fprintf(w, "%v", rows)
+	//rows := scrape_enamad(requestBody.Domain)
+	//fmt.Fprintf(w, "%v", rows)
 
+	/*
+	 just getting data from GetData function
+	*/
+	enamad_data, err := enamad_GetData(requestBody.Domain)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Fprintf(w, "%v", enamad_data)
 }
