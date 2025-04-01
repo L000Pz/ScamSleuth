@@ -11,7 +11,7 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-func Do_scrape(domain string) {
+func Do_scrape(domain string) map[string]interface{} {
 
 	var fi = models.NewDefaultFraudIndicators()
 	//var myhtml string
@@ -81,24 +81,8 @@ func Do_scrape(domain string) {
 		}
 
 		fmt.Println("\nAnalysis complete!")
+
 	})
-
-	// c.OnHTML("html", func(e *colly.HTMLElement) {
-
-	// 	html, err := e.DOM.Html()
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		//http.Error(w, "Invalid Request Body", http.StatusBadRequest)
-	// 		return
-	// 	}
-
-	// 	//fmt.Fprintf(w, "%s", html)
-	// 	myhtml = html
-	// })
-
-	// c.OnError(func(r *colly.Response, err error) {
-	// 	log.Println("Request failed:", err)
-	// })
 
 	err := c.Visit(domain)
 	if err != nil {
@@ -106,7 +90,7 @@ func Do_scrape(domain string) {
 	}
 
 	c.Wait()
-	//return myhtml
+	return fi.Findings
 }
 
 func Scrape(w http.ResponseWriter, r *http.Request) {

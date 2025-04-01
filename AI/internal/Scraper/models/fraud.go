@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -48,29 +49,57 @@ func NewDefaultFraudIndicators() *FraudIndicators {
 		Findings:  make(map[string]interface{}),
 	}
 }
+func extractMainDomain(rawURL string) (string, error) {
+	// Parse the URL
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse URL: %v", err)
+	}
+
+	// Get the hostname (removes port if present)
+	host := u.Hostname()
+
+	// Split the host into parts
+	parts := strings.Split(host, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid domain: %s", host)
+	}
+
+	// Handle cases like "co.uk" (second-level domains)
+	// This is a simplified approach - you might need a proper TLD list for full accuracy
+	if len(parts) > 2 {
+		// For most cases, take the last two parts
+		return parts[len(parts)-2] + "." + parts[len(parts)-1], nil
+	}
+
+	return host, nil
+}
 
 func (fi *FraudIndicators) AnalyzeResponse(resp *colly.Response) {
 	html := string(resp.Body)
 	req := resp.Request
-	urlObj := req.URL.Host
-	//fmt.Println(urlObj)
+	urlObj, err := extractMainDomain(req.URL.String())
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(urlObj)
 
-	// 1. Check for suspicious keywords
+	//  Check for suspicious keywords
 	fi.Findings["keywords"] = fi.detectKeyWords(html)
 
-	// 2. Check for hidden elements
+	//  Check for hidden elements
 	hasHidden, hiddenElements := fi.detectHiddenElements(html)
 	fi.Findings["has_hidden_elements"] = hasHidden
 	fi.Findings["hidden_elements"] = hiddenElements
 
-	// 3. Check security
+	//  Check security
 	fi.checkSecurity(req)
 
-	// 4. Check contact info
+	//  Check contact info
 	contactInfo := fi.checkContactInfo(html)
 	fi.Findings["has_contact_info"] = len(contactInfo) > 0
 	fi.Findings["contact_info"] = contactInfo
-	// 5. Check domain age (mock)
+	//  Check domain age (mock)
 	fi.Findings["new_domain"] = fi.checkDomainAge(handlers.Whois(urlObj))
 	//return results
 }
