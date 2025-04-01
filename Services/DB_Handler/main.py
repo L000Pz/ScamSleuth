@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -46,7 +47,6 @@ def ensure_alembic_config():
     if not alembic_ini_exists or not env_py_exists:
         print("🛠 Alembic not initialized. Setting it up...")
 
-        # Clean up any broken folder
         if not alembic_ini_exists and os.path.exists("alembic"):
             print("🧹 Removing leftover alembic folder...")
             import shutil
@@ -54,7 +54,6 @@ def ensure_alembic_config():
 
         subprocess.run(["alembic", "init", "alembic"], check=True)
 
-        # Patch alembic.ini
         with open("alembic.ini", "r") as file:
             lines = file.readlines()
         with open("alembic.ini", "w") as file:
@@ -64,7 +63,6 @@ def ensure_alembic_config():
                 else:
                     file.write(line)
 
-        # Patch env.py to set target_metadata
         env_path = os.path.join("alembic", "env.py")
         with open(env_path, "r") as f:
             content = f.read()
@@ -76,33 +74,27 @@ def ensure_alembic_config():
             f.write(content)
 
 
-def generate_initial_migration():
-    versions_dir = os.path.join("alembic", "versions")
-    if not os.path.exists(versions_dir):
-        os.makedirs(versions_dir)
+def generate_and_apply_migration():
+    print("📦 Generating Alembic migration...")
+    try:
+        subprocess.run(["alembic", "revision", "--autogenerate", "-m", "auto"], check=True)
+    except subprocess.CalledProcessError as e:
+        print("⚠️ Migration not created. Maybe no changes were detected.")
 
-    if not os.listdir(versions_dir):
-        print("⚙️ No migrations found. Generating initial migration...")
-        subprocess.run(["alembic", "revision", "--autogenerate", "-m", "initial"], check=True)
-    else:
-        print("✅ Migrations already exist.")
-
-
-def run_migrations():
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+    print("🚀 Applying latest migration...")
+    subprocess.run(["alembic", "upgrade", "head"], check=True)
 
 
 def init_db():
     print("🔌 Connecting to database...")
     create_database_if_missing()
     engine = create_engine(DATABASE_URL)
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine)  # In case some tables are brand new
     ensure_alembic_config()
-    generate_initial_migration()
-    run_migrations()
-    print("✅ Database synced.")
+    generate_and_apply_migration()
+    print("✅ Database is synced with ORM models.")
 
 
 if __name__ == "__main__":
     init_db()
+    time.sleep(5)  # Optional: Let logs print before container exits

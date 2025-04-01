@@ -121,6 +121,7 @@ services:
     networks:
       - scamsleuth-network
 
+
   postgres_container:
     image: postgres:16
     container_name: postgres_container

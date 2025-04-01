@@ -1,6 +1,6 @@
 ﻿using IAM.Domain;
 
-namespace IAM.Application.AuthenticationService;
+namespace IAM.Contracts;
 
 public record AdminAuthenticationResult(
     Admins admin,

@@ -68,7 +68,7 @@ public class UserRepository:IUserRepository
             .Where(x => x.User.email == email)
             .Join(
                 _context.report,
-                x => x.UserReport.review_id,
+                x => x.UserReport.report_id,
                 r => r.report_id,
                 (x, r) => r
             )
@@ -91,7 +91,7 @@ public class UserRepository:IUserRepository
                 }
 
                 var userReports = await _context.user_report
-                    .Where(ur => ur.review_id == report_id)
+                    .Where(ur => ur.report_id == report_id)
                     .ToListAsync();
                 if (userReports.Any())
                 {
@@ -148,7 +148,7 @@ public class UserRepository:IUserRepository
     public async Task<User_Report?> GetReportWriter(int report_id)
     {
         var writer = await _context.user_report
-            .FirstOrDefaultAsync(c => c.review_id == report_id);
+            .FirstOrDefaultAsync(c => c.report_id == report_id);
         return writer;
     }
 }
