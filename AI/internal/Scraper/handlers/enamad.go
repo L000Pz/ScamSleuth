@@ -11,7 +11,7 @@ import (
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/models"
 )
 
-func enamad_GetData(domain string) (*models.Enamad_Data, error) {
+func Enamad_GetData(domain string) (*models.Enamad_Data, error) {
 
 	var enamad_data models.Enamad_Data
 
@@ -57,45 +57,6 @@ func enamad_GetData(domain string) (*models.Enamad_Data, error) {
 	return &enamad_data, nil
 }
 
-// uncall this function
-/*
-func scrape_enamad(url string) [][]string {
-
-	enamad_get_data, err := enamad_GetData(url)
-	if err != nil {
-		log.Println(err)
-	}
-	req_url := fmt.Sprintf("https://trustseal.enamad.ir/?id=%d&code=%s", enamad_get_data.ID, enamad_get_data.Code)
-
-	// Create a new collector
-	c := colly.NewCollector()
-
-	// Slice to store the table rows
-	var rows [][]string
-
-	// Set up the callback to handle the table rows
-	c.OnHTML("table.table-hover tbody tr", func(e *colly.HTMLElement) {
-		var row []string
-		e.ForEach("td, th", func(_ int, el *colly.HTMLElement) {
-			row = append(row, el.Text)
-		})
-		rows = append(rows, row)
-	})
-
-	// Set up error handling
-	c.OnError(func(r *colly.Response, err error) {
-		log.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
-	})
-
-	// Start scraping
-	err = c.Visit(req_url)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return rows
-}
-*/
 func EnamadHandler(w http.ResponseWriter, r *http.Request) {
 	val := "~!"
 	fmt.Fprintf(w, "something is going to happen %s \n", val)
@@ -110,13 +71,7 @@ func EnamadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//rows := scrape_enamad(requestBody.Domain)
-	//fmt.Fprintf(w, "%v", rows)
-
-	/*
-	 just getting data from GetData function
-	*/
-	enamad_data, err := enamad_GetData(requestBody.Domain)
+	enamad_data, err := Enamad_GetData(requestBody.Domain)
 	if err != nil {
 		log.Println(err)
 	}

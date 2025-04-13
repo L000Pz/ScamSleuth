@@ -76,7 +76,7 @@ func Do_scrape(domain string) map[string]interface{} {
 		}
 
 		// Domain age
-		if fi.DomainAge < 30 {
+		if fi.DomainAge < 120 {
 			fmt.Printf("\nWarning: Domain appears to be new (less than %d days old)\n", fi.DomainAge)
 		}
 

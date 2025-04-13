@@ -6,13 +6,9 @@ import (
 	"log"
 	"net/url"
 	"strings"
-	"time"
 
-	//"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
-	"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
-	whoisparser "github.com/likexian/whois-parser"
 )
 
 type FraudIndicators struct {
@@ -76,11 +72,11 @@ func extractMainDomain(rawURL string) (string, error) {
 func (fi *FraudIndicators) AnalyzeResponse(resp *colly.Response) {
 	html := string(resp.Body)
 	req := resp.Request
-	urlObj, err := extractMainDomain(req.URL.String())
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(urlObj)
+	// urlObj, err := extractMainDomain(req.URL.String())
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// fmt.Println(urlObj)
 
 	//  Check for suspicious keywords
 	fi.Findings["keywords"] = fi.detectKeyWords(html)
@@ -98,7 +94,7 @@ func (fi *FraudIndicators) AnalyzeResponse(resp *colly.Response) {
 	fi.Findings["has_contact_info"] = len(contactInfo) > 0
 	fi.Findings["contact_info"] = contactInfo
 	//  Check domain age (mock)
-	fi.Findings["new_domain"] = fi.checkDomainAge(handlers.Whois(urlObj))
+	//fi.Findings["new_domain"] = fi.checkDomainAge(handlers.Whois(urlObj))
 	//return results
 }
 
@@ -135,6 +131,7 @@ func (fi *FraudIndicators) detectHiddenElements(html string) (bool, []string) {
 
 }
 
+/*
 func (fi *FraudIndicators) checkDomainAge(whois whoisparser.WhoisInfo) int {
 
 	creationDate, err := time.Parse(time.RFC3339, whois.Domain.CreatedDate)
@@ -146,6 +143,7 @@ func (fi *FraudIndicators) checkDomainAge(whois whoisparser.WhoisInfo) int {
 
 	return ageInDays
 }
+*/
 
 func (fi *FraudIndicators) checkSecurity(req *colly.Request) {
 
@@ -171,7 +169,7 @@ func (fi *FraudIndicators) checkContactInfo(html string) []string {
 	if err != nil {
 		log.Println(err)
 	}
-	contactPatterns := []string{"contact", "about", "support", "help", "email", "phone", "address"}
+	contactPatterns := []string{"contact", "about", "support", "help", "email", "phone", "address", "تماس با"}
 	var founds []string
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		href, _ := s.Attr("href")
