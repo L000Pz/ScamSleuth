@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
+	"golang.org/x/net/html"
 )
 
 type FraudIndicators struct {
@@ -45,28 +45,68 @@ func NewDefaultFraudIndicators() *FraudIndicators {
 		Findings:  make(map[string]interface{}),
 	}
 }
-func extractMainDomain(rawURL string) (string, error) {
-	// Parse the URL
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse URL: %v", err)
+
+var (
+	fraudKeywords = []string{
+		"urgent", "guarantee", "risk-free", "act now", "limited time",
+		"congratulations", "prize", "winner", "free", "instant",
+	}
+)
+
+func isHidden(n *html.Node) bool {
+	for _, attr := range n.Attr {
+		if attr.Key == "style" && strings.Contains(strings.ToLower(attr.Val), "display:none") {
+			return true
+		}
+		if attr.Key == "type" && attr.Val == "hidden" {
+			return true
+		}
+	}
+	return false
+}
+
+// Example implementation of AnalyzeContent (should be in models package)
+func (fi *FraudIndicators) AnalyzeContent(doc *html.Node, r *colly.Response) {
+	var f func(*html.Node)
+	foundKeywords := make(map[string]bool)
+	var hiddenElements []string
+
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			// Check for hidden elements
+			if isHidden(n) {
+				hiddenElements = append(hiddenElements, n.Data)
+			}
+		}
+
+		if n.Type == html.TextNode {
+			// Check for fraud keywords
+			text := strings.ToLower(n.Data)
+			for _, kw := range fraudKeywords {
+				if strings.Contains(text, kw) {
+					foundKeywords[kw] = true
+				}
+			}
+
+			// Check for contact info
+			if strings.Contains(text, "@") || strings.Contains(text, "phone") {
+				fi.Findings["NoContactInfo"] = true
+			}
+		}
+
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
 	}
 
-	// Get the hostname (removes port if present)
-	host := u.Hostname()
+	f(doc)
 
-	// Split the host into parts
-	parts := strings.Split(host, ".")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid domain: %s", host)
-	}
-
-	if len(parts) > 2 {
-		// For most cases, take the last two parts
-		return parts[len(parts)-2] + "." + parts[len(parts)-1], nil
-	}
-
-	return host, nil
+	// Update findings
+	// for kw := range foundKeywords {
+	// 	fi.SuspiciousKeywords = append(fi.SuspiciousKeywords, kw)
+	// }
+	fi.Findings["FoundKeywords"] = foundKeywords
+	fi.Findings["HiddenElements"] = hiddenElements
 }
 
 func (fi *FraudIndicators) AnalyzeResponse(resp *colly.Response) {
