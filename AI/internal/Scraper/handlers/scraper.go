@@ -103,7 +103,7 @@ func Do_scrape(domain string) map[string]interface{} {
 
 	c := colly.NewCollector(
 		colly.Async(true),
-		//colly.AllowedDomains(strings.Split(domain, "/")[2]), // Restrict to target domain
+		//colly.AllowedDomains(domain),     // Restrict to target domain
 		colly.CacheDir("./scrape_cache"), // Enable caching
 	)
 
@@ -172,11 +172,15 @@ func Do_scrape(domain string) map[string]interface{} {
 
 	// Post-processing
 	// fi.CheckDomainAge(domain) // Implement this method
-	// fi.CheckSSL(domain)       // Implement SSL verification
+	//fi.CheckSSL(domain) // Implement SSL verification
 
 	// Print final results once
-	printAnalysisResults(fi)
-
+	//printAnalysisResults(fi)
+	jsonFinding, err := json.MarshalIndent(fi.Findings, "", "  ")
+	if err != nil {
+		log.Printf("jsonizing the fi.Findings went wrong: %s \n", err)
+	}
+	fmt.Println(string(jsonFinding))
 	return fi.Findings
 }
 
