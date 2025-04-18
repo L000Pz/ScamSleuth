@@ -49,9 +49,24 @@ func NewDefaultFraudIndicators() *FraudIndicators {
 var (
 	fraudKeywords = []string{
 		"urgent", "guarantee", "risk-free", "act now", "limited time",
-		"congratulations", "prize", "winner", "free", "instant",
+		"congratulations", "prize", "winner", "free", "instant", "100% safe", "guaranteed profit", "limited offer",
+		"won't believe", "click here", "instant money",
+		"risk-free", "double your", "earn cash", "github",
 	}
 )
+
+func nodeToString(n *html.Node) (string, error) {
+	if n == nil {
+		return "", fmt.Errorf("node is nil")
+	}
+
+	var buf bytes.Buffer
+	err := html.Render(&buf, n)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
 
 func isHidden(n *html.Node) bool {
 	for _, attr := range n.Attr {
@@ -74,7 +89,11 @@ func (fi *FraudIndicators) AnalyzeContent(doc *html.Node, r *colly.Response) {
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			// Check for hidden elements
-			if isHidden(n) {
+			string_node, err := nodeToString(n)
+			if err != nil {
+				log.Printf("converting html node to string went wrong in fraud.go file : %s \n", err)
+			}
+			if ok, _ := fi.detectHiddenElements(string_node); ok {
 				hiddenElements = append(hiddenElements, n.Data)
 			}
 		}
@@ -90,6 +109,8 @@ func (fi *FraudIndicators) AnalyzeContent(doc *html.Node, r *colly.Response) {
 
 			// Check for contact info
 			if strings.Contains(text, "@") || strings.Contains(text, "phone") {
+				fi.Findings["NoContactInfo"] = false
+			} else {
 				fi.Findings["NoContactInfo"] = true
 			}
 		}

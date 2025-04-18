@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -14,174 +16,30 @@ import (
 	"golang.org/x/net/html"
 )
 
-func Do_scrape1(domain string) map[string]interface{} {
+func RemoveScheme(inputURL string) (string, error) {
+	// Add scheme if missing to make url.Parse work correctly
+	if !strings.HasPrefix(inputURL, "http://") && !strings.HasPrefix(inputURL, "https://") {
+		inputURL = "https://" + inputURL
+	}
 
-	var fi = models.NewDefaultFraudIndicators()
-	//var myhtml string
-	// creating a collector
-	c := colly.NewCollector(
-		colly.Async(true),
-	)
-
-	c.Limit(&colly.LimitRule{
-
-		DomainGlob:  "*",
-		Parallelism: 2,
-		Delay:       2 * time.Second,
-		RandomDelay: 1 * time.Second,
-	})
-
-	// Set headers to appear more like a browser
-	c.OnRequest(func(r *colly.Request) {
-		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-		r.Headers.Set("Accept-Language", "en-US,en;q=0.9")
-		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	})
-
-	// Analyze each response
-	c.OnResponse(func(r *colly.Response) {
-		fmt.Printf("Visited %s\n", r.Request.URL)
-		fi.AnalyzeResponse(r)
-	})
-	// Print results when done
-	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("\nFraud Analysis Results:")
-		fmt.Println("======================")
-		for ind, p := range fi.Findings {
-			fmt.Println(ind)
-			fmt.Println(p)
-		}
-
-		// Keywords
-		if keywords, ok := fi.Findings["keywords"].([]string); ok && len(keywords) > 0 {
-			fmt.Println("\nSuspicious Keywords Found:")
-			for _, kw := range keywords {
-				fmt.Printf("- %s\n", kw)
-			}
-		}
-
-		// Hidden elements
-		if hidden, ok := fi.Findings["hidden_elements"].([]string); ok && len(hidden) > 0 {
-			fmt.Println("\nHidden Elements Found:")
-			for _, el := range hidden {
-				fmt.Printf("- %s\n", el)
-			}
-		}
-
-		// Security
-		if fi.UnsecureConnection {
-			fmt.Println("\nSecurity Issue: Connection is not HTTPS")
-		}
-
-		// Contact info
-		if hasContact, ok := fi.Findings["has_contact_info"].(bool); ok && !hasContact {
-			fmt.Println("\nWarning: No obvious contact information found")
-		}
-
-		/*
-			// Domain age
-			if fi.DomainAge < 120 {
-				fmt.Printf("\nWarning: Domain appears to be new (less than %d days old)\n", fi.DomainAge)
-			}
-		*/
-		fmt.Println("\nAnalysis complete!")
-
-	})
-
-	err := c.Visit(domain)
+	parsed, err := url.Parse(inputURL)
 	if err != nil {
-		log.Println(err)
+		return "", fmt.Errorf("failed to parse URL: %v", err)
 	}
 
-	c.Wait()
-	return fi.Findings
-}
-
-func Do_scrape(domain string) map[string]interface{} {
-	var fi = models.NewDefaultFraudIndicators()
-	var mu sync.Mutex // Mutex to protect concurrent access to findings
-
-	c := colly.NewCollector(
-		colly.Async(true),
-		//colly.AllowedDomains(domain),     // Restrict to target domain
-		colly.CacheDir("./scrape_cache"), // Enable caching
-	)
-
-	// Configure limits
-	c.Limit(&colly.LimitRule{
-		DomainGlob:  "*",
-		Parallelism: 4, // Slightly higher parallelism
-		RandomDelay: 1 * time.Second,
-	})
-
-	// Set browser-like headers with rotation
-	userAgents := []string{
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15",
-		"Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+	// Rebuild URL without scheme
+	result := parsed.Host
+	if parsed.Path != "" {
+		result += parsed.Path
+	}
+	if parsed.RawQuery != "" {
+		result += "?" + parsed.RawQuery
+	}
+	if parsed.Fragment != "" {
+		result += "#" + parsed.Fragment
 	}
 
-	c.OnRequest(func(r *colly.Request) {
-		r.Headers.Set("User-Agent", userAgents[time.Now().Unix()%int64(len(userAgents))])
-		r.Headers.Set("Accept-Language", "en-US,en;q=0.9")
-		r.Headers.Set("Referer", "https://www.google.com/")
-		r.Headers.Set("Accept-Encoding", "gzip, deflate, br")
-	})
-
-	// Follow links within the same domain
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		link := e.Request.AbsoluteURL(e.Attr("href"))
-		if strings.Contains(link, domain) {
-			e.Request.Visit(link)
-		}
-	})
-
-	// Analyze responses
-	c.OnResponse(func(r *colly.Response) {
-		mu.Lock()
-		defer mu.Unlock()
-
-		// Check HTTPS
-		if !strings.HasPrefix(r.Request.URL.String(), "https://") {
-			fi.Findings["SecureConnection"] = false
-		}
-
-		// Parse HTML
-		doc, err := html.Parse(strings.NewReader(string(r.Body)))
-		if err != nil {
-			return
-		}
-
-		// Analyze content
-		fi.AnalyzeContent(doc, r)
-	})
-
-	// Error handling
-	c.OnError(func(r *colly.Response, err error) {
-		log.Printf("Request URL: %s failed with response: %v\nError: %v", r.Request.URL, r, err)
-	})
-
-	// Start scraping
-	err := c.Visit(domain)
-	if err != nil {
-		log.Printf("Initial visit error: %v", err)
-		return fi.Findings
-	}
-
-	c.Wait()
-
-	// Post-processing
-	// fi.CheckDomainAge(domain) // Implement this method
-	//fi.CheckSSL(domain) // Implement SSL verification
-
-	// Print final results once
-	//printAnalysisResults(fi)
-	jsonFinding, err := json.MarshalIndent(fi.Findings, "", "  ")
-	if err != nil {
-		log.Printf("jsonizing the fi.Findings went wrong: %s \n", err)
-	}
-	fmt.Println(string(jsonFinding))
-	return fi.Findings
+	return result, nil
 }
 
 func printAnalysisResults(fi *models.FraudIndicators) {
@@ -218,6 +76,181 @@ func printAnalysisResults(fi *models.FraudIndicators) {
 	}
 
 	fmt.Println("\nAnalysis complete!")
+}
+
+func Do_scrape(domain string) map[string]interface{} {
+	var fi = models.NewDefaultFraudIndicators()
+	var mu sync.Mutex
+	visited := make(map[string]bool)
+	visitedMu := &sync.Mutex{}
+
+	// Set timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	// Ensure domain has scheme
+	if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+		domain = "https://" + domain
+	}
+
+	domain1, err := RemoveScheme(domain)
+	if err != nil {
+		log.Printf("Error removing scheme: %v", err)
+		return fi.Findings
+	}
+
+	// Create collector with proper configuration
+	c := colly.NewCollector(
+		colly.Async(true),
+		colly.AllowedDomains(domain1),
+		colly.CacheDir("./scrape_cache"),
+		colly.IgnoreRobotsTxt(),
+	)
+
+	// Configure limits
+	c.Limit(&colly.LimitRule{
+		DomainGlob:  "*",
+		Parallelism: 4,
+		RandomDelay: 1 * time.Second,
+	})
+
+	c.SetRequestTimeout(30 * time.Second)
+
+	// Channel to track active requests (buffered to prevent deadlocks)
+	activeRequests := make(chan struct{}, 100)
+	defer close(activeRequests)
+
+	// Timeout monitor
+	go func() {
+		<-ctx.Done()
+		log.Println("Timeout reached, aborting pending requests")
+
+		// Abort all pending requests
+		c.OnRequest(func(r *colly.Request) {
+			r.Abort()
+		})
+	}()
+
+	// Set browser-like headers with rotation
+	userAgents := []string{
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15",
+		"Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+	}
+
+	c.OnRequest(func(r *colly.Request) {
+		select {
+		case <-ctx.Done():
+			r.Abort()
+			return
+		case activeRequests <- struct{}{}:
+			r.Headers.Set("User-Agent", userAgents[time.Now().Unix()%int64(len(userAgents))])
+			r.Headers.Set("Accept-Language", "en-US,en;q=0.9")
+			r.Headers.Set("Referer", "https://www.google.com/")
+		default:
+			r.Abort()
+		}
+	})
+
+	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			link := e.Request.AbsoluteURL(e.Attr("href"))
+			parsed, err := url.Parse(link)
+			if err != nil {
+				return
+			}
+
+			visitedMu.Lock()
+			if !visited[parsed.Path] {
+				visited[parsed.Path] = true
+				visitedMu.Unlock()
+				e.Request.Visit(link)
+			} else {
+				visitedMu.Unlock()
+			}
+		}
+	})
+
+	c.OnResponse(func(r *colly.Response) {
+		defer func() {
+			select {
+			case <-activeRequests:
+			default:
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			mu.Lock()
+			defer mu.Unlock()
+
+			if !strings.HasPrefix(r.Request.URL.String(), "https://") {
+				fi.Findings["SecureConnection"] = false
+			}
+
+			doc, err := html.Parse(strings.NewReader(string(r.Body)))
+			if err != nil {
+				return
+			}
+
+			fi.AnalyzeContent(doc, r)
+			fi.AnalyzeResponse(r)
+		}
+	})
+
+	c.OnError(func(r *colly.Response, err error) {
+		defer func() {
+			select {
+			case <-activeRequests:
+			default:
+			}
+		}()
+		log.Printf("Request URL: %s failed with response: %v\nError: %v", r.Request.URL, r, err)
+	})
+
+	// Start scraping
+	err = c.Visit(domain)
+	if err != nil {
+		log.Printf("Initial visit error: %v", err)
+		return fi.Findings
+	}
+
+	// Wait for completion with timeout
+	waitDone := make(chan struct{})
+	go func() {
+		c.Wait()
+		close(waitDone)
+	}()
+
+	select {
+	case <-waitDone:
+		log.Println("Scraping completed successfully")
+	case <-ctx.Done():
+		log.Println("Scraping terminated due to timeout")
+	case <-time.After(5 * time.Second):
+		log.Println("Warning: c.Wait() took longer than expected after activeRequests drained")
+	}
+
+	// Final check for active requests
+	for i := 0; i < 10 && len(activeRequests) > 0; i++ {
+		time.Sleep(100 * time.Millisecond)
+		log.Printf("Waiting for %d active requests to complete", len(activeRequests))
+	}
+
+	// Marshal and print results
+	jsonFinding, err := json.MarshalIndent(fi.Findings, "", "  ")
+	if err != nil {
+		log.Printf("Error marshaling findings: %v", err)
+	} else {
+		log.Println(string(jsonFinding))
+	}
+
+	return fi.Findings
 }
 
 func Scrape(w http.ResponseWriter, r *http.Request) {
