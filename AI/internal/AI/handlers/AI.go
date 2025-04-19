@@ -68,14 +68,14 @@ func SendToAI(site string) models.CompletionResponse {
 	}
 	apiKey := os.Getenv("APIKEY")
 
-	//	scraper_result := handlers.Do_scrape(site)
+	//scraper_result := handlers.Do_scrape(site)
 
-	// scraperData := scraperHandler.Do_scrape(site)
-	// urlObj, err := extractMainDomain(site)
+	scraperData := scraperHandler.Do_scrape(site)
+	//urlObj, err := extractMainDomain(site)
 
-	// if err != nil {
-	// 	log.Println(err)
-	// }
+	if err != nil {
+		log.Println(err)
+	}
 
 	whoisData := Whois(site)
 	jsonWhoisData, err := json.MarshalIndent(whoisData, "", "  ")
@@ -84,14 +84,15 @@ func SendToAI(site string) models.CompletionResponse {
 	}
 	fmt.Println("this is whois data")
 	fmt.Println(string(jsonWhoisData))
-	// scraperData["domain_age"] = checkDomainAge(whoisData)
+	scraperData["domain_age"] = checkDomainAge(whoisData)
 
-	// jsonScraperData, err := json.MarshalIndent(scraperData, "", "  ")
-	// if err != nil {
-	// 	log.Printf("marshaling the scraperData went wrong : %s \n", err)
-	// }
-	// fmt.Println("this is scraper data:")
-	// fmt.Println(string(jsonScraperData))
+	jsonScraperData, err := json.MarshalIndent(scraperData, "", "  ")
+	if err != nil {
+		log.Printf("marshaling the scraperData went wrong : %s \n", err)
+	}
+	fmt.Println("this is scraper data:")
+	fmt.Println(string(jsonScraperData))
+
 	Enamad, err := scraperHandler.Enamad_GetData(site)
 	if err != nil {
 		log.Printf("Enamd geting data in AI handler function went wrong : %s\n", err)
@@ -118,7 +119,7 @@ func SendToAI(site string) models.CompletionResponse {
 			},
 			{
 				"role":    "user",
-				"content": fmt.Sprintf("url=%s   whois_data=%s enamad_data=%s", site, string(jsonWhoisData), string(jsonEnamad)),
+				"content": fmt.Sprintf("url=%s  scrape_data=%s whois_data=%s enamad_data=%s", site, jsonScraperData, string(jsonWhoisData), string(jsonEnamad)),
 			},
 		},
 	}
@@ -163,7 +164,17 @@ func SendToAI(site string) models.CompletionResponse {
 	return response
 
 }
+func convertTojson(AI_response string) []byte {
 
+	result := strings.Trim(AI_response, "```json")
+
+	//fmt.Println(result)
+	jsonResult, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		log.Printf("jsonizing the AI response went wrong ")
+	}
+	return jsonResult
+}
 func Scan(w http.ResponseWriter, r *http.Request) {
 
 	var response models.CompletionResponse
@@ -180,5 +191,9 @@ func Scan(w http.ResponseWriter, r *http.Request) {
 	//Prepare_AI()
 	//fmt.Fprintf(w, "%s", prepare_ai.Choices[0].Message.Content)
 	response = SendToAI(urlterm)
+
 	fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
+	//	jsonFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
+
+	// save the json response into database
 }
