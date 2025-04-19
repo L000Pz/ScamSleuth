@@ -115,7 +115,7 @@ func SendToAI(site string) models.CompletionResponse {
 			*/
 			{
 				"role":    "system",
-				"content": "You are a scam scoring engine. You will receive a JSON object with:\n\n- 'flags': an object where each key is a detection flag and each value is the score to apply if the flag matches\n- 'input': an object containing website data (URL, WHOIS info, HTML, SSL info, etc.)\n\nYour job:\n1. Check which flags match based on the input.\n2. Add up the scores from matching flags.\n3. Return a JSON object:\n  - 'totalScore': the sum of matching flag scores\n  - 'matchedFlags': object with matched flags and their scores\n  - 'notes': short summary of why these flags matched\n\nIMPORTANT:\n- Only use the flags provided.\n- Do NOT invent or reword flags.\n- If unsure about a match, do not include it.\n- Output only valid JSON (no comments, no explanations).",
+				"content": "You are a scam scoring engine. You will receive multiple JSON objects with:url: is the website url, scrape_data: is a scrapped data based on the key words i have preseted from the given url, whois_data: is the whois data extracted from the given url, enamad_data: is the enamad data(enamad is a iranian website ran by the government which gives the website a huge value if its based in iran) note that if it was empty and it wasnt based in iran it doesnt necessarily mean that the website doesnt have any values,but if it was based in iran it does need to have this premeter. Your job:\n1. Check the input and give it up to 10 flags and score the flags based on the input and its value up to a hundrad, a hundrad means it is very suspicious.\n2. Add up the scores from matching flags up to a hundred do not use negative values if a site doesnt match the flags or its low just give it zero.\n3. Return a JSON object:\n  - 'totalScore': the sum of matching flag scores\n  - 'matchedFlags': object with matched flags and their scores\n  - 'notes': short summary of why these flags matched and a short discripton explaining why this site is good or not good\n\nIMPORTANT:\n- If unsure about a match, do not include it.\n- Output only valid JSON (no comments, no description).",
 			},
 			{
 				"role":    "user",
@@ -164,7 +164,7 @@ func SendToAI(site string) models.CompletionResponse {
 	return response
 
 }
-func convertTojson(AI_response string) []byte {
+func convertTojson(AI_response string) ([]byte, string) {
 
 	result := strings.Trim(AI_response, "```json")
 
@@ -173,7 +173,7 @@ func convertTojson(AI_response string) []byte {
 	if err != nil {
 		log.Printf("jsonizing the AI response went wrong ")
 	}
-	return jsonResult
+	return jsonResult, result
 }
 func Scan(w http.ResponseWriter, r *http.Request) {
 
@@ -192,8 +192,15 @@ func Scan(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "%s", prepare_ai.Choices[0].Message.Content)
 	response = SendToAI(urlterm)
 
-	fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
-	//	jsonFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
+	//fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
+	_, stringFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
 
+	fmt.Fprintf(w, "%s", stringFraudDetectorResponseAI)
+
+	//sending to frontend
+	// if err := json.NewEncoder(w).Encode(jsonFraudDetectorResponseAI); err != nil {
+	// 	log.Printf("sending the json to front end went wrong : %s, \n", err)
+	// }
 	// save the json response into database
+
 }
