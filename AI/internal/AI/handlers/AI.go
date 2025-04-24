@@ -167,12 +167,14 @@ func SendToAI(site string) models.CompletionResponse {
 func convertTojson(AI_response string) ([]byte, string) {
 
 	result := strings.Trim(AI_response, "```json")
+	result = strings.TrimSpace(result)
 
 	//fmt.Println(result)
-	jsonResult, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		log.Printf("jsonizing the AI response went wrong ")
-	}
+	// jsonResult, err := json.MarshalIndent(result, "", "  ")
+	// if err != nil {
+	// 	log.Printf("jsonizing the AI response went wrong ")
+	// }
+	jsonResult := []byte(result)
 	return jsonResult, result
 }
 func Scan(w http.ResponseWriter, r *http.Request) {
@@ -193,10 +195,12 @@ func Scan(w http.ResponseWriter, r *http.Request) {
 	response = SendToAI(urlterm)
 
 	//fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
-	_, stringFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
+	jsonFraudDetectorResponseAI, stringFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
 
-	fmt.Fprintf(w, "%s", stringFraudDetectorResponseAI)
+	fmt.Printf("%s", stringFraudDetectorResponseAI)
 
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonFraudDetectorResponseAI)
 	//sending to frontend
 	// if err := json.NewEncoder(w).Encode(jsonFraudDetectorResponseAI); err != nil {
 	// 	log.Printf("sending the json to front end went wrong : %s, \n", err)
