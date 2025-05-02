@@ -8,11 +8,21 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Databases"
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/models"
 	"github.com/chromedp/chromedp"
 )
 
-func TakeScreenShot(site string) ([]byte, error) {
+type ScreenshotHandler struct {
+	MongoDB *Databases.MongoDB
+}
+
+func NewScreenShotHandler(mongoDB *Databases.MongoDB) *ScreenshotHandler {
+
+	return &ScreenshotHandler{MongoDB: mongoDB}
+}
+
+func (h *ScreenshotHandler) TakeScreenShot(site string) ([]byte, error) {
 
 	// Create context
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -29,19 +39,19 @@ func TakeScreenShot(site string) ([]byte, error) {
 		chromedp.Navigate(site),
 		chromedp.FullScreenshot(&buf, 90),
 	)
-	if err := chromedp.Run(ctx, elementScreenshot(site, `img.Homepage-logo`, &buf)); err != nil {
+	if err := chromedp.Run(ctx, h.elementScreenshot(site, `img.Homepage-logo`, &buf)); err != nil {
 		log.Printf("getting chromedp run went wrong : %s \n", err)
 	}
 
 	return buf, err
 }
-func elementScreenshot(urlstr, sel string, res *[]byte) chromedp.Tasks {
+func (h *ScreenshotHandler) elementScreenshot(urlstr, sel string, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(urlstr),
 		chromedp.Screenshot(sel, res, chromedp.NodeVisible),
 	}
 }
-func ScreenShotHandler(w http.ResponseWriter, r *http.Request) {
+func (h *ScreenshotHandler) ScreenShotHandler(w http.ResponseWriter, r *http.Request) {
 
 	var requestBody models.Req_body
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
@@ -54,6 +64,21 @@ func ScreenShotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buf, _ := TakeScreenShot(requestBody.Domain)
+	buf, _ := h.TakeScreenShot(requestBody.Domain)
+	if err != nil {
+		log.Printf("Failed ot take screenshot: %v", err)
+		return
+	}
 	fmt.Println(buf)
+	if err := h.MongoDB.SaveScreenshot("screenshots", requestBody.Domain, buf); err != nil {
+		log.Printf("Failed to save screenshot: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": "Screenshot saved successfully",
+	})
+
 }

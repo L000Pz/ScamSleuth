@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   gateway-api:
@@ -48,8 +48,8 @@ services:
     ports:
       - "5002:80"
     depends_on:
-    - rabbitmq_container
-    - mongodb_container
+      - rabbitmq_container
+      - mongodb_container
     networks:
       - scamsleuth-network
 
@@ -107,6 +107,23 @@ services:
     networks:
       - scamsleuth-network
 
+  scamsleuth-ai:
+    container_name: scamsleuth-ai
+    build:
+      context: ./AI
+      dockerfile: Dockerfile
+    volumes:
+      - ./AI:/app
+    ports:
+      - "6996:6996" # Matching your main.go port
+    environment:
+      - mongodb_container
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - mongodb_container
+    networks:
+      - scamsleuth-network
+
   db-handler:
     container_name: db-handler
     build:
@@ -120,7 +137,6 @@ services:
       - postgres_container
     networks:
       - scamsleuth-network
-
 
   postgres_container:
     image: postgres:16
@@ -149,7 +165,6 @@ services:
       - mongo-data:/data/db
     networks:
       - scamsleuth-network
-
 
   redis_container:
     image: redis:7
@@ -181,17 +196,17 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@scamsleuth.com
       PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
     networks:
       - scamsleuth-network
 
-
-
 networks:
   scamsleuth-network:
+    driver: bridge
+    name: scamsleuth-network
 
 volumes:
   postgres-data:
