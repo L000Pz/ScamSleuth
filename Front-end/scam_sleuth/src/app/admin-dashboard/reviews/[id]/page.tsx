@@ -1,11 +1,13 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, ArrowLeft, Trash2 } from 'lucide-react';
+import { Calendar, ArrowLeft, Trash2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getPublicReview, deleteReview } from './actions';
+import { getPublicReview, deleteReview, updateReview } from './actions';
+import LexicalEditor from '@/components/LexicalEditor';
+import { getHtmlFromEditor } from '@/components/editor/lexicalHtmlConversion';
 
 interface ReviewData {
  id: string;
@@ -23,6 +25,10 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
  const [isLoading, setIsLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [isDeleting, setIsDeleting] = useState(false);
+ const [isEditing, setIsEditing] = useState(false);
+ const [isSaving, setIsSaving] = useState(false);
+ const [editedTitle, setEditedTitle] = useState('');
+ const editorRef = useRef<any>(null);
 
  useEffect(() => {
    const fetchReview = async () => {
@@ -32,6 +38,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
        
        if (result.success && result.data) {
          setReview(result.data);
+         setEditedTitle(result.data.title);
        } else {
          setError(result.error || 'Failed to fetch review');
        }
@@ -67,6 +74,67 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
    }
  };
 
+ const handleEditorChange = (editorState: any, editor: any) => {
+   // Store a reference to the editor
+   if (!editorRef.current) {
+     editorRef.current = editor;
+   }
+ };
+
+ const toggleEdit = () => {
+   setIsEditing(!isEditing);
+ };
+
+ const handleSave = async () => {
+   if (!review) return;
+   
+   try {
+     setIsSaving(true);
+     
+     // Get content from Lexical editor
+     let content = '';
+     if (editorRef.current) {
+       content = await getHtmlFromEditor(editorRef.current);
+     }
+
+     if (!content) {
+       alert('Content cannot be empty');
+       setIsSaving(false);
+       return;
+     }
+
+     if (!editedTitle.trim()) {
+       alert('Title cannot be empty');
+       setIsSaving(false);
+       return;
+     }
+
+     // Assuming updateReview action exists and handles content update
+     const result = await updateReview({
+       id: params.id,
+       title: editedTitle.trim(),
+       content
+     });
+
+     if (result.success) {
+       // Update the local state to reflect changes
+       setReview({
+         ...review,
+         title: editedTitle.trim(),
+         content
+       });
+       setIsEditing(false);
+     } else {
+       throw new Error(result.error);
+     }
+   } catch (error) {
+     console.error('Error saving review:', error);
+     alert('Failed to save review');
+   } finally {
+     setIsSaving(false);
+   }
+ };
+
  if (isLoading) {
    return (
      <div className="flex justify-center items-center h-full">
@@ -95,15 +163,37 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
          Back to Reviews
        </Button>
 
-       <Button 
-         variant="outline" 
-         className="flex items-center gap-2"
-         onClick={handleDelete}
-         disabled={isDeleting}
-       >
-         <Trash2 size={20} />
-         {isDeleting ? 'Deleting...' : 'Delete Review'}
-       </Button>
+       <div className="flex gap-2">
+         {isEditing ? (
+           <Button 
+             variant="outline" 
+             className="flex items-center gap-2"
+             onClick={handleSave}
+             disabled={isSaving}
+           >
+             <Save size={20} />
+             {isSaving ? 'Saving...' : 'Save Changes'}
+           </Button>
+         ) : (
+           <Button 
+             variant="outline" 
+             className="flex items-center gap-2"
+             onClick={toggleEdit}
+           >
+             Edit
+           </Button>
+         )}
+
+         <Button 
+           variant="outline" 
+           className="flex items-center gap-2 text-red-500 hover:text-red-700"
+           onClick={handleDelete}
+           disabled={isDeleting}
+         >
+           <Trash2 size={20} />
+           {isDeleting ? 'Deleting...' : 'Delete'}
+         </Button>
+       </div>
      </div>
 
      <Card>
@@ -113,11 +203,31 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
              <Calendar size={16} />
              {review.date}
            </div>
-           <h1 className="text-3xl font-bold">{review.title}</h1>
+           
+           {isEditing ? (
+             <input
+               type="text"
+               value={editedTitle}
+               onChange={(e) => setEditedTitle(e.target.value)}
+               className="w-full text-3xl font-bold p-2 border border-gray-300 rounded-lg mb-4"
+             />
+           ) : (
+             <h1 className="text-3xl font-bold">{review.title}</h1>
+           )}
          </div>
 
-         <div className="prose max-w-none mt-6" 
-              dangerouslySetInnerHTML={{ __html: review.content }} />
+         {isEditing ? (
+           <div className="mt-6">
+             <LexicalEditor
+               initialContent={review.content}
+               onChange={handleEditorChange}
+               height={500}
+             />
+           </div>
+         ) : (
+           <div className="prose max-w-none mt-6" 
+                dangerouslySetInnerHTML={{ __html: review.content }} />
+         )}
 
          {review.media && review.media.length > 0 && (
            <div className="mt-8">

@@ -3,9 +3,10 @@
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Editor } from '@tinymce/tinymce-react';
 import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { getScamTypes, submitReview, uploadFile, deleteFile } from './actions';
+import LexicalEditor from '@/components/LexicalEditor';
+import { getHtmlFromEditor } from '@/components/editor/lexicalHtmlConversion';
 
 interface ScamType {
   scam_type_id: number;
@@ -159,15 +160,21 @@ export default function WriteReviewPage() {
     setError(null);
 
     try {
-      const content = editorRef.current?.getContent();
+      // Get content from Lexical editor
+      let content = '';
+      if (editorRef.current) {
+        content = await getHtmlFromEditor(editorRef.current);
+      }
       
       if (!content) {
         setError('Content is required');
+        setIsSubmitting(false);
         return;
       }
 
       if (!form.title.trim()) {
         setError('Title is required');
+        setIsSubmitting(false);
         return;
       }
 
@@ -191,6 +198,13 @@ export default function WriteReviewPage() {
       setError(err?.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditorChange = (editorState: any, editor: any) => {
+    // Save a reference to the editor
+    if (!editorRef.current) {
+      editorRef.current = editor;
     }
   };
 
@@ -327,23 +341,12 @@ export default function WriteReviewPage() {
           <label className="block text-sm font-medium text-gray-500 mb-4">
             Content
           </label>
-          <Editor
-            apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-            onInit={(evt, editor) => editorRef.current = editor}
-            init={{
-              height: 500,
-              menubar: false,
-              plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-              ],
-              toolbar: 'undo redo | blocks | ' +
-                'bold italic forecolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
-              content_style: 'body { font-family:Vazirmat,Helvetica,Arial,sans-serif; font-size:14px }'
-            }}
+          
+          {/* Lexical Editor */}
+          <LexicalEditor
+            height={500}
+            placeholder="Start writing your review here..."
+            onChange={handleEditorChange}
           />
         </div>
       </form>
