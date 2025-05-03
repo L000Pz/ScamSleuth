@@ -28,7 +28,40 @@ import {
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
 } from "@lexical/list";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
+import FontSizePlugin from './plugins/FontSizePlugin';
+
+const ParagraphIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 4v16"></path>
+    <path d="M19 4v16"></path>
+    <path d="M19 4H8.5a4.5 4.5 0 0 0 0 9H13"></path>
+  </svg>
+);
+
+const Heading1Icon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12h16"></path>
+    <path d="M4 6h16"></path>
+    <path d="M4 18h12"></path>
+  </svg>
+);
+
+const Heading2Icon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12h10"></path>
+    <path d="M4 6h16"></path>
+    <path d="M4 18h8"></path>
+  </svg>
+);
+
+const Heading3Icon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12h8"></path>
+    <path d="M4 6h16"></path>
+    <path d="M4 18h6"></path>
+  </svg>
+);
 
 export function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -36,6 +69,8 @@ export function ToolbarPlugin() {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [blockType, setBlockType] = useState<string>("paragraph");
+  const [isBlockTypeDropdownOpen, setIsBlockTypeDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -55,20 +90,15 @@ export function ToolbarPlugin() {
       } else if ($isParagraphNode(element)) {
         setBlockType("paragraph");
       } else if ($isListNode(element)) {
-        // Properly type check for ListNode before accessing getListType
         setBlockType(($isListNode(element) && element.getListType() === "bullet") ? "ul" : "ol");
       } else if ($isListItemNode(element)) {
-        // Check parent node if this is a list item
         const parent = element.getParent();
         if (parent && $isListNode(parent)) {
-          // Now we know it's a ListNode, we can safely access getListType
           setBlockType(parent.getListType() === "bullet" ? "ul" : "ol");
         } else {
-          // Default to paragraph if we can't determine
           setBlockType("paragraph");
         }
       } else {
-        // Default to paragraph for any other node type
         setBlockType("paragraph");
       }
     }
@@ -82,6 +112,20 @@ export function ToolbarPlugin() {
     });
   }, [editor, updateToolbar]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsBlockTypeDropdownOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
+
   const formatHeading = (headingSize: HeadingTagType) => {
     editor.update(() => {
       const selection = $getSelection();
@@ -89,6 +133,7 @@ export function ToolbarPlugin() {
         $wrapNodes(selection, () => $createHeadingNode(headingSize));
       }
     });
+    setIsBlockTypeDropdownOpen(false);
   };
 
   const formatParagraph = () => {
@@ -98,6 +143,7 @@ export function ToolbarPlugin() {
         $wrapNodes(selection, () => $createParagraphNode());
       }
     });
+    setIsBlockTypeDropdownOpen(false);
   };
 
   const formatBulletList = () => {
@@ -117,44 +163,131 @@ export function ToolbarPlugin() {
     });
   };
 
+  // Function to display the current block type in the dropdown button
+  const getCurrentBlockIcon = () => {
+    switch (blockType) {
+      case 'paragraph':
+        return <ParagraphIcon />;
+      case 'h1':
+        return <Heading1Icon />;
+      case 'h2':
+        return <Heading2Icon />;
+      case 'h3':
+        return <Heading3Icon />;
+      default:
+        return <ParagraphIcon />;
+    }
+  };
+
+  // Function to get the display name of the current block type
+  const getBlockTypeDisplayName = () => {
+    switch (blockType) {
+      case 'paragraph':
+        return 'Paragraph';
+      case 'h1':
+        return 'Heading 1';
+      case 'h2':
+        return 'Heading 2';
+      case 'h3':
+        return 'Heading 3';
+      default:
+        return 'Paragraph';
+    }
+  };
+
   return (
     <div className="toolbar flex items-center p-2 gap-1 border-b border-gray-300 flex-wrap">
       <button
-        className={`p-2 rounded hover:bg-gray-100 ${
-          blockType === "paragraph" ? "bg-gray-200" : ""
-        }`}
-        onClick={formatParagraph}
-        title="Paragraph"
+        className="p-2 rounded hover:bg-gray-100"
+        onClick={() => {
+          editor.dispatchCommand(UNDO_COMMAND, undefined);
+        }}
+        title="Undo"
       >
-        P
+        ↩
       </button>
       <button
-        className={`p-2 rounded hover:bg-gray-100 ${
-          blockType === "h1" ? "bg-gray-200" : ""
-        }`}
-        onClick={() => formatHeading("h1")}
-        title="Heading 1"
+        className="p-2 rounded hover:bg-gray-100"
+        onClick={() => {
+          editor.dispatchCommand(REDO_COMMAND, undefined);
+        }}
+        title="Redo"
       >
-        H1
+        ↪
       </button>
-      <button
-        className={`p-2 rounded hover:bg-gray-100 ${
-          blockType === "h2" ? "bg-gray-200" : ""
-        }`}
-        onClick={() => formatHeading("h2")}
-        title="Heading 2"
-      >
-        H2
-      </button>
-      <button
-        className={`p-2 rounded hover:bg-gray-100 ${
-          blockType === "h3" ? "bg-gray-200" : ""
-        }`}
-        onClick={() => formatHeading("h3")}
-        title="Heading 3"
-      >
-        H3
-      </button>
+      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+      
+      {/* Block Type Dropdown */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors w-40"
+          onClick={() => setIsBlockTypeDropdownOpen(!isBlockTypeDropdownOpen)}
+          title="Text Style"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium truncate">
+            {getCurrentBlockIcon()}
+            {getBlockTypeDisplayName()}
+          </span>
+          <svg 
+            className={`transition-transform duration-200 ${isBlockTypeDropdownOpen ? 'rotate-180' : ''}`}
+            xmlns="http://www.w3.org/2000/svg" 
+            width="10" 
+            height="6" 
+            viewBox="0 0 10 6" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <polyline points="1 1 5 5 9 1"></polyline>
+          </svg>
+        </button>
+        
+        {isBlockTypeDropdownOpen && (
+          <div className="absolute z-10 mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 overflow-hidden">
+            <button
+              className={`flex items-center gap-3 w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                blockType === "paragraph" ? "bg-gray-100 text-blue-600" : ""
+              }`}
+              onClick={formatParagraph}
+            >
+              <ParagraphIcon />
+              <span>Paragraph</span>
+            </button>
+            <button
+              className={`flex items-center gap-3 w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                blockType === "h1" ? "bg-gray-100 text-blue-600" : ""
+              }`}
+              onClick={() => formatHeading("h1")}
+            >
+              <Heading1Icon />
+              <span className="text-lg font-bold">Heading 1</span>
+            </button>
+            <button
+              className={`flex items-center gap-3 w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                blockType === "h2" ? "bg-gray-100 text-blue-600" : ""
+              }`}
+              onClick={() => formatHeading("h2")}
+            >
+              <Heading2Icon />
+              <span className="text-base font-bold">Heading 2</span>
+            </button>
+            <button
+              className={`flex items-center gap-3 w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                blockType === "h3" ? "bg-gray-100 text-blue-600" : ""
+              }`}
+              onClick={() => formatHeading("h3")}
+            >
+              <Heading3Icon />
+              <span className="text-sm font-bold">Heading 3</span>
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <div className="h-6 border-l border-gray-300 mx-1"></div>
+      <FontSizePlugin />
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
       <button
         className={`p-2 rounded hover:bg-gray-100 ${isBold ? "bg-gray-200" : ""}`}
@@ -212,25 +345,6 @@ export function ToolbarPlugin() {
         title="Quote"
       >
         "Quote"
-      </button>
-      <div className="w-px h-6 bg-gray-300 mx-1"></div>
-      <button
-        className="p-2 rounded hover:bg-gray-100"
-        onClick={() => {
-          editor.dispatchCommand(UNDO_COMMAND, undefined);
-        }}
-        title="Undo"
-      >
-        ↩
-      </button>
-      <button
-        className="p-2 rounded hover:bg-gray-100"
-        onClick={() => {
-          editor.dispatchCommand(REDO_COMMAND, undefined);
-        }}
-        title="Redo"
-      >
-        ↪
       </button>
     </div>
   );

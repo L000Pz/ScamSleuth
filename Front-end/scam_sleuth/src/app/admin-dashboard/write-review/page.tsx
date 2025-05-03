@@ -50,7 +50,7 @@ export default function WriteReviewPage() {
       if (result.success && result.data) {
         setScamTypes(result.data);
         if (result.data.length > 0) {
-          setForm(prev => ({ ...prev, scam_type_id: result.data[0].scam_type_id }));
+          setForm(prev => ({ ...prev, scam_type_id: result.data?.[0]?.scam_type_id ?? prev.scam_type_id }));
         }
       } else {
         setError(result.error || 'Failed to fetch scam types');
@@ -154,8 +154,12 @@ export default function WriteReviewPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    // If the event exists, prevent default behavior
+    if (e) {
+      e.preventDefault();
+    }
+    
     setIsSubmitting(true);
     setError(null);
 
@@ -216,15 +220,17 @@ export default function WriteReviewPage() {
             variant="ghost"
             onClick={() => router.push('/admin-dashboard/reviews')}
             className="p-2"
+            type="button"
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <h2 className="text-[40px] font-bold">Write a Review</h2>
         </div>
         <Button
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={isSubmitting}
           className="rounded-full px-6 font-bold bg-black hover:bg-gray-800"
+          type="button"
         >
           {isSubmitting ? (
             'Publishing...'
@@ -237,7 +243,8 @@ export default function WriteReviewPage() {
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Removed form element and onSubmit to prevent default form submission */}
+      <div className="space-y-6">
         <div className="bg-background rounded-xl p-6 shadow-md">
           <div className="space-y-4">
             <div>
@@ -349,7 +356,7 @@ export default function WriteReviewPage() {
             onChange={handleEditorChange}
           />
         </div>
-      </form>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">

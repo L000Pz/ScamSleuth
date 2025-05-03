@@ -1,5 +1,5 @@
 // src/components/LexicalEditor.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -20,6 +20,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { ToolbarPlugin } from './editor/ToolbarPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import FontSizePlugin from './editor/plugins/FontSizePlugin';
 
 interface LexicalEditorProps {
   initialContent?: string;
@@ -127,16 +128,15 @@ export default function LexicalEditor({
     <LexicalComposer initialConfig={editorConfig}>
       <div className="lexical-editor-container border border-gray-300 rounded-lg overflow-hidden">
         <ToolbarPlugin />
-        <div className="editor-inner" style={{ height: `${height}px`, overflow: 'auto' }}>
+        <div className="editor-inner relative" style={{ height: `${height}px`, overflow: 'auto' }}>
           <RichTextPlugin
             contentEditable={
               <ContentEditable
-                className="editor-input px-4 py-2 outline-none"
-                style={{ height: '100%', minHeight: '100%', resize: 'none' }}
+                className="editor-input px-4 py-2 outline-none h-full"
               />
             }
             placeholder={
-              <div className="editor-placeholder text-gray-400 px-4 py-2 absolute top-0 pointer-events-none">
+              <div className="editor-placeholder absolute top-[10px] left-[16px] text-gray-400 pointer-events-none">
                 {placeholder}
               </div>
             }
