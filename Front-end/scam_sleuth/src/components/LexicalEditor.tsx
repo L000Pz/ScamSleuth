@@ -20,14 +20,14 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { ToolbarPlugin } from './editor/ToolbarPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
-import FontSizePlugin from './editor/plugins/FontSizePlugin';
+
 
 interface LexicalEditorProps {
   initialContent?: string;
   onChange?: (editorState: EditorState, editor: any) => void;
   onBlur?: () => void;
   placeholder?: string;
-  height?: number;
+  height?: number|string;
 }
 
 // Create a plugin to import HTML into Lexical
@@ -102,6 +102,7 @@ export default function LexicalEditor({
         italic: 'italic',
         underline: 'underline',
         code: 'bg-gray-100 p-1 rounded font-mono text-sm',
+        color: 'color',
       },
       link: 'text-blue-500 underline',
     },
@@ -123,7 +124,7 @@ export default function LexicalEditor({
       console.error(error);
     },
   };
-
+  
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <div className="lexical-editor-container border border-gray-300 rounded-lg overflow-hidden">

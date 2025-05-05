@@ -3,16 +3,16 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, FileText, List, PenSquare } from 'lucide-react';
 import Script from 'next/script';
 import { config } from '@/app/config/env';
 import { logout } from './actions';
 import { useState, useEffect } from 'react';
 
 const navItems = [
-  { name: 'Scam Reports', href: '/admin-dashboard' },
-  { name: 'Reviews', href: '/admin-dashboard/reviews' },
-  { name: 'Write a Review', href: '/admin-dashboard/write-review' },
+  { name: 'Scam Reports', href: '/admin-dashboard', icon: <List className="w-5 h-5" /> },
+  { name: 'Reviews', href: '/admin-dashboard/reviews', icon: <FileText className="w-5 h-5" /> },
+  { name: 'Write a Review', href: '/admin-dashboard/write-review', icon: <PenSquare className="w-5 h-5" /> },
 ];
 
 export default function AdminLayout({
@@ -23,6 +23,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     router.refresh();
@@ -49,8 +50,8 @@ export default function AdminLayout({
         strategy="beforeInteractive"
         referrerPolicy="origin"
       />
-      <div className="flex items-center justify-center p-4 md:p-8 lg:p-[76px] min-h-screen">
-        <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1240px] lg:h-[610px]">
+      <div className="flex items-center justify-center p-2 md:p-4 lg:p-6 min-h-screen">
+        <div className="bg-cardWhite rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row w-full max-w-[1440px] h-[90vh]">
           {/* Mobile Menu Button */}
           <div className="lg:hidden p-4 flex justify-between items-center bg-black text-white">
             <h1 className="text-2xl font-bold">Admin Panel</h1>
@@ -72,31 +73,57 @@ export default function AdminLayout({
           <div className={`
             ${isMobileMenuOpen ? 'block' : 'hidden'}
             lg:block
-            w-full lg:w-80 
+            w-full lg:w-auto
             bg-black text-white 
             p-4 lg:p-6 
             flex flex-col
             flex-shrink-0
+            ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-96'}
+            transition-all duration-300
           `}>
-            <h1 className="hidden lg:block text-[32px] font-bold mb-8">Admin Panel</h1>
+            <div className="flex items-center justify-between mb-8">
+              <h1 className={`${isSidebarCollapsed ? 'hidden' : 'block'} text-2xl font-bold`}>
+                Admin Dashboard
+              </h1>
+              <button 
+                onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
+                className="hidden lg:flex text-white hover:bg-white/10 h-10 w-10 items-center justify-center rounded-full ml-auto"
+                aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {isSidebarCollapsed ? (
+                  <Menu className="h-6 w-6" />
+                ) : (
+                  <X className="h-6 w-6" />
+                )}
+              </button>
+            </div>
             
             {/* Navigation Links */}
-            <nav className="space-y-4 lg:space-y-6 mb-auto">
+            <nav className="space-y-6 mb-auto">
               {navItems.map((item) => (
                 <Link 
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block text-lg lg:text-xl transition-colors relative pl-4 py-2 ${
-                    pathname === item.href 
-                      ? 'text-red bg-white/10 rounded-lg' 
-                      : 'hover:text-red'
-                  }`}
+                  className={`flex items-center transition-colors relative py-3 px-4 rounded-lg
+                    ${pathname === item.href 
+                      ? 'text-red bg-white/10' 
+                      : 'hover:text-red hover:bg-white/5'
+                    } 
+                    ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
+                  title={isSidebarCollapsed ? item.name : ''}
                 >
-                  {pathname === item.href && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-red rounded-r"/>
+                  {pathname === item.href && !isSidebarCollapsed && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-red rounded-r"/>
                   )}
-                  {item.name}
+                  
+                  <span className={`${isSidebarCollapsed ? 'mr-0 text-xl' : 'mr-4 text-lg'}`}>
+                    {item.icon}
+                  </span>
+                  
+                  {!isSidebarCollapsed && (
+                    <span className="text-lg font-medium">{item.name}</span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -106,10 +133,10 @@ export default function AdminLayout({
               <Button 
                 variant="outline"
                 onClick={handleLogout}
-                className="w-full rounded-full font-bold"
+                className={`w-full rounded-full font-bold flex items-center justify-center ${isSidebarCollapsed ? 'p-3' : 'py-3 px-4'}`}
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                <LogOut className={isSidebarCollapsed ? "h-6 w-6" : "mr-3 h-5 w-5"} />
+                {isSidebarCollapsed ? '' : 'Logout'}
               </Button>
             </div>
           </div>
