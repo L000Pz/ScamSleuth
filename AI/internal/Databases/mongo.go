@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -53,7 +54,7 @@ func NewMongoDB(uri string) (*MongoDB, error) {
 	return &MongoDB{Client: client}, nil
 }
 
-func (db *MongoDB) SaveScreenshot(collectionName string, domain string, screenshot []byte) error {
+func (db *MongoDB) SaveScreenshot(collectionName string, domain string, screenshot []byte) (primitive.ObjectID, error) {
 
 	collection := db.Client.Database("scamsleuth").Collection(collectionName)
 	doc := map[string]interface{}{
@@ -62,7 +63,15 @@ func (db *MongoDB) SaveScreenshot(collectionName string, domain string, screensh
 		"createdAt":  time.Now(),
 	}
 
-	_, err := collection.InsertOne(context.Background(), doc)
-	return err
+	insertResult, err := collection.InsertOne(context.Background(), doc)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+
+	if oid, ok := insertResult.InsertedID.(primitive.ObjectID); ok {
+		return oid, nil
+	}
+
+	return primitive.NilObjectID, fmt.Errorf("could not convert inserted Id to Object Id ")
 
 }

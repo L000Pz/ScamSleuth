@@ -121,6 +121,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - mongodb_container
+      - postgres_container
     networks:
       - scamsleuth-network
 

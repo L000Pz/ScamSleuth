@@ -5,12 +5,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter() *mux.Router {
+func NewRouter(aiHandler *handlers.AIHandler) *mux.Router {
 
 	r := mux.NewRouter()
 
 	// All the endpoints are handled here
-	r.HandleFunc("/scan/{url}", handlers.Scan).Methods("GET")
+	r.HandleFunc("/scan/{url}", aiHandler.Scan).Methods("GET")
 	r.HandleFunc("/whois/{url}", handlers.GetWhoisData).Methods("GET")
 
 	return r

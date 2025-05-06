@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	aiHandlers "github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/handlers"
 	aiRouter "github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/router"
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Databases"
 	scraperHandler "github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/handlers"
@@ -20,13 +21,23 @@ func main() {
 	}
 
 	defer mongoDB.Client.Disconnect(context.Background())
+
+	// initializying postgresql
+	connStr := "postgresql://postgres:admin@postgres_container:5432/ScamSleuth_db?sslmode=disable"
+
+	postgresDB, err := Databases.NewPostgreSQL(connStr)
+	if err != nil {
+		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
+	}
+	defer postgresDB.DB.Close()
 	// Initializing handler with MongoDB
 	screenshotHandler := scraperHandler.NewScreenShotHandler(mongoDB)
+	aiHandler := aiHandlers.NewAIhandler(postgresDB)
 
 	//r := router.NewRouter()
 	r := mux.NewRouter()
 
-	aiRouter := aiRouter.NewRouter()
+	aiRouter := aiRouter.NewRouter(aiHandler)
 	r.PathPrefix("/ai").Handler(http.StripPrefix("/ai", aiRouter))
 
 	scraperRouter := scraperRouter.NewRouter(screenshotHandler)

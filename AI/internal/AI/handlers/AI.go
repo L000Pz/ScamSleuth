@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ArminEbrahimpour/scamSleuthAI/internal/AI/models"
+	"github.com/ArminEbrahimpour/scamSleuthAI/internal/Databases"
 	whoisparser "github.com/likexian/whois-parser"
 
 	//scraperModels "github.com/ArminEbrahimpour/scamSleuthAI/internal/Scraper/models"
@@ -20,6 +21,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
+
+type AIHandler struct {
+	PostgreSQL *Databases.PostgreSQL
+}
+
+func NewAIhandler(PostgreSQL *Databases.PostgreSQL) *AIHandler {
+
+	return &AIHandler{PostgreSQL: PostgreSQL}
+
+}
 
 func extractMainDomain(rawURL string) (string, error) {
 	// Parse the URL
@@ -177,7 +188,7 @@ func convertTojson(AI_response string) ([]byte, string) {
 	jsonResult := []byte(result)
 	return jsonResult, result
 }
-func Scan(w http.ResponseWriter, r *http.Request) {
+func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 
 	var response models.CompletionResponse
 	vars := mux.Vars(r)
@@ -206,5 +217,10 @@ func Scan(w http.ResponseWriter, r *http.Request) {
 	// 	log.Printf("sending the json to front end went wrong : %s, \n", err)
 	// }
 	// save the json response into database
+	_, err := h.PostgreSQL.SaveAIResponse("url_storage", urlterm, jsonFraudDetectorResponseAI)
+	if err != nil {
+		log.Printf("Failed to save the AI response : %v", err)
+		return
+	}
 
 }

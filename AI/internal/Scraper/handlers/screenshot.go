@@ -70,7 +70,8 @@ func (h *ScreenshotHandler) ScreenShotHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	fmt.Println(buf)
-	if err := h.MongoDB.SaveScreenshot("screenshots", requestBody.Domain, buf); err != nil {
+	oid, err := h.MongoDB.SaveScreenshot("screenshots", requestBody.Domain, buf)
+	if err != nil {
 		log.Printf("Failed to save screenshot: %v", err)
 		return
 	}
@@ -79,6 +80,7 @@ func (h *ScreenshotHandler) ScreenShotHandler(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "Screenshot saved successfully",
+		"id":      oid.Hex(),
 	})
 
 }
