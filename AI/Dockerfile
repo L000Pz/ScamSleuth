@@ -18,6 +18,10 @@ WORKDIR /myapp
 # Copy the binary with verification
 COPY --from=builder /app/scamsleuth-ai /myapp/scamsleuth-ai
 
+# copy the .env file 
+COPY cmd/.env /myapp/.env
+
+
 # # Add debugging tools and dependencies
 # RUN apk --no-cache add \
 #     ca-certificates \
