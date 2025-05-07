@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson.Serialization;
 using Public.Application.Common;
 using Public.Domain;
 
@@ -7,10 +8,12 @@ namespace Public.Infrastructure.PublicRepository;
 public class PublicRepository : IPublicRepository
 {
     private readonly PostgreSqlContext _context;
+    private readonly MongoContext _mongoContext;
 
-    public PublicRepository(PostgreSqlContext context)
+    public PublicRepository(PostgreSqlContext context, MongoContext mongoContext)
     {
         _context = context;
+        _mongoContext = mongoContext;
     }
 
     public async Task<List<Review>?> GetAllReviews()
@@ -54,24 +57,17 @@ public class PublicRepository : IPublicRepository
     }
     public async Task<Review_Content?> GetReviewContent(int review_content_id)
     {
-        var content = await _context.review_content
-            .FirstOrDefaultAsync(c => c.review_content_id == review_content_id);
-        return content;
+        var bsonContent = await _mongoContext.GetDoc(review_content_id);
+        if (bsonContent == null)
+            return null;
+        
+        
+        bsonContent.Remove("_id");
+
+        var reviewContent = BsonSerializer.Deserialize<Review_Content>(bsonContent);
+        return reviewContent;
     }
-   
-    public async Task<Admin_Review?> GetReviewWriter(int review_id)
-    {
-        var writer = await _context.admin_review
-            .FirstOrDefaultAsync(c => c.review_id == review_id);
-        return writer;
-    }
-    public async Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_content_id)
-    {
-        var media = await _context.review_content_media
-            .Where(m => m.review_content_id == review_content_id)
-            .ToListAsync();
-        return media;
-    }
+    
 
     public async Task<Scam_Type?> GetScamTypeById(int scam_type_id)
     {

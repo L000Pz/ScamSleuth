@@ -19,7 +19,6 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddApplication().AddInfrastructure();
-builder.Services.AddDbContext<PostgreSqlContext>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

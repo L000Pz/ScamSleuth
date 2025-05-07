@@ -2,10 +2,10 @@ import os
 import subprocess
 import time
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
-from models import Base
-
+from sqlalchemy.orm import sessionmaker
+from models import Base, ScamType
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -84,11 +84,48 @@ def generate_and_apply_migration():
     subprocess.run(["alembic", "upgrade", "head"], check=True)
 
 
+def seed_scam_types(engine):
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    if session.query(ScamType).count() == 0:
+        print("🌱 Seeding scam types...")
+
+        # List of scam types to insert
+        scam_types = [
+            "Phishing",
+            "Investment Fraud",
+            "Romance",
+            "Tech Support",
+            "Lottery",
+            "Employment",
+            "Advance Fee",
+            "Identity Theft",
+            "Cryptocurrency",
+            "Business Email Compromise"
+        ]
+
+        for i, scam_name in enumerate(scam_types, 1):
+            scam_type = ScamType(scam_type_id=i, scam_type=scam_name)
+            session.add(scam_type)
+
+        session.commit()
+        print(f"✅ Added {len(scam_types)} scam types to the database")
+    else:
+        print("👍 Scam types already exist - skipping seed")
+
+    session.close()
+
+
 def init_db():
     print("🔌 Connecting to database...")
     create_database_if_missing()
     engine = create_engine(DATABASE_URL)
-    Base.metadata.create_all(engine)  # In case some tables are brand new
+    Base.metadata.create_all(engine)
+
+    seed_scam_types(engine)
+
     ensure_alembic_config()
     generate_and_apply_migration()
     print("✅ Database is synced with ORM models.")

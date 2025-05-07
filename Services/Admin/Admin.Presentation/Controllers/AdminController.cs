@@ -134,26 +134,7 @@ public class AdminController: ControllerBase
             Console.WriteLine(e);
             return BadRequest("Failed to verify scam type!");
         }
-    
-        // Validate media
-        try 
-        { 
-            foreach (var media_id in reviewCreation.media)
-            {
-                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
         
-                // If any media ID fails verification, return a bad request
-                if (!mediaResponse.IsSuccessStatusCode)
-                {
-                    return BadRequest($"Failed to verify media!");
-                }
-            }
-        }
-        catch (Exception e) 
-        { 
-            Console.WriteLine(e);
-            return BadRequest("Failed to verify media!");
-        }
 
         string result = await _createReview.Handle(reviewCreation, token);
         if (result == "report")

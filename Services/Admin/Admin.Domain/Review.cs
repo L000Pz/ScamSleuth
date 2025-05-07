@@ -17,11 +17,12 @@ public class Review
     public int review_content_id { get; set; }
 
     
-    public static Review Create(string title, int scam_type_id, DateTime review_date, int review_content_id)
+    public static Review Create(string title,int writer_id, int scam_type_id, DateTime review_date, int review_content_id)
     {
         return new Review
         {
             title = title,
+            writer_id = writer_id,
             scam_type_id = scam_type_id,
             review_date = review_date,
             review_content_id = review_content_id

@@ -24,18 +24,10 @@ public class ReturnReviewById : IReturnReviewById
         {
             return null;
         }
-        var writer = await _publicRepository.GetReviewWriter(review.review_id);
-        if (writer is null)
-        {
-            return null;
-        }
-        var media = await _publicRepository.GetReviewContentMedia(review.review_content_id);
         return new ReviewDetails
         {
             Review = review,
-            Content = content,
-            Admin_Review = writer,
-            Media = media
+            Content = content.review_content,
         };
     }
 }

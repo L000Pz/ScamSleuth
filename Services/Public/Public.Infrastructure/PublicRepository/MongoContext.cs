@@ -1,14 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Public.Domain;
 
-namespace Admin.Infrastructure.AdminRepository;
+namespace Public.Infrastructure.PublicRepository;
 
 public class MongoContext : DbContext
 {
     private static MongoClient client = new MongoClient("mongodb://admin:admin@mongodb_container:27017");
     private static IMongoDatabase database = client.GetDatabase("ScamSleuth_db");
     private static IMongoCollection<BsonDocument> collection = database.GetCollection<BsonDocument>("Review_Content");
+    
 
     public async Task Insert(BsonDocument doc)
     {
@@ -19,8 +21,8 @@ public class MongoContext : DbContext
     {
         BsonDocument document = new BsonDocument
         {
-            {"review_content_id",reviewContent.review_content_id},
-            {"review_content",reviewContent.review_content},
+            {"_id",reviewContent.review_content_id},
+            {"content",reviewContent.review_content},
         };
         return document;
     }
@@ -40,7 +42,7 @@ public class MongoContext : DbContext
     
     public async Task<String?> Delete(int id)
     {
-        var delete = Builders<BsonDocument>.Filter.Eq("review_content_id", id);
+        var delete = Builders<BsonDocument>.Filter.Eq("_id", id);
         BsonDocument doc = collection.Find(delete).FirstOrDefault().ToBsonDocument();
         if (doc is null)
         {

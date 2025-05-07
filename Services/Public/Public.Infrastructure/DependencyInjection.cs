@@ -10,6 +10,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IPublicRepository, PublicRepository.PublicRepository>();
         services.AddDbContext<PostgreSqlContext>();
+        services.AddDbContext<MongoContext>();
         return services;
     }
 }

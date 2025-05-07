@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using Moq;
 using Public.Application.PublicManagement;
 using Public.Domain;
 using Public.Presentation.Controllers;
-using Xunit;
 
 namespace Public.Tests
 {
@@ -61,19 +61,7 @@ namespace Public.Tests
                     review_content_id = id,
                     review_content = $"Test Content {id}"
                 },
-                Admin_Review = new Admin_Review
-                {
-                    admin_id = id,
-                    review_id = id
-                },
-                Media = new List<Review_Content_Media>
-                {
-                    new Review_Content_Media
-                    {
-                        review_content_id = id,
-                        media_id = id
-                    }
-                }
+                
             };
         }
 
@@ -219,9 +207,6 @@ namespace Public.Tests
             var okResult = Assert.IsType<OkObjectResult>(result);
             var returnedReview = Assert.IsType<ReviewDetails>(okResult.Value);
             Assert.Equal(1, returnedReview.Review.review_id);
-            Assert.Equal(1, returnedReview.Content.review_content_id);
-            Assert.Equal(1, returnedReview.Admin_Review.review_id);
-            Assert.Single(returnedReview.Media);
         }
 
         [Fact]

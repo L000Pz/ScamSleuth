@@ -14,22 +14,23 @@ public class CreateReview:ICreateReview
     }
     public async Task<string> Handle(ReviewCreation reviewCreation, string token)
     {
-        Review_Content content = Review_Content.Create(reviewCreation.content);
+        int max = await _adminRepository.GetLastContentId();
+        Review_Content content = Review_Content.Create(max,reviewCreation.content);
         Review_Content? reviewContent = await _adminRepository.SubmitReviewContent(content);
         if (reviewContent is null)
         {
             return "content";
         }
-        Review review = Review.Create(reviewCreation.title,reviewCreation.scam_type_id,reviewCreation.review_date,reviewContent.review_content_id);
-        Review? newReview=  await _adminRepository.SubmitReview(review);
-        if (newReview is null)
-        {
-            return "review";
-        }
         Admins? writer = await _adminRepository.GetAdminByEmail(token);
         if (writer is null)
         {
             return "writer";
+        }
+        Review review = Review.Create(reviewCreation.title,writer.admin_id,reviewCreation.scam_type_id,reviewCreation.review_date,reviewContent.review_content_id);
+        Review? newReview=  await _adminRepository.SubmitReview(review);
+        if (newReview is null)
+        {
+            return "review";
         }
         return "ok";
     }

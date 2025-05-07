@@ -141,8 +141,8 @@ namespace Admin.Tests
 
             var reviews = new List<Review>
             {
-                Review.Create("Test Review 1", 1, testDate, 1),
-                Review.Create("Test Review 2", 2, testDate, 2)
+                Review.Create("Test Review 1", 1,1, testDate, 1),
+                Review.Create("Test Review 2", 1,2, testDate, 2)
             };
 
             _mockGetAdminReviews.Setup(x => x.Handle("admin@example.com"))

@@ -53,7 +53,6 @@ public class AdminRepository : IAdminRepository
             {
                 max = VARIABLE[0].AsInt32;
             }
-
         }
 
         return max + 1;
@@ -80,15 +79,15 @@ public class AdminRepository : IAdminRepository
     }
     public async Task<List<Review>> GetAdminReviews(int writer_id)
     {
-        return _context.admins
-            .Join(
-                _context.review,
-                x => x.admin_id,
-                r => r.review_id,
-                (x, r) => r
-            )            
-            .Where(x => x.writer_id == writer_id)
-            .ToList();
+        return await _context.review
+            .Join( 
+                _context.admins,
+                review => review.writer_id,
+                admin => admin.admin_id,
+                (review, admin) => review
+            )
+            .Where(review => review.writer_id == writer_id)
+            .ToListAsync();
     }
     public async Task<Review?> GetReviewById(int review_id)
     {
