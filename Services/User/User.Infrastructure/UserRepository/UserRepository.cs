@@ -50,29 +50,18 @@ public class UserRepository:IUserRepository
         await _context.SaveChangesAsync();
         return report_media_list;
     }
-    public async Task<User_Report?> SubmitUserReport(User_Report user_report)
+
+    public async Task<List<Report>> GetUserReports(int writer_id)
     {
-        _context.user_report.Add(user_report);
-        await _context.SaveChangesAsync();
-        return user_report;
-    }
-    public async Task<List<Report>> GetUserReports(string email)
-    {
-        return _context.user_report
-            .Join(
+        return await _context.report
+            .Join( 
                 _context.users,
-                ur => ur.user_id,
-                u => u.user_id,
-                (ur, u) => new { UserReport = ur, User = u }
+                report => report.writer_id,
+                users => users.user_id,
+                (review, admin) => review
             )
-            .Where(x => x.User.email == email)
-            .Join(
-                _context.report,
-                x => x.UserReport.report_id,
-                r => r.report_id,
-                (x, r) => r
-            )
-            .ToList();
+            .Where(report => report.writer_id == writer_id)
+            .ToListAsync();
     }
     public async Task<bool> DeleteReport(int report_id)
     {
@@ -88,14 +77,6 @@ public class UserRepository:IUserRepository
                 if (mediaAssociations.Any())
                 {
                     _context.report_media.RemoveRange(mediaAssociations);
-                }
-
-                var userReports = await _context.user_report
-                    .Where(ur => ur.report_id == report_id)
-                    .ToListAsync();
-                if (userReports.Any())
-                {
-                    _context.user_report.RemoveRange(userReports);
                 }
 
                 var report = await _context.report
@@ -145,10 +126,5 @@ public class UserRepository:IUserRepository
             .ToListAsync();
         return media;
     }
-    public async Task<User_Report?> GetReportWriter(int report_id)
-    {
-        var writer = await _context.user_report
-            .FirstOrDefaultAsync(c => c.report_id == report_id);
-        return writer;
-    }
+ 
 }

@@ -14,7 +14,12 @@ public class SubmitReport : ISubmitReport
     }
     public async Task<string> Handle(ReportSubmission reportSubmission, string token)
     {
-        Report report = Report.Create(reportSubmission.title, reportSubmission.scam_type_id, reportSubmission.scam_date,
+        Users? writer = await _userRepository.GetUserByEmail(token);
+             if (writer is null)
+             {
+                 return "writer";
+             }
+        Report report = Report.Create(reportSubmission.title, writer.user_id,reportSubmission.scam_type_id, reportSubmission.scam_date,
             reportSubmission.financial_loss, reportSubmission.description);
         Report? newReport=  await _userRepository.SubmitReport(report);
         if (newReport is null)
@@ -23,14 +28,7 @@ public class SubmitReport : ISubmitReport
         }
         List<Report_Media> reportMedia = Report_Media.Create(newReport.report_id, reportSubmission.media);
         await _userRepository.SubmitReportMedia(reportMedia);
-        Users? writer = await _userRepository.GetUserByEmail(token);
-        if (writer is null)
-        {
-            return "writer";
-        }
-
-        User_Report userReport = User_Report.Create(writer.user_id, newReport.report_id);
-        await _userRepository.SubmitUserReport(userReport);
+        
         return "ok";
     }
 }

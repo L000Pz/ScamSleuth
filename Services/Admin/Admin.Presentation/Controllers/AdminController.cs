@@ -99,7 +99,7 @@ public class AdminController: ControllerBase
     }
     
     
-    [HttpPost("SubmitReport")]
+    [HttpPost("WriteReview")]
     [Authorize]
     public async Task<ActionResult> CreateReview([FromBody] ReviewCreation reviewCreation)
     {

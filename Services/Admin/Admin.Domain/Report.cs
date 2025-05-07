@@ -9,6 +9,8 @@ public class Report
     [Required]
     public string title { get; set; }
     [Required]
+    public int writer_id { get; set; }
+    [Required]
     public int scam_type_id { get; set; }
     [Required]
     public DateTime scam_date { get; set; }

@@ -222,8 +222,7 @@ namespace Admin.Tests
                 content: "Test content",
                 title: "Test Review",
                 scam_type_id: 1,
-                review_date: testDate,
-                media: new List<int> { 1, 2 }
+                review_date: testDate
             );
 
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
@@ -255,8 +254,7 @@ namespace Admin.Tests
                 content: "Test content",
                 title: "Test Review",
                 scam_type_id: 999,
-                review_date: testDate,
-                media: new List<int> { 1 }
+                review_date: testDate
             );
 
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
@@ -282,9 +280,8 @@ namespace Admin.Tests
                 content: "Test content",
                 title: "Test Review",
                 scam_type_id: 1,
-                review_date: testDate,
-                media: new List<int> { 999 }
-            );
+                review_date: testDate
+                );
 
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "admin@example.com", "Check Token");

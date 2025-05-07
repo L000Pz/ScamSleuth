@@ -19,6 +19,6 @@ public class GetUserReports : IGetUserReports
         {
             return null;
         }
-        return await _userRepository.GetUserReports(user.email);
+        return await _userRepository.GetUserReports(user.user_id);
     }
 }
