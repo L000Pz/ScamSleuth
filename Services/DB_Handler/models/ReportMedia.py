@@ -7,6 +7,5 @@ class ReportMedia(Base):
     __tablename__ = 'report_media'
 
     report_id = Column(Integer, ForeignKey("report.report_id"), primary_key=True)
-    media_id = Column(Integer, primary_key=True)  # No FK to media
+    media_id = Column(Integer, primary_key=True)
 
-    report = relationship("Report", back_populates="report_media")

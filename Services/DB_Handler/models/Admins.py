@@ -12,7 +12,6 @@ class Admins(Base):
     name = Column(String(50), nullable=False)
     contact_info = Column(String(255), nullable=False)
     bio = Column(String(255))
-    profile_picture_id = Column(Integer)  # no FK to media
+    profile_picture_id = Column(Integer)
     password = Column(String, nullable=False)
 
-    admin_reviews = relationship("AdminReview", back_populates="admin")

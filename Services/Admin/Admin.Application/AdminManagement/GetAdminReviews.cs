@@ -19,6 +19,6 @@ public class GetAdminReviews:IGetAdminReviews
         {
             return null;
         }
-        return await _adminRepository.GetAdminReviews(admin.email);
+        return await _adminRepository.GetAdminReviews(admin.admin_id);
     }
 }

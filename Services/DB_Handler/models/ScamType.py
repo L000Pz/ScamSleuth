@@ -9,5 +9,4 @@ class ScamType(Base):
     scam_type_id = Column(Integer, primary_key=True, nullable=False)
     scam_type = Column(String(50), unique=True, nullable=False)
 
-    reports = relationship("Report", back_populates="scam_type")
-    reviews = relationship("Review", back_populates="scam_type")
+

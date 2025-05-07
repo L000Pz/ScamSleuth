@@ -8,11 +8,9 @@ class Report(Base):
 
     report_id = Column(Integer, primary_key=True, nullable=False)
     title = Column(String(50), nullable=False)
+    writer_id = Column(Integer, ForeignKey("users.user_id"))
     scam_type_id = Column(Integer, ForeignKey("scam_type.scam_type_id"))
     scam_date = Column(Date, nullable=False)
     financial_loss = Column(Numeric, nullable=False)
     description = Column(String(255), nullable=False)
 
-    scam_type = relationship("ScamType", back_populates="reports")
-    report_media = relationship("ReportMedia", back_populates="report")
-    user_reports = relationship("UserReport", back_populates="report")

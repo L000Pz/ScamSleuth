@@ -9,4 +9,3 @@ class ReviewBanner(Base):
     review_id = Column(Integer, ForeignKey("review.review_id"), primary_key=True)
     media_id = Column(Integer, primary_key=True)  # No FK to media
 
-    review = relationship("Review", back_populates="banners")

@@ -89,19 +89,10 @@ public class AdminController: ControllerBase
         }
 
         // Delete the review and get media IDs
-        var (status, mediaIds) = await _deleteReview.Handle(reviewId, token);
+        string status = await _deleteReview.Handle(reviewId, token);
         if (status != "ok")
         {
-            return BadRequest($"Failed to delete review!");
-        }
-
-        // Publish messages to delete associated media
-        if (mediaIds != null && mediaIds.Any())
-        {
-            foreach (var mediaId in mediaIds)
-            {
-                _messagePublisher.PublishMediaDeletion(mediaId);
-            }
+            return BadRequest("Failed to delete review!");
         }
 
         return Ok("Review deleted successfully.");

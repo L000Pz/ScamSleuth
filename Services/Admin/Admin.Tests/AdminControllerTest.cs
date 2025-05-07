@@ -185,7 +185,7 @@ namespace Admin.Tests
 
             var mediaIds = new List<int> { 1, 2 };
             _mockDeleteReview.Setup(x => x.Handle(1, "admin@example.com"))
-                .ReturnsAsync(("ok", mediaIds));
+                .ReturnsAsync("ok");
 
             // Act
             var result = await _controller.DeleteReview(1);

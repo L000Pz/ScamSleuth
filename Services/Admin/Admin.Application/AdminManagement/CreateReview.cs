@@ -26,15 +26,11 @@ public class CreateReview:ICreateReview
         {
             return "review";
         }
-        List<Review_Content_Media> reviewMedia = Review_Content_Media.Create(newReview.review_content_id, reviewCreation.media);
-        await _adminRepository.SubmitReviewMedia(reviewMedia);
         Admins? writer = await _adminRepository.GetAdminByEmail(token);
         if (writer is null)
         {
             return "writer";
         }
-        Admin_Review userReport = Admin_Review.Create( writer.admin_id, newReview.review_id);
-        await _adminRepository.SubmitAdminReview(userReport);
         return "ok";
     }
 }

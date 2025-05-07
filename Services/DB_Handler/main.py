@@ -5,8 +5,7 @@ import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from models import Base
-from alembic.config import Config
-from alembic import command
+
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -97,4 +96,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-    time.sleep(5)  # Optional: Let logs print before container exits
+    time.sleep(5)

@@ -14,5 +14,4 @@ class Users(Base):
     password = Column(String, nullable=False)
     is_verified = Column(Boolean)
 
-    comments = relationship("ReviewComment", back_populates="writer")
-    user_reports = relationship("UserReport", back_populates="user")
+
