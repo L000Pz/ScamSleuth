@@ -14,7 +14,7 @@ public class InMemoryRepository : IInMemoryRepository
         public async Task Add(string key,String code)
         {
             await _db.Set(key,code);
-            Console.WriteLine("New code: '" + code + "' generated for sign up.");
+            Console.WriteLine("📳  New code: '" + code + "' generated for sign up.");
         }
 
         public async Task<String?> Get(string key)
