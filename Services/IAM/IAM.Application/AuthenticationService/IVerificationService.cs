@@ -5,5 +5,5 @@ namespace IAM.Application.AuthenticationService;
 
 public interface IVerificationService
 {
-    Task<AuthenticationResult> Handle(VerificationDetails verificationDetails);
+    Task<String> Handle(VerificationDetails verificationDetails);
 }

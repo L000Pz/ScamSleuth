@@ -26,13 +26,13 @@ public class RegisterService : IRegisterService
     {
         if (!Regex.IsMatch(registerDetails.email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
         {
-            return new AuthenticationResult(null, "emailFormat");
+            return new AuthenticationResult(null,null,null,null,null,false, "emailFormat",null);
         }
 
         // Validate password length
         if (registerDetails.password.Length < 6)
         {
-            return new AuthenticationResult(null, "passwordFormat");
+            return new AuthenticationResult(null,null,null,null,null,false, "passwordFormat",null);
         }
 
 
@@ -41,14 +41,14 @@ public class RegisterService : IRegisterService
         {
             if (await _userRepository.GetAdminByUsername(registerDetails.username) is not null)
             {
-                return new AuthenticationResult(null, "username");
+                return new AuthenticationResult(null,null,null,null,null,false, "username",null);
             }
         }
         if (await _userRepository.GetUserByEmail(registerDetails.email) is not null)
         {
             if (await _userRepository.GetAdminByEmail(registerDetails.email) is not null)
             {
-                return new AuthenticationResult(null, "email");
+                return new AuthenticationResult(null,null,null,null,null,false, "username",null);
             }        
         }
         String code = _codeGenerator.GenerateCode();
@@ -56,7 +56,7 @@ public class RegisterService : IRegisterService
         var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
         _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
-        return new AuthenticationResult(user, token);
+        return new AuthenticationResult(user.user_id,user.username,user.email,user.name,null,user.is_verified, token,"user");
     }
 
     

@@ -29,12 +29,12 @@ public class LoginService : ILoginService
         // Verify password
         if (!existingUser.password.Equals(_hasher.Hash(loginDetails.password)))
         {
-            return new AuthenticationResult(null, "incorrect");
+            return new AuthenticationResult(null,null,null,null,null,false,"incorrect", null);
         }
 
         // Generate token
         string token = _jwtTokenGenerator.GenerateToken(existingUser);
-        return new AuthenticationResult(existingUser, token);
+        return new AuthenticationResult(existingUser.user_id,existingUser.username,existingUser.email,existingUser.name,existingUser.profile_picture_id,existingUser.is_verified, token,"user");
     }
     
     public async Task<AdminAuthenticationResult?> HandleAdmin(LoginDetails loginDetails)
@@ -49,11 +49,11 @@ public class LoginService : ILoginService
         // Verify password
         if (!existingAdmin.password.Equals(_hasher.Hash(loginDetails.password)))
         {
-            return new AdminAuthenticationResult(null, "incorrect");
+            return new AdminAuthenticationResult(null,null,null,null,null,null,null,"incorrect", null);
         }
 
         // Generate token
         string token = _jwtTokenGenerator.GenerateToken(existingAdmin);
-        return new AdminAuthenticationResult(existingAdmin, token);
+        return new AdminAuthenticationResult(existingAdmin.admin_id,existingAdmin.username,existingAdmin.email,existingAdmin.name,existingAdmin.contact_info,existingAdmin.bio,existingAdmin.profile_picture_id, token,"admin");
     }
 }

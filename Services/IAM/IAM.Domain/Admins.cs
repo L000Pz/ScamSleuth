@@ -14,6 +14,8 @@ public class Admins
     public string name { get; set; }
     [Required]
     public string contact_info { get; set; }
+    public string bio { get; set; }
+    public int profile_picture_id { get; set; }
     [Required]
     public string password { get; set; }
     

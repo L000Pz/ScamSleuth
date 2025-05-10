@@ -18,30 +18,30 @@ public class VerificationService : IVerificationService
         _userRepository = userRepository;
     }
 
-    public async Task<AuthenticationResult> Handle(VerificationDetails verificationDetails)
+    public async Task<String> Handle(VerificationDetails verificationDetails)
     {
         String? email = _jwtGenerator.GetEmail(verificationDetails.token);
         if (email is null)
         {
-            return new AuthenticationResult(null,"invalidToken");
+            return "invalidToken";
         }
         Users? user = await _userRepository.GetUserByEmail(email);
         if (user is null)
         {
-            return new AuthenticationResult(null, "invalidUser");
+            return "invalidUser";
         }
         String? result = await _inMemoryRepository.Get(user.email.ToString());
         if (result is null)
         {
-            return new AuthenticationResult(null,"codeExpired");
+            return "codeExpired";
         }
         if (!result.Equals(verificationDetails.code))
         {
-            return new AuthenticationResult(null, "invalidCode");
+            return"invalidCode";
         }
         // veify user
         user.verify();
         await _userRepository.Update(user);
-        return new AuthenticationResult(null,"ok");
+        return "ok";
     }
 }

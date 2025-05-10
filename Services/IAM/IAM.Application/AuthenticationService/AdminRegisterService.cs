@@ -23,13 +23,13 @@ public class AdminRegisterService : IAdminRegisterService
     {
         if (!Regex.IsMatch(adminRegisterDetails.email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
         {
-            return new AdminAuthenticationResult(null, "emailFormat");
+            return new AdminAuthenticationResult(null,null,null,null,null,null,null, "emailFormat",null);
         }
 
         // Validate password length
         if (adminRegisterDetails.password.Length < 6)
         {
-            return new AdminAuthenticationResult(null, "passwordFormat");
+            return new AdminAuthenticationResult(null,null,null,null,null,null,null, "passwordFormat",null);
         }
 
 
@@ -38,20 +38,20 @@ public class AdminRegisterService : IAdminRegisterService
         {
             if (await _userRepository.GetUserByUsername(adminRegisterDetails.username) is not null)
             {
-                return new AdminAuthenticationResult(null, "username");
+                return new AdminAuthenticationResult(null,null,null,null,null,null,null, "username",null);
             }
         }
         if (await _userRepository.GetAdminByEmail(adminRegisterDetails.email) is not null)
         {
             if (await _userRepository.GetUserByEmail(adminRegisterDetails.email) is not null)
             {
-                return new AdminAuthenticationResult(null, "email");
+                return new AdminAuthenticationResult(null,null,null,null,null,null,null, "username",null);
             }        
         }
 
         var admin = Admins.Create(adminRegisterDetails.username, adminRegisterDetails.name, adminRegisterDetails.email,adminRegisterDetails.contact_info, _hasher.Hash(adminRegisterDetails.password));
         _userRepository.AddAdmin(admin);
         String token = _jwtGenerator.GenerateToken(admin);
-        return new AdminAuthenticationResult(admin, token);
+        return new AdminAuthenticationResult(admin.admin_id,admin.username,admin.email,admin.name,admin.contact_info,admin.bio,admin.profile_picture_id, token,"admin");
     }
 }
