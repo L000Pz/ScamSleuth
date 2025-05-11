@@ -21,6 +21,14 @@ public class PostgreSqlContext : DbContext
         modelBuilder.Entity<Admins>()
             .Property(a => a.bio)
             .IsRequired(false);
+        modelBuilder.Entity<Admins>()
+            .Property(a => a.profile_picture_id)
+            .IsRequired(false);
+        modelBuilder.Entity<Users>()
+            .HasKey(u => new { u.user_id });
+        modelBuilder.Entity<Users>()
+            .Property(u => u.profile_picture_id)
+            .IsRequired(false);
         
         base.OnModelCreating(modelBuilder);
     }
