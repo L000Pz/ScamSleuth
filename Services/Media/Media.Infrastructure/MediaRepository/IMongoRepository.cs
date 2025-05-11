@@ -11,4 +11,6 @@ public interface IMongoRepository
     Task<BsonDocument> GetDoc(int id);
     Task<String?> DeleteAll(String email);
     Task<String?> Delete(int id);
+    Task SeedDefaultProfilePictures();
+
 }

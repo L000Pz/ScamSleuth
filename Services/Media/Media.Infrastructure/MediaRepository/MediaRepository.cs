@@ -55,10 +55,10 @@ public class MediaRepository : IMediaRepository
     public async Task<MediaFile> CreateMedia(BsonDocument file)
     {
         MediaFile mediaFile = new MediaFile();
-        mediaFile.name = file[2].ToString();
-        mediaFile.file_name = file[3].ToString();
-        mediaFile.content_type = file[4].ToString();
-        Byte[] stream = file[5].AsByteArray;
+        mediaFile.name = file[1].ToString();
+        mediaFile.file_name = file[2].ToString();
+        mediaFile.content_type = file[3].ToString();
+        Byte[] stream = file[4].AsByteArray;
         mediaFile.Content = new MemoryStream(stream);
         return mediaFile;
     }

@@ -56,7 +56,7 @@ public class RegisterService : IRegisterService
         var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
         _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
-        return new AuthenticationResult(user.user_id,user.username,user.email,user.name,null,user.is_verified, token,"user");
+        return new AuthenticationResult(user.user_id,user.username,user.email,user.name,user.profile_picture_id,user.is_verified, token,"user");
     }
 
     

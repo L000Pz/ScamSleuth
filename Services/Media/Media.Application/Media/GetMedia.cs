@@ -15,15 +15,12 @@ public class GetMedia : IGetMedia
 
     public async Task<MediaFile?> GetFile(int id)
     {
-        // get the desired document
         BsonDocument? file = await _mediaRepository.GetDoc(id);
         if (file is null)
         {
             return null;
         }
-        // create media File
         MediaFile mediaFile =await _mediaRepository.CreateMedia(file);
-        // return media file
         return mediaFile;
     }
 }
