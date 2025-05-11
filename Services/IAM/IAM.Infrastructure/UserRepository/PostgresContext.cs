@@ -14,6 +14,16 @@ public class PostgreSqlContext : DbContext
     public DbSet<Users> users { get; set; }
     public DbSet<Admins> admins { get; set; }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Admins>()
+            .HasKey(a => new { a.admin_id });
+        modelBuilder.Entity<Admins>()
+            .Property(a => a.bio)
+            .IsRequired(false);
+        
+        base.OnModelCreating(modelBuilder);
+    }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

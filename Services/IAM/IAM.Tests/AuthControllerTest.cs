@@ -308,7 +308,7 @@ public class AuthControllerTests
         var registerDetails = new RegisterDetails("test@example.com", "test", "testPassword", "test");
         var generatedCode = "123456";
         var hashedPassword = "hashedPassword123";
-        var newUser = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, hashedPassword);
+        //var newUser = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, hashedPassword);
         var generatedToken = "generated_jwt_token";
 
         _mockUserRepository

@@ -21,7 +21,7 @@ public class Users
     public bool is_verified { get; set; }
     
     
-    public static Users Create(String username,String name,String email, String password)
+    public static Users Create(String username,String name,String email, String password, int profile_picture_id)
     {
         return new Users
         {
@@ -29,6 +29,7 @@ public class Users
             name = name,
             email = email,
             password = password,
+            profile_picture_id = profile_picture_id,
             is_verified = false
         };
     }

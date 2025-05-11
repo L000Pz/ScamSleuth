@@ -34,22 +34,18 @@ public class AdminRegisterService : IAdminRegisterService
 
 
 
-        if (await _userRepository.GetAdminByUsername(adminRegisterDetails.username) is not null)
-        {
-            if (await _userRepository.GetUserByUsername(adminRegisterDetails.username) is not null)
-            {
-                return new AdminAuthenticationResult(null,null,null,null,null,null,null, "username",null);
-            }
+        if ((await _userRepository.GetAdminByUsername(adminRegisterDetails.username) is not null) || (await _userRepository.GetUserByUsername(adminRegisterDetails.username) is not null))
+        { 
+            return new AdminAuthenticationResult(null,null,null,null,null,null,null, "username",null);
         }
-        if (await _userRepository.GetAdminByEmail(adminRegisterDetails.email) is not null)
-        {
-            if (await _userRepository.GetUserByEmail(adminRegisterDetails.email) is not null)
-            {
-                return new AdminAuthenticationResult(null,null,null,null,null,null,null, "username",null);
-            }        
+        if ((await _userRepository.GetAdminByEmail(adminRegisterDetails.email) is not null) || (await _userRepository.GetUserByEmail(adminRegisterDetails.email) is not null))
+        { 
+            return new AdminAuthenticationResult(null,null,null,null,null,null,null, "email",null);
         }
 
-        var admin = Admins.Create(adminRegisterDetails.username, adminRegisterDetails.name, adminRegisterDetails.email,adminRegisterDetails.contact_info, _hasher.Hash(adminRegisterDetails.password));
+        Random random = new Random();
+        int default_pfp = random.Next(1, 4);
+        var admin = Admins.Create(adminRegisterDetails.username, adminRegisterDetails.name, adminRegisterDetails.email,adminRegisterDetails.contact_info, _hasher.Hash(adminRegisterDetails.password),default_pfp);
         _userRepository.AddAdmin(admin);
         String token = _jwtGenerator.GenerateToken(admin);
         return new AdminAuthenticationResult(admin.admin_id,admin.username,admin.email,admin.name,admin.contact_info,admin.bio,admin.profile_picture_id, token,"admin");

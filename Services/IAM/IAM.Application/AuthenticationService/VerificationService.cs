@@ -30,7 +30,7 @@ public class VerificationService : IVerificationService
         {
             return "invalidUser";
         }
-        String? result = await _inMemoryRepository.Get(user.email.ToString());
+        String? result = await _inMemoryRepository.Get(user.email);
         if (result is null)
         {
             return "codeExpired";
@@ -39,7 +39,6 @@ public class VerificationService : IVerificationService
         {
             return"invalidCode";
         }
-        // veify user
         user.verify();
         await _userRepository.Update(user);
         return "ok";

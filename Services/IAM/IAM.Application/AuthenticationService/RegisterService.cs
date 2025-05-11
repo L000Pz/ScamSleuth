@@ -37,23 +37,19 @@ public class RegisterService : IRegisterService
 
 
 
-        if (await _userRepository.GetUserByUsername(registerDetails.username) is not null)
-        {
-            if (await _userRepository.GetAdminByUsername(registerDetails.username) is not null)
-            {
-                return new AuthenticationResult(null,null,null,null,null,false, "username",null);
-            }
+        if ((await _userRepository.GetUserByUsername(registerDetails.username) is not null) || (await _userRepository.GetAdminByUsername(registerDetails.username) is not null))
+        { 
+            return new AuthenticationResult(null,null,null,null,null,false, "username",null);
         }
-        if (await _userRepository.GetUserByEmail(registerDetails.email) is not null)
-        {
-            if (await _userRepository.GetAdminByEmail(registerDetails.email) is not null)
-            {
-                return new AuthenticationResult(null,null,null,null,null,false, "username",null);
-            }        
+        if ((await _userRepository.GetUserByEmail(registerDetails.email) is not null) || (await _userRepository.GetAdminByEmail(registerDetails.email) is not null))
+        { 
+            return new AuthenticationResult(null,null,null,null,null,false, "email",null);
         }
         String code = _codeGenerator.GenerateCode();
         await _inMemoryRepository.Add(registerDetails.email,code);
-        var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password));
+        Random random = new Random();
+        int default_pfp = random.Next(1, 4);
+        var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password),default_pfp);
         _userRepository.Add(user);
         String token = _jwtGenerator.GenerateToken(user);
         return new AuthenticationResult(user.user_id,user.username,user.email,user.name,user.profile_picture_id,user.is_verified, token,"user");
