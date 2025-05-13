@@ -110,10 +110,10 @@ services:
   scamsleuth-ai:
     container_name: scamsleuth-ai
     build:
-      context: ./AI
+      context: ./Services/AI
       dockerfile: Dockerfile
     volumes:
-      - ./AI:/app
+      - ./Services/AI:/app
     ports:
       - "6996:6996" # Matching your main.go port
     environment:
