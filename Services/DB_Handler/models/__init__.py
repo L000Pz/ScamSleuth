@@ -7,3 +7,8 @@ from .ReviewBanner import ReviewBanner
 from .ReviewComment import ReviewComment
 from .ScamType import ScamType
 from .Users import Users
+from .Conversation import Conversation
+from .ReviewTag import ReviewTag
+from .Tag import Tag
+from .URLComment import URLComment
+from .URLStorage import URLStorage
