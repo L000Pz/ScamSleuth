@@ -164,7 +164,7 @@ export async function submitReview(reviewData: ReviewData): Promise<{
     // Log the request body for debugging
     console.log('Submitting review with data:', JSON.stringify(reviewData, null, 2));
 
-    const response = await fetch('http://localhost:8080/Admin/adminManagement/SubmitReport', {
+    const response = await fetch('http://localhost:8080/Admin/adminManagement/WriteReview', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
