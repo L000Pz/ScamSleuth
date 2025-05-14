@@ -119,10 +119,11 @@ public class UserRepository:IUserRepository
             .FirstOrDefaultAsync(r => r.report_id == report_id);
         return review;
     }
-    public async Task<List<Report_Media?>> GetReportMedia(int report_id)
+    public async Task<List<int>> GetReportMedia(int report_id)
     {
         var media = await _context.report_media
             .Where(m => m.report_id == report_id)
+            .Select(m => m.media_id)
             .ToListAsync();
         return media;
     }
