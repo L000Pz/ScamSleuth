@@ -1,4 +1,5 @@
-﻿using Public.Domain;
+﻿using Public.Contracts;
+using Public.Domain;
 
 namespace Public.Application.PublicManagement;
 

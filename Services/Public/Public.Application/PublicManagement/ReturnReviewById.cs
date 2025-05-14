@@ -1,4 +1,5 @@
 ﻿using Public.Application.Common;
+using Public.Contracts;
 using Public.Domain;
 
 namespace Public.Application.PublicManagement;
@@ -24,10 +25,19 @@ public class ReturnReviewById : IReturnReviewById
         {
             return null;
         }
+
+        var writer = await _publicRepository.GetAdminById(review_id);
+        if (writer is null)
+        {
+            return null;
+        }
+
+        var writerDetails = new ReviewWriterDetails(writer.username, writer.name, writer.profile_picture_id,writer.contact_info);
         return new ReviewDetails
         {
             Review = review,
             Content = content.review_content,
+            ReviewWriterDetails = writerDetails
         };
     }
 }

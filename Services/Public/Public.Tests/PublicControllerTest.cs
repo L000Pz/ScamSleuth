@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+/*using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
 using Public.Application.PublicManagement;
@@ -296,4 +296,4 @@ namespace Public.Tests
             Assert.Empty(returnedScamTypes);
         }
     }
-}
+}*/

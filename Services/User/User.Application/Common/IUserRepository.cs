@@ -12,7 +12,6 @@ public interface IUserRepository
     public Task<List<Report_Media>> SubmitReportMedia(List<Report_Media> report_media_list);
     public Task<List<Report>> GetUserReports(int user_id);
     public Task<bool> DeleteReport(int review_id);
-    public Task<List<int>?> FindMediaId(int report_id);
     public Task<Report?> GetReportById(int report_id);
     public Task<List<int>> GetReportMedia(int report_id);
 

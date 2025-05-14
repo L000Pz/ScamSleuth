@@ -10,6 +10,9 @@ public class PostgreSqlContext : DbContext
     }
     public DbSet<Admins> admins { get; set; }
     public DbSet<Report> report { get; set; }
+    public DbSet<Users> users { get; set; }
+    public DbSet<Report_Media> report_media { get; set; }
+
     public DbSet<Review> review { get; set; }
     public DbSet<Review_Banner> review_banner { get; set; }
     public DbSet<Review_Content> review_content { get; set; }
@@ -17,6 +20,13 @@ public class PostgreSqlContext : DbContext
     {
         modelBuilder.Entity<Report>()
             .HasKey(r => new { r.report_id});
+        modelBuilder.Entity<Report_Media>()
+            .HasKey(rm => new { rm.report_id,rm.media_id });
+        modelBuilder.Entity<Users>()
+            .HasKey(u => new { u.user_id });
+        modelBuilder.Entity<Users>()
+            .Property(u => u.profile_picture_id)
+            .IsRequired(false);
         modelBuilder.Entity<Review>()
             .HasKey(r => new { r.review_id});
         modelBuilder.Entity<Review_Content>()

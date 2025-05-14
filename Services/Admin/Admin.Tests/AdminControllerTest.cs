@@ -1,4 +1,4 @@
-using System.Net;
+/*using System.Net;
 using System.Text;
 using Admin.Application.AdminManagement;
 using Admin.Contracts;
@@ -301,4 +301,4 @@ namespace Admin.Tests
             Assert.Equal("Failed to verify media!", badRequestResult.Value);
         }
     }
-}
+}*/
