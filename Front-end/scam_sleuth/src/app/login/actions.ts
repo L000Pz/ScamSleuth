@@ -1,29 +1,17 @@
+// src/app/login/actions.ts
 'use server';
 
 import { cookies } from 'next/headers';
 
-interface AdminResponse {
-  admin: {
-    admin_id: number;
-    username: string;
-    email: string;
-    name: string;
-    contact_info: string;
-    password: string;
-  };
+interface LoginResponse {
+  user_id: number;
+  username: string;
+  email: string;
+  name: string;
+  profile_picture_id: number | null;
+  is_verified: boolean;
   token: string;
-}
-
-interface UserResponse {
-  users: {
-    user_id: number;
-    username: string;
-    email: string;
-    name: string;
-    password: string;
-    is_verified: boolean;
-  };
-  token: string;
+  role: string;
 }
 
 type LoginResult = 
@@ -33,7 +21,7 @@ type LoginResult =
     }
   | {
       success: true;
-      data: AdminResponse | UserResponse;
+      data: LoginResponse;
     };
 
 export async function login(formData: { email: string; password: string }): Promise<LoginResult> {
@@ -56,9 +44,9 @@ export async function login(formData: { email: string; password: string }): Prom
       };
     }
 
-    const data: AdminResponse | UserResponse = await response.json();
-
-    // Use NextResponse to set cookies
+    const data: LoginResponse = await response.json();
+    
+    // Set the token in cookies
     const cookiesStore = await cookies();
     
     cookiesStore.set({
@@ -71,60 +59,38 @@ export async function login(formData: { email: string; password: string }): Prom
     });
 
     // Store the user's name
-    const userName = 'admin' in data ? data.admin.name : data.users.name;
     cookiesStore.set({
       name: 'userName',
-      value: userName,
+      value: data.name,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/'
     });
 
-    if ('admin' in data) {
-      // Admin case
-      cookiesStore.set({
-        name: 'userType',
-        value: 'admin',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/'
-      });
-      
-      // Set isVerified to true for admins
-      cookiesStore.set({
-        name: 'isVerified',
-        value: 'true',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/'
-      });
-    } else {
-      // Regular user case
-      cookiesStore.set({
-        name: 'userType',
-        value: 'user',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/'
-      });
-      
-      cookiesStore.set({
-        name: 'isVerified',
-        value: data.users.is_verified.toString(),
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/'
-      });
-    }
+    // Set userType based on role
+    cookiesStore.set({
+      name: 'userType',
+      value: data.role,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+    
+    // Set isVerified flag
+    cookiesStore.set({
+      name: 'isVerified',
+      value: data.is_verified.toString(),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
 
     return { 
       success: true,
-      data: data
+      data
     };
   } catch (error) {
     console.error('error:', error);

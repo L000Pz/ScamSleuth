@@ -1,3 +1,4 @@
+// src/app/login/page.tsx
 "use client";
 
 import Image from 'next/image';
@@ -15,29 +16,12 @@ const LoginSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
 });
 
-interface AdminData {
-  admin_id: number;
-  username: string;
-  email: string;
-  name: string;
-  contact_info: string;
-  password: string;
-}
-
-interface UserData {
-  user_id: number;
-  username: string;
-  email: string;
-  name: string;
-  password: string;
-  is_verified: boolean;
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({ email: '', password: '' });
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -45,6 +29,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
     // Validate form data using Zod schema
     const result = LoginSchema.safeParse(formData);
@@ -55,6 +40,7 @@ export default function LoginPage() {
         email: fieldErrors.email ? fieldErrors.email[0] : '',
         password: fieldErrors.password ? fieldErrors.password[0] : '',
       });
+      setIsLoading(false);
       return;
     }
 
@@ -67,17 +53,18 @@ export default function LoginPage() {
       
       if (!response.success) {
         setApiError(response.message);
+        setIsLoading(false);
         return;
       }
 
-      // Check if response contains admin data
-      if ('admin' in response.data) {
+      // Check role to determine where to redirect
+      if (response.data.role === 'admin') {
         // Admin login successful
         router.refresh();
         router.push('/admin-dashboard');
       } else {
         // Regular user login
-        if (!response.data.users.is_verified) {
+        if (!response.data.is_verified) {
           router.push('/otp');
           return;
         }
@@ -87,6 +74,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Error logging in:', error);
       setApiError('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -107,6 +95,7 @@ export default function LoginPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
             </div>
@@ -120,6 +109,7 @@ export default function LoginPage() {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
                 required
+                disabled={isLoading}
               />
               {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
             </div>
@@ -131,14 +121,15 @@ export default function LoginPage() {
                 type="submit" 
                 variant="outline" 
                 className="block mx-auto w-full sm:w-[250px] h-[40px] py-2 text-base sm:text-lg lg:text-[20px] leading-none font-bold"
+                disabled={isLoading}
               >
-                Log In
+                {isLoading ? "Logging in..." : "Log In"}
               </Button>
             </div>
           </form>
 
           <p className="text-center text-sm mt-4">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-blue-600 hover:underline">
               Sign up
             </Link>
