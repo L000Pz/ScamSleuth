@@ -75,4 +75,8 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(c => c.scam_type_id == scam_type_id);
         return scamType;
     }
+    public async Task<Admins?> GetAdminById(int admin_id)
+    {
+        return _context.admins.SingleOrDefault(user => user.admin_id == admin_id);
+    }
 }

@@ -157,10 +157,19 @@ public class UserController: ControllerBase
     [HttpGet("reportId")]
     public async Task<ActionResult> GetReportById(int report_id)
     {
-        var reportInfo = await _returnReportById.Handle(report_id);
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        var reportInfo = await _returnReportById.Handle(report_id,token);
         if (reportInfo == null)
         {
             return BadRequest("Report information could not be found!");
+        }
+
+        if (reportInfo.WriterDetails == null)
+        {
+            return BadRequest("You do not have access to this report.");
         }
         return Ok(reportInfo);
     }

@@ -19,7 +19,7 @@ public class RemoveReport:IRemoveReport
             return null;
         }
 
-        List<int>? media_id = await _userRepository.FindMediaId(report_id);
+        List<int> media_id = await _userRepository.GetReportMedia(report_id);
         return media_id;
     }
 

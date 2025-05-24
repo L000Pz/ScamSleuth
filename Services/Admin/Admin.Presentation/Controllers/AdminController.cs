@@ -21,13 +21,14 @@ public class AdminController: ControllerBase
     private readonly IGetAdminReviews _getAdminReviews;
     private readonly ICreateReview _createReview;
     private readonly IDeleteReview _deleteReview;
+    private readonly IGetReportById _getReportById;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
     private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
     private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
 
-    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher)
+    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,IGetReportById getReportById)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
@@ -35,6 +36,7 @@ public class AdminController: ControllerBase
         _createReview = createReview;
         _deleteReview = deleteReview;
         _messagePublisher = messagePublisher;
+        _getReportById = getReportById;
     }
     [HttpPut("ViewReports")]
     [Authorize]
@@ -149,6 +151,25 @@ public class AdminController: ControllerBase
         return Ok("Report submitted successfully.");
     }
     
+    [HttpGet("GetReportById")]
+    public async Task<ActionResult> GetReportById(int report_id)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        var reportInfo = await _getReportById.Handle(report_id,token);
+        if (reportInfo == null)
+        {
+            return BadRequest("Report information could not be found!");
+        }
+
+        if (reportInfo.ReportWriterDetails == null)
+        {
+            return BadRequest("You do not have access to this report.");
+        }
+        return Ok(reportInfo);
+    }
     
     private async Task<String> CheckToken(String token)
     {

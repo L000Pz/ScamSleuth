@@ -59,6 +59,7 @@ public class MongoRepository : IMongoRepository
         BsonDocument document = new BsonDocument
         {
             {"_id", id},
+            {"email","pfp"},
             {"name", fileName},
             {"file_name", fileName},
             {"content_type", GetContentType(fileName)},

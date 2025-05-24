@@ -7,12 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MongoDB.Bson" Version="3.4.0" />
-      <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Admin.Contracts\Admin.Contracts.csproj" />
+      <ProjectReference Include="..\Public.Domain\Public.Domain.csproj" />
     </ItemGroup>
 
 </Project>
