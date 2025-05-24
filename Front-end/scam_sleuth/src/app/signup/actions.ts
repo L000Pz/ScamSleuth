@@ -68,9 +68,14 @@ export async function signup(formData: {
       path: '/'
     });
 
+    // Check if is_verified exists before using it
+    const isVerified = data.users?.is_verified !== undefined 
+      ? data.users.is_verified.toString() 
+      : 'false'; // Default to false if not provided
+      
     cookieStore.set({
       name: 'isVerified',
-      value: data.users.is_verified.toString(),
+      value: isVerified,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
