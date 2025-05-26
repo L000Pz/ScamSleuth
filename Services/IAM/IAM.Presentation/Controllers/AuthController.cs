@@ -15,8 +15,9 @@ public class AuthController : ControllerBase
     private readonly INewCodeService _newCodeService;
     private readonly IAdminRegisterService _adminRegisterService;
     private readonly ITokenCheck _tokenCheck;
+    private readonly IReturnByTokenService _returnByTokenService;
 
-    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, INewCodeService newCodeService, IAdminRegisterService adminRegisterService, ITokenCheck tokenCheck)
+    public AuthController(IRegisterService registerService, ILoginService loginService, IVerificationService verificationService, INewCodeService newCodeService, IAdminRegisterService adminRegisterService, ITokenCheck tokenCheck, IReturnByTokenService returnByTokenService)
     {
         _registerService = registerService;
         _loginService = loginService;
@@ -24,6 +25,7 @@ public class AuthController : ControllerBase
         _newCodeService = newCodeService;
         _adminRegisterService = adminRegisterService;
         _tokenCheck = tokenCheck;
+        _returnByTokenService = returnByTokenService;
     }
     //public AuthController(){}
 
@@ -141,6 +143,22 @@ public class AuthController : ControllerBase
             return BadRequest("Invalid code!");
         }
         return Ok("Account verified successfully!");
+    }
+    
+    [HttpPost("ReturnByToken")]
+    public async Task<ActionResult> Return([FromBody] String token)
+    {
+        var result = await _returnByTokenService.Handle(token);
+        if (result is null)
+        {
+            var adminResult = await _returnByTokenService.HandleAdmin(token);
+            if (adminResult is null)
+            {
+                return BadRequest("User doesn't exist!");
+            }
+            return Ok(adminResult);
+        }
+        return Ok(result);
     }
     
     [HttpPost("Check Token")]

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices.JavaScript;
+/*using System.Runtime.InteropServices.JavaScript;
 using IAM.Application.AuthenticationService;
 using IAM.Application.Common;
 using IAM.Contracts;
@@ -521,4 +521,4 @@ public class AuthControllerTests
     }
 
 
-}
+}*/

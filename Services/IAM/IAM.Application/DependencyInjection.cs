@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<IVerificationService, VerificationService>();
         services.AddScoped<INewCodeService, NewCodeService>();
         services.AddScoped<ITokenCheck, TokenCheck>();
+        services.AddScoped<IReturnByTokenService, ReturnByTokenService>();
         return services;
     }
 }
