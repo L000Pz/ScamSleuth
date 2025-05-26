@@ -14,5 +14,7 @@ public interface IAdminRepository
     Task<bool> DeleteReview(int review_id);
     Task<bool> DeleteReviewContent(int review_content_id);
     public Task<int> GetLastContentId();
+    public Task<bool> UpdateReviewContent(Review_Content new_content);
+    public Task<bool> UpdateReviewTitle(int review_id, string new_title);
 
 }

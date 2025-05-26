@@ -20,7 +20,7 @@ public class MongoContext : DbContext
         BsonDocument document = new BsonDocument
         {
             {"review_content_id",reviewContent.review_content_id},
-            {"review_content",reviewContent.review_content},
+            {"review_content",reviewContent.review_content}
         };
         return document;
     }
@@ -49,4 +49,21 @@ public class MongoContext : DbContext
         collection.DeleteOne(delete);
         return "ok";
     }
+    public async Task<string?> Update(Domain.Review_Content updatedContent)
+    {
+        var filter = Builders<BsonDocument>.Filter.Eq("review_content_id", updatedContent.review_content_id);
+
+        var update = Builders<BsonDocument>.Update
+            .Set("review_content", updatedContent.review_content);
+
+        var result = await collection.UpdateOneAsync(filter, update);
+
+        if (result.MatchedCount == 0)
+        {
+            return null;
+        }
+
+        return "ok";
+    }
+
 }

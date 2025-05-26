@@ -125,4 +125,23 @@ public class AdminRepository : IAdminRepository
         }
         return true;
     }
+    public async Task<bool> UpdateReviewContent(Review_Content new_content)
+    {
+        var res = await _mongoContext.Update(new_content);
+        if (res is null)
+        {
+            return false;
+        }
+        return true;
+    }
+    public async Task<bool> UpdateReviewTitle(int review_id, string new_title)
+    {
+        var review = await _context.review.FirstOrDefaultAsync(r => r.review_id == review_id);
+        if (review == null) 
+            return false; 
+        review.title = new_title;
+        await _context.SaveChangesAsync();
+        return true; 
+    }
+
 }

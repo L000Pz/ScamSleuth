@@ -26,7 +26,7 @@ public class ReturnReviewById : IReturnReviewById
             return null;
         }
 
-        var writer = await _publicRepository.GetAdminById(review_id);
+        var writer = await _publicRepository.GetAdminById(review.writer_id);
         if (writer is null)
         {
             return null;

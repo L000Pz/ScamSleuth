@@ -22,13 +22,14 @@ public class AdminController: ControllerBase
     private readonly ICreateReview _createReview;
     private readonly IDeleteReview _deleteReview;
     private readonly IGetReportById _getReportById;
+    private readonly IUpdateReview _updateReview;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
     private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
     private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
 
-    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,IGetReportById getReportById)
+    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,IGetReportById getReportById, IUpdateReview updateReview)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
@@ -37,6 +38,7 @@ public class AdminController: ControllerBase
         _deleteReview = deleteReview;
         _messagePublisher = messagePublisher;
         _getReportById = getReportById;
+        _updateReview = updateReview;
     }
     [HttpPut("ViewReports")]
     [Authorize]
@@ -48,7 +50,7 @@ public class AdminController: ControllerBase
         token = await CheckToken(token);
         if (token == "unsuccessful")
         {
-            return BadRequest("You do not have access!");
+            return BadRequest("You don't have access to this property!");
         }
         
         var reports = await _showAllReports.Handle();
@@ -67,6 +69,10 @@ public class AdminController: ControllerBase
         token = token.Split(" ")[1];
 
         token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
         List<Review>? reviews = await _getAdminReviews.Handle(token);
         if (reviews is null)
         {
@@ -156,8 +162,11 @@ public class AdminController: ControllerBase
     {
         string? token = HttpContext.Request.Headers.Authorization;
         token = token.Split(" ")[1];
-
         token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
         var reportInfo = await _getReportById.Handle(report_id,token);
         if (reportInfo == null)
         {
@@ -169,6 +178,62 @@ public class AdminController: ControllerBase
             return BadRequest("You do not have access to this report.");
         }
         return Ok(reportInfo);
+    }
+    [HttpPost("UpdateReviewContent")]
+    [Authorize]
+    public async Task<ActionResult> UpdateReviewContent([FromBody] ReviewContentUpdate reviewContentUpdate)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+        var result = await _updateReview.HandleReviewContent(reviewContentUpdate.review_id,reviewContentUpdate.new_content,token);
+        if (result == "review")
+        {
+            return BadRequest("Review information could not be found!");
+        }
+        if (result == "admin")
+        {
+            return BadRequest("You do not have access to this review.");
+        }
+
+        if (result == "invalid")
+        {
+            return BadRequest("Could not Update Review content!");
+        }
+        return Ok("Review content has been updated successfully");
+    }
+    
+    [HttpPost("UpdateReviewTitle")]
+    [Authorize]
+    public async Task<ActionResult> UpdateReviewTitle([FromBody] TitleUpdate titleUpdate)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+        var result = await _updateReview.HandleReviewTitle(titleUpdate.review_id,titleUpdate.new_title,token);
+        if (result == "review")
+        {
+            return BadRequest("Review information could not be found!");
+        }
+        if (result == "admin")
+        {
+            return BadRequest("You do not have access to this review.");
+        }
+
+        if (result == "invalid")
+        {
+            return BadRequest("Could not Update Review title!");
+        }
+        return Ok("Review title has been updated successfully");
     }
     
     private async Task<String> CheckToken(String token)
