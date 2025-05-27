@@ -145,8 +145,8 @@ public class AuthController : ControllerBase
         return Ok("Account verified successfully!");
     }
     
-    [HttpPost("ReturnByToken")]
-    public async Task<ActionResult> Return([FromBody] String token)
+    [HttpGet("ReturnByToken")]
+    public async Task<ActionResult> Return(string token)
     {
         var result = await _returnByTokenService.Handle(token);
         if (result is null)
@@ -161,8 +161,8 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
-    [HttpPost("Check Token")]
-    public async Task<ActionResult> Check([FromBody] String token)
+    [HttpGet("Check Token")]
+    public async Task<ActionResult> Check(string token)
     {
         var email = await _tokenCheck.Handle(token);
         if (email is not null)
