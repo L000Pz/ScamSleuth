@@ -230,7 +230,7 @@ func (fi *FraudIndicators) checkContactInfo(html string) []string {
 	if err != nil {
 		log.Println(err)
 	}
-	contactPatterns := []string{"contact", "about", "support", "help", "email", "phone", "address", "تماس با"}
+	contactPatterns := []string{"contact", "about", "support", "help", "email", "phone", "address", "تماس با", "ارتباط"}
 	var founds []string
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		href, _ := s.Attr("href")

@@ -51,16 +51,31 @@ func NewPostgreSQL(connStr string) (*PostgreSQL, error) {
 	return &PostgreSQL{DB: db}, nil
 }
 
-func (db *PostgreSQL) SaveAIResponse(tableName string, domain string, description []byte) (int64, error) {
-	search_date := time.DateTime
-	query := `INSERT INTO ` + tableName + `(domain, description , search_date) VALUES ($1, $2, $3) returning id`
+// func (db *PostgreSQL) SaveAIResponse(tableName string, domain string, description []byte) (int64, error) {
+// 	search_date := time.DateTime
+// 	query := `INSERT INTO ` + tableName + `(domain, description , search_date) VALUES ($1, $2, $3) returning id`
+
+//		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+//		defer cancel()
+//		var id int64
+//		err := db.DB.QueryRowContext(ctx, query, domain, description, search_date)
+//		if err != nil {
+//			return 0, fmt.Errorf("error inserting ai response err: %v", err)
+//		}
+//		return id, nil
+//	}
+func (db *PostgreSQL) SaveAIResponse(tableName string, url string, description []byte) (int64, error) {
+	search_date := time.Now() // FIXED
+
+	query := `INSERT INTO ` + tableName + `(url, description , search_date) VALUES ($1, $2, $3) returning url_id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	var id int64
-	err := db.DB.QueryRowContext(ctx, query, domain, description, search_date)
+
+	var url_id int64
+	err := db.DB.QueryRowContext(ctx, query, url, description, search_date).Scan(&url_id)
 	if err != nil {
 		return 0, fmt.Errorf("error inserting ai response err: %v", err)
 	}
-	return id, nil
+	return url_id, nil
 }
