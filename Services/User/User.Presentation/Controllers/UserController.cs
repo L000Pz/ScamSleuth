@@ -155,6 +155,7 @@ public class UserController: ControllerBase
     }
   
     [HttpGet("reportId")]
+    [Authorize]
     public async Task<ActionResult> GetReportById(int report_id)
     {
         string? token = HttpContext.Request.Headers.Authorization;
@@ -173,6 +174,7 @@ public class UserController: ControllerBase
         }
         return Ok(reportInfo);
     }
+    
     
     
     private async Task<String> CheckToken(String token)

@@ -161,8 +161,8 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
-    [HttpGet("Check Token")]
-    public async Task<ActionResult> Check(string token)
+    [HttpPost("Check Token")]
+    public async Task<ActionResult> Check([FromBody]string token)
     {
         var email = await _tokenCheck.Handle(token);
         if (email is not null)
