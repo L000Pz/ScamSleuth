@@ -7,7 +7,7 @@ export async function changePassword(email: string, password: string) {
       const cookieStore = await cookies();
       const token = cookieStore.get('token')?.value;
   
-      const response = await fetch('http://localhost:5276/userManagement/ChangePassword', {
+      const response = await fetch('http://localhost:8080/User/userManagement/ChangePassword', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

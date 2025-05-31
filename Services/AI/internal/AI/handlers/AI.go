@@ -32,7 +32,7 @@ func NewAIhandler(PostgreSQL *Databases.PostgreSQL) *AIHandler {
 
 }
 
-func extractMainDomain(rawURL string) (string, error) {
+func ExtractMainDomain(rawURL string) (string, error) {
 	// Parse the URL
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -82,7 +82,7 @@ func SendToAI(site string) models.CompletionResponse {
 	//scraper_result := handlers.Do_scrape(site)
 
 	scraperData := scraperHandler.Do_scrape(site)
-	//urlObj, err := extractMainDomain(site)
+	//urlObj, err := ExtractMainDomain(site)
 
 	if err != nil {
 		log.Println(err)
@@ -204,6 +204,12 @@ func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 	//Prepare_AI()
 	//fmt.Fprintf(w, "%s", prepare_ai.Choices[0].Message.Content)
 	response = SendToAI(urlterm)
+	//fmt.Println(response)
+
+	if len(response.Choices) == 0 {
+		http.Error(w, "No response from AI model", http.StatusInternalServerError)
+		return
+	}
 
 	//fmt.Fprintf(w, "%s", response.Choices[0].Message.Content)
 	jsonFraudDetectorResponseAI, stringFraudDetectorResponseAI := convertTojson(response.Choices[0].Message.Content)
