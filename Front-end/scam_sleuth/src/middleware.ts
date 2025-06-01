@@ -9,10 +9,31 @@ const userRoutes = ['/dashboard'];
 const noAuthRoutes = ['/login', '/signup'];
 const otpRoute = '/otp';
 
-export function middleware(request: NextRequest) {
+async function getUserInfoFromToken(token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token');
-  const userType = request.cookies.get('userType');
-  const isVerified = request.cookies.get('isVerified');
   const currentPath = request.nextUrl.pathname;
 
   // Create response with cache-busting headers
@@ -21,18 +42,39 @@ export function middleware(request: NextRequest) {
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
 
-  // If user has token but is not verified and trying to access something other than OTP
-  if (token && isVerified?.value !== 'true' && currentPath !== '/otp') {
+  // If no token, handle public routes
+  if (!token) {
+    // Allow access to login/signup pages
+    if (noAuthRoutes.some(route => currentPath === route)) {
+      return response;
+    }
+    
+    // Redirect to login for protected routes
+    if (authRequiredRoutes.some(route => currentPath.startsWith(route)) || currentPath === otpRoute) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    
+    return response;
+  }
+
+  // Get user info from token
+  const userInfo = await getUserInfoFromToken(token.value);
+  
+  // If token is invalid, clear it and redirect to login
+  if (!userInfo) {
+    const cleanupResponse = NextResponse.redirect(new URL('/login', request.url));
+    cleanupResponse.cookies.delete('token');
+    return cleanupResponse;
+  }
+
+  const { role, is_verified } = userInfo;
+
+  // Handle unverified users (but not admins)
+  if (!is_verified && role !== 'admin' && currentPath !== '/otp') {
     // If they're trying to access login/signup, clean up their session
     if (noAuthRoutes.some(route => currentPath === route)) {
       const cleanupResponse = NextResponse.redirect(new URL(currentPath, request.url));
-      
-      // Clear all cookies
       cleanupResponse.cookies.delete('token');
-      cleanupResponse.cookies.delete('userType');
-      cleanupResponse.cookies.delete('isVerified');
-      cleanupResponse.cookies.delete('userName');
-      
       return cleanupResponse;
     }
     
@@ -42,55 +84,36 @@ export function middleware(request: NextRequest) {
 
   // Case 1: Check if admin is trying to access user dashboard
   if (userRoutes.some(route => currentPath.startsWith(route))) {
-    if (userType?.value === 'admin') {
+    if (role === 'admin') {
       return NextResponse.redirect(new URL('/admin-dashboard', request.url));
     }
   }
 
-  // Case 2: Trying to access protected routes without being logged in
-  if (authRequiredRoutes.some(route => currentPath.startsWith(route))) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    const isVerified = request.cookies.get('isVerified')?.value === 'true';
-    if (!isVerified && currentPath !== '/otp') {
-      return NextResponse.redirect(new URL('/otp', request.url));
-    }
-    return response;
-  }
-
-  // Case 3: Trying to access admin routes without being admin
+  // Case 2: Trying to access admin routes without being admin
   if (adminRoutes.some(route => currentPath.startsWith(route))) {
-    if (userType?.value !== 'admin') {
+    if (role !== 'admin') {
       // If logged in as regular user, redirect to user dashboard
-      if (token) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-      // If not logged in, redirect to login
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
-  // Case 4: Accessing login/signup pages while already logged in
-  if (noAuthRoutes.some(route => currentPath === route) && token) {
+  // Case 3: Accessing login/signup pages while already logged in
+  if (noAuthRoutes.some(route => currentPath === route)) {
     // Redirect based on user type
-    if (userType?.value === 'admin') {
+    if (role === 'admin') {
       return NextResponse.redirect(new URL('/admin-dashboard', request.url));
     }
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Case 5: Accessing OTP page
+  // Case 4: Accessing OTP page
   if (currentPath === otpRoute) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+    // Admins shouldn't access OTP page
+    if (role === 'admin') {
+      return NextResponse.redirect(new URL('/admin-dashboard', request.url));
     }
     
-    const isVerified = request.cookies.get('isVerified')?.value === 'true';
-    if (isVerified) {
-      if (userType?.value === 'admin') {
-        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
-      }
+    if (is_verified) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

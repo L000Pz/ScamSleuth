@@ -2,16 +2,52 @@
 
 import { cookies } from 'next/headers';
 
+async function getUserInfoFromToken(token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
 export async function getUserData() {
   try {
     const cookieStore = await cookies();
-    const userNameCookie = cookieStore.get('userName');
+    const token = cookieStore.get('token')?.value;
     
-    if (!userNameCookie) {
+    if (!token) {
       return { name: '[User]' };
     }
 
-    return { name: userNameCookie.value };
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return { name: '[User]' };
+    }
+
+    return { 
+      name: userInfo.name,
+      username: userInfo.username,
+      email: userInfo.email,
+      role: userInfo.role,
+      is_verified: userInfo.is_verified,
+      profile_picture_id: userInfo.profile_picture_id
+    };
   } catch (error) {
     console.error('Error in getUserData:', error);
     return { name: '[User]' };
@@ -21,25 +57,25 @@ export async function getUserData() {
 export async function logout(): Promise<{ success: boolean; message?: string }> {
   try {
     const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
     
-    // Clear all authentication-related cookies
-    cookieStore.delete('token');
-    cookieStore.delete('userType'); // In case you add this later
-    cookieStore.delete('userName');
-    cookieStore.delete('isVerified')
-    
-    // Optional: Call backend logout endpoint if available
-    try {
-      await fetch('http://localhost:8080/IAM/authentication/Logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cookieStore.get('token')?.value}`,
-        },
-      });
-    } catch (error) {
-      // Continue with logout even if backend call fails
-      console.warn('Backend logout call failed, but cookies were cleared');
+    // Call backend logout endpoint first
+    if (token) {
+      try {
+        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        // Continue with logout even if backend call fails
+        console.warn('Backend logout call failed, but will clear token anyway');
+      }
     }
+    
+    // Clear the token
+    cookieStore.delete('token');
 
     return {
       success: true

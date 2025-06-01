@@ -16,6 +16,29 @@ export interface ScamReportPayload {
   media: number[];
 }
 
+async function getUserInfoFromToken(token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
 // Upload a single file and return its media ID
 export async function uploadFile(formData: FormData): Promise<{
   mediaId: number | null;
@@ -24,12 +47,28 @@ export async function uploadFile(formData: FormData): Promise<{
   try {
     const cookiesStore = await cookies();
     const token = cookiesStore.get('token');
-    const isVerified = cookiesStore.get('isVerified');
 
-    if (!token || !isVerified || isVerified.value !== 'true') {
+    if (!token) {
       return {
         mediaId: null,
-        error: 'Please login and verify your account to upload files'
+        error: 'Please login to upload files'
+      };
+    }
+
+    // Verify user is authenticated and verified
+    const userInfo = await getUserInfoFromToken(token.value);
+    
+    if (!userInfo) {
+      return {
+        mediaId: null,
+        error: 'Invalid authentication. Please login again.'
+      };
+    }
+
+    if (!userInfo.is_verified) {
+      return {
+        mediaId: null,
+        error: 'Please verify your account to upload files'
       };
     }
 
@@ -80,12 +119,28 @@ export async function deleteFile(id: number): Promise<{
   try {
     const cookiesStore = await cookies();
     const token = cookiesStore.get('token');
-    const isVerified = cookiesStore.get('isVerified');
 
-    if (!token || !isVerified || isVerified.value !== 'true') {
+    if (!token) {
       return {
         success: false,
-        error: 'Please login and verify your account'
+        error: 'Please login to delete files'
+      };
+    }
+
+    // Verify user is authenticated and verified
+    const userInfo = await getUserInfoFromToken(token.value);
+    
+    if (!userInfo) {
+      return {
+        success: false,
+        error: 'Invalid authentication. Please login again.'
+      };
+    }
+
+    if (!userInfo.is_verified) {
+      return {
+        success: false,
+        error: 'Please verify your account to delete files'
       };
     }
 
@@ -153,12 +208,28 @@ export async function submitScamReport(report: ScamReportPayload): Promise<{
   try {
     const cookiesStore = await cookies();
     const token = cookiesStore.get('token');
-    const isVerified = cookiesStore.get('isVerified');
 
-    if (!token || !isVerified || isVerified.value !== 'true') {
+    if (!token) {
       return {
         success: false,
-        error: 'Please login and verify your account to submit a report'
+        error: 'Please login to submit a report'
+      };
+    }
+
+    // Verify user is authenticated and verified
+    const userInfo = await getUserInfoFromToken(token.value);
+    
+    if (!userInfo) {
+      return {
+        success: false,
+        error: 'Invalid authentication. Please login again.'
+      };
+    }
+
+    if (!userInfo.is_verified) {
+      return {
+        success: false,
+        error: 'Please verify your account to submit a report'
       };
     }
 
