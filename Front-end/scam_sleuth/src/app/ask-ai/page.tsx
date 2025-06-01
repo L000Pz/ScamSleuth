@@ -126,12 +126,12 @@ const WebsiteAnalysisPage: React.FC = () => {
       {/* Background Hero Image - Left Side */}
       <div className="absolute inset-0 w-full">
         {/* Left side with hero image - semi-transparent */}
-        <div className="absolute -left-[50px] w-2/3 bg-gradient-to-r from-black/10 via-black/5 to-transparent overflow-hidden flex items-center justify-start pl-0">
+        <div className="absolute -left-[100px] w-2/3 bg-gradient-to-r from-black/10 via-black/5 to-transparent overflow-hidden flex items-center justify-start pl-0">
           <NextImage 
             src={heroImage} 
             alt="Detective Dog" 
-            width={800}
-            height={800}
+            width={1500}
+            height={1500}
             className="opacity-25 object-contain -ml-20" 
           />
         </div>
