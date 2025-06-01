@@ -16,7 +16,17 @@ export interface ScamReportPayload {
   media: number[];
 }
 
-async function getUserInfoFromToken(token: string) {
+interface UserInfo {
+  user_id: number;
+  username: string;
+  email: string;
+  name: string;
+  is_verified: boolean;
+  role: string;
+  profile_picture_id?: number | null;
+}
+
+async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
       `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
@@ -174,7 +184,8 @@ export async function fetchScamTypes(): Promise<{
   error: string | null;
 }> {
   try {
-    const response = await fetch('http://localhost:8080/public/publicManager/scamTypes', {
+    // Fixed the URL - should match the pattern from other working endpoints
+    const response = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -233,29 +244,56 @@ export async function submitScamReport(report: ScamReportPayload): Promise<{
       };
     }
 
-    const response = await fetch('http://localhost:8080/user/userManagement/SubmitReport', {
+    // Fixed the URL to match the working curl request
+    const response = await fetch('http://localhost:8080/User/userManagement/SubmitReport', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.value}`
+        'Authorization': `Bearer ${token.value}`,
+        'Accept': '*/*' // Added this header to match the curl request
       },
       body: JSON.stringify(report),
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        text: errorText
+      });
+      
       if (response.status === 401) {
         return {
           success: false,
           error: 'Please login again to submit your report'
         };
       }
+      
       return {
         success: false,
-        error: 'Failed to submit report'
+        error: `Failed to submit report: ${errorText || response.statusText}`
       };
     }
 
+    // Handle the response - it could be either JSON or plain text
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
+    }
+
+    console.log('Server response:', responseData);
+
+    // Since your API returns "Report submitted successfully." as a string,
+    // we consider it successful regardless of the response format
     return { success: true, error: null };
+
   } catch (error) {
     console.error('Error submitting scam report:', error);
     return {
