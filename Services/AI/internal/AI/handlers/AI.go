@@ -67,6 +67,23 @@ func checkDomainAge(whois whoisparser.WhoisInfo) int {
 
 	return ageInDays
 }
+func HostUp(site string) bool {
+	// url, err := ExtractMainDomain(site)
+	// if err != nil {
+	// 	log.Printf("Extracting main domain went wrong %v", err)
+	// }
+	url := fmt.Sprintf("https://%s", site)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Printf("Get request did't went right : %d", err)
+	}
+
+	if res.StatusCode == 200 {
+		return true
+	}
+	return false
+
+}
 
 func SendToAI(site string) models.CompletionResponse {
 
@@ -192,6 +209,7 @@ func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 
 	var response models.CompletionResponse
 	vars := mux.Vars(r)
+	w.Header().Set("Content-Type", "application/json")
 
 	urlterm, ok := vars["url"]
 
@@ -200,7 +218,27 @@ func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(urlterm)
+	// checking if host is up then continue
+	if !HostUp(urlterm) {
+		http.Error(w, "Host is not Up", http.StatusBadRequest)
+		return
+	}
+	//checking if the url exists in database or not
+	//site, _ := ExtractMainDomain(urlterm)
+	exists := h.PostgreSQL.CheckIfurlExistsInDB(urlterm, "url_storage")
+	fmt.Println(exists)
+	if exists {
+		//check if date is exceed or not
+		if h.PostgreSQL.IsRecent(urlterm, "url_storage") {
 
+			// retrieve if not
+			desc := h.PostgreSQL.RetreiveSavedData(urlterm, "url_storage")
+			w.Write([]byte(desc))
+			return
+		}
+
+		// proceed to send to AI if exceed
+	}
 	//Prepare_AI()
 	//fmt.Fprintf(w, "%s", prepare_ai.Choices[0].Message.Content)
 	response = SendToAI(urlterm)
@@ -216,7 +254,6 @@ func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("%s", stringFraudDetectorResponseAI)
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonFraudDetectorResponseAI)
 	//sending to frontend
 	// if err := json.NewEncoder(w).Encode(jsonFraudDetectorResponseAI); err != nil {
