@@ -42,7 +42,10 @@ public class EditUserInfo : IEditUserInfo
         {
             Users? newName = await _userRepository.ChangeName(user, editInfo.new_name);
         }
-
+        if (editInfo.new_profile_picture_id != null)
+        {
+            Users? newPicture = await _userRepository.ChangeProfilePicture(user, (int)editInfo.new_profile_picture_id);
+        }
         if (editInfo.new_password != null)
         {
             if (editInfo.new_password.Length < 6)

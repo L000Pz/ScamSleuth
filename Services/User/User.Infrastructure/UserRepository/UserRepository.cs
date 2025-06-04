@@ -47,6 +47,13 @@ public class UserRepository:IUserRepository
         await _context.SaveChangesAsync();
         return users;
     }
+    public async Task<Users?> ChangeProfilePicture(Users users, int profile_picture_id)
+    {
+        users.profile_picture_id = profile_picture_id;
+        _context.users.Update(users);
+        await _context.SaveChangesAsync();
+        return users;
+    }
     public async Task<Report?> SubmitReport(Report report)
     {
         _context.report.Add(report);

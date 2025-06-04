@@ -9,6 +9,7 @@ public interface IUserRepository
     public Task<Users?> ChangePassword(Users users, string password);
     public Task<Users?> ChangeUsername(Users users, string username);
     public Task<Users?> ChangeName(Users users, string name);
+    public Task<Users?> ChangeProfilePicture(Users users, int profile_picture_id);
     public Task<Users?> GetUserByEmail(string email);
     public Task<Report?> SubmitReport(Report report);
     public Task<List<Report_Media>> SubmitReportMedia(List<Report_Media> report_media_list);
