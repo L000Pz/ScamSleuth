@@ -14,6 +14,8 @@ interface UserData {
   username?: string;
   email?: string;
   profile_picture_id?: number | null;
+  role?: string;
+  is_verified?: boolean;
 }
 
 export default function UserDashboard() {
@@ -24,6 +26,7 @@ export default function UserDashboard() {
   const [reportCount, setReportCount] = useState<number>(0);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [profileImageError, setProfileImageError] = useState(false);
 
   useEffect(() => {
     // Force reload on mount using hash strategy
@@ -89,12 +92,43 @@ export default function UserDashboard() {
   };
 
   const ProfilePicture = ({ size = "w-12 h-12" }: { size?: string }) => {
-    // Just show a nice placeholder since backend is broken
+    // Check if user has a profile picture ID and no error occurred
+    const hasValidProfilePicture = userData?.profile_picture_id && !profileImageError;
+
+    if (hasValidProfilePicture) {
+      return (
+        <div className={`${size} rounded-full overflow-hidden shadow-lg border-2 border-gray-200`}>
+          <Image
+            src={`http://localhost:8080/Media/mediaManager/Get?id=${userData.profile_picture_id}`}
+            alt="Profile Picture"
+            width={80}
+            height={80}
+            className="w-full h-full object-cover"
+            unoptimized={true}
+            onError={() => setProfileImageError(true)}
+            onLoad={() => setProfileImageError(false)}
+          />
+        </div>
+      );
+    }
+
+    // Fallback to gradient placeholder
     return (
-      <div className={`${size} rounded-full bg-gradient-to-br from-red via-red/80 to-red/60 flex items-center justify-center shadow-lg`}>
+      <div className={`${size} rounded-full bg-gradient-to-br from-red via-red/80 to-red/60 flex items-center justify-center shadow-lg border-2 border-gray-200`}>
         <User className="w-6 h-6 text-white" />
       </div>
     );
+  };
+
+  const ProfilePictureWithLoader = ({ size = "w-12 h-12" }: { size?: string }) => {
+    if (isLoadingUser) {
+      return (
+        <div className={`${size} rounded-full bg-gray-200 animate-pulse shadow-lg`}>
+        </div>
+      );
+    }
+
+    return <ProfilePicture size={size} />;
   };
 
   return (
@@ -104,7 +138,7 @@ export default function UserDashboard() {
         <div className="w-full md:w-3/5 p-6 md:p-8 overflow-y-auto max-h-[700px]">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
-              <ProfilePicture />
+              <ProfilePictureWithLoader />
               {isLoadingUser ? (
                 <div className="h-10 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
               ) : (
@@ -131,7 +165,7 @@ export default function UserDashboard() {
                 Your Profile
               </h3>
               <div className="flex items-center gap-6 mb-6">
-                <ProfilePicture size="w-20 h-20" />
+                <ProfilePictureWithLoader size="w-20 h-20" />
                 {isLoadingUser ? (
                   <div className="space-y-3">
                     <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
@@ -144,8 +178,18 @@ export default function UserDashboard() {
                     <p className="text-base text-gray-500">@{userUsername}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm text-green-600">Active</span>
+                      <span className="text-sm text-green-600">
+                        {userData?.is_verified ? 'Verified' : 'Active'}
+                      </span>
                     </div>
+                    {userData?.role && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm text-blue-600 capitalize">
+                          {userData.role}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
