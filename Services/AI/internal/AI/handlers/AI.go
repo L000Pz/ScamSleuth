@@ -133,24 +133,99 @@ func SendToAI(site string) models.CompletionResponse {
 	fmt.Println("this is enamad data")
 	fmt.Println(string(jsonEnamad))
 	payload := map[string]interface{}{
-		"model": "deepseek/deepseek-r1:free",
-		"messages": []map[string]string{
-			/*
-				{
-					"role":    "user",
-					"content": fmt.Sprintf("You are a scam scoring engine. You will receive a JSON object with:\n\n- 'flags': an object where each key is a detection flag and each value is the score to apply if the flag matches\n- 'input': an object containing website data (URL, WHOIS info, HTML, SSL info, etc.)\n\nYour job:\n1. Check which flags match based on the input.\n2. Add up the scores from matching flags.\n3. Return a JSON object:\n  - 'totalScore': the sum of matching flag scores\n  - 'matchedFlags': object with matched flags and their scores\n  - 'notes': short summary of why these flags matched\n\nIMPORTANT:\n- Only use the flags provided.\n- Do NOT invent or reword flags.\n- If unsure about a match, do not include it.\n- Output only valid JSON (no comments, no explanations)url=%s  scraperData=%v whois_data=%v enamad_data=%v", site, scraperData, whoisData, Enamad),
-				},
-			*/
-			{
-				"role":    "system",
-				"content": "You are a scam scoring engine. You will receive multiple JSON objects with:url: is the website url, scrape_data: is a scrapped data based on the key words i have preseted from the given url, whois_data: is the whois data extracted from the given url, enamad_data: is the enamad data(enamad is a iranian website ran by the government which gives the website a huge value if its based in iran) note that if it was empty and it wasnt based in iran it doesnt necessarily mean that the website doesnt have any values,but if it was based in iran it does need to have this premeter. Your job:\n1. Check the input and give it up to 10 flags and score the flags based on the input and its value up to a hundrad, a hundrad means it is very suspicious.\n2. Add up the scores from matching flags up to a hundred do not use negative values if a site doesnt match the flags or its low just give it zero.\n3. Return a JSON object:\n  - 'totalScore': the sum of matching flag scores\n  - 'matchedFlags': object with matched flags and their scores\n  - 'notes': short summary of why these flags matched and a short discripton explaining why this site is good or not good\n\nIMPORTANT:\n- If unsure about a match, do not include it.\n- Output only valid JSON (no comments, no description).",
-			},
-			{
-				"role":    "user",
-				"content": fmt.Sprintf("url=%s  scrape_data=%s whois_data=%s enamad_data=%s", site, jsonScraperData, string(jsonWhoisData), string(jsonEnamad)),
-			},
-		},
-	}
+    "model": "deepseek/deepseek-r1:free",
+    "messages": []map[string]string{
+        {
+            "role": "system",
+            "content": `You are an expert website security analyst. Your task is to analyze websites for trustworthiness and reliability.
+
+ANALYSIS CRITERIA:
+1. Domain Trust Factors:
+   - Domain age (older = higher trust)
+   - Registration transparency (public info = higher trust)
+   - Valid SSL certificate with proper configuration
+   - Complete WHOIS information
+
+2. Content Analysis:
+   - Professional presentation and design
+   - Clear contact information and policies
+   - Proper grammar and spelling
+   - Absence of suspicious promises or urgency tactics
+
+3. Technical Security:
+   - Proper security headers implementation
+   - Clean, non-obfuscated code
+   - No suspicious redirects
+   - Secure content delivery
+
+4. Regional Compliance (Iran):
+   - Enamad certification for Iranian websites
+   - Proper business registration verification
+
+SCORING SYSTEM:
+- Calculate TRUST SCORE from 0-100 where:
+  * 100 = Highly trustworthy and reliable
+  * 70-99 = Generally trustworthy with minor concerns
+  * 40-69 = Moderate trust, proceed with caution
+  * 20-39 = Low trust, significant concerns
+  * 0-19 = Very untrustworthy, likely scam
+
+- Generate specific trust/risk factors
+- Focus on what makes the site trustworthy OR concerning
+
+OUTPUT FORMAT:
+Return ONLY valid JSON with no comments:
+{
+  "trustScore": number (0-100, where 100 = most trustworthy),
+  "riskLevel": "low|medium|high",
+  "positivePoints": [
+    "Strong SSL certificate with extended validation",
+    "Domain registered for 5+ years showing stability",
+    "Complete contact information and business address",
+    "Professional website design and content"
+  ],
+  "negativePoints": [
+    "Domain registered very recently (suspicious timing)",
+    "Missing essential security headers",
+    "No visible contact information",
+    "Contains urgent action prompts typical of scams"
+  ],
+  "description": "Detailed analysis explaining the overall trustworthiness assessment, highlighting key factors that contribute to or detract from the site's reliability",
+  "technicalFlags": {
+    "HasValidSSL": 15,
+    "DomainAgeOver2Years": 20,
+    "CompleteCotactInfo": 10,
+    "MissingSecurityHeaders": -25,
+    "RecentDomainRegistration": -30
+  }
+}
+
+IMPORTANT:
+- Higher scores = MORE trustworthy
+- Lower scores = LESS trustworthy  
+- Focus on reliability indicators
+- Positive flags ADD to trust score
+- Negative flags SUBTRACT from trust score`,
+        },
+        {
+            "role": "user", 
+            "content": fmt.Sprintf(`Analyze this website for trustworthiness and reliability:
+
+URL: %s
+
+SCRAPED DATA:
+%s
+
+WHOIS DATA:
+%s
+
+ENAMAD DATA:
+%s
+
+Provide a comprehensive trust analysis focusing on what makes this website reliable or unreliable. Score from 0 (very untrustworthy) to 100 (highly trustworthy).`, site, jsonScraperData, string(jsonWhoisData), string(jsonEnamad)),
+        },
+    },
+}
 
 	// conveting the payload to json
 	jsonPayload, err := json.Marshal(payload)
