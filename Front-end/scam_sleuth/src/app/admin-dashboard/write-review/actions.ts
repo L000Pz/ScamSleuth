@@ -15,6 +15,29 @@ interface ScamType {
   scam_type: string;
 }
 
+async function getUserInfoFromToken(token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
 // Get all available scam types
 export async function getScamTypes(): Promise<{
   success: boolean;
@@ -27,6 +50,17 @@ export async function getScamTypes(): Promise<{
 
     if (!token) {
       return { success: false, error: 'No token found' };
+    }
+
+    // Verify user is admin
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return { success: false, error: 'Invalid authentication. Please login again.' };
+    }
+
+    if (userInfo.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
     }
 
     const response = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
@@ -59,12 +93,28 @@ export async function uploadFile(formData: FormData): Promise<{
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
-    const isVerified = cookieStore.get('isVerified')?.value;
 
-    if (!token || !isVerified || isVerified !== 'true') {
+    if (!token) {
       return {
         mediaId: null,
-        error: 'Please login and verify your account to upload files'
+        error: 'Please login to upload files'
+      };
+    }
+
+    // Verify user is admin (admins don't need verification check)
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return {
+        mediaId: null,
+        error: 'Invalid authentication. Please login again.'
+      };
+    }
+
+    if (userInfo.role !== 'admin') {
+      return {
+        mediaId: null,
+        error: 'Admin access required to upload files'
       };
     }
 
@@ -114,12 +164,28 @@ export async function deleteFile(id: number): Promise<{
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
-    const isVerified = cookieStore.get('isVerified')?.value;
 
-    if (!token || !isVerified || isVerified !== 'true') {
+    if (!token) {
       return {
         success: false,
-        error: 'Please login and verify your account'
+        error: 'Please login to delete files'
+      };
+    }
+
+    // Verify user is admin (admins don't need verification check)
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return {
+        success: false,
+        error: 'Invalid authentication. Please login again.'
+      };
+    }
+
+    if (userInfo.role !== 'admin') {
+      return {
+        success: false,
+        error: 'Admin access required to delete files'
       };
     }
 
@@ -159,6 +225,17 @@ export async function submitReview(reviewData: ReviewData): Promise<{
 
     if (!token) {
       return { success: false, error: 'No token found' };
+    }
+
+    // Verify user is admin
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return { success: false, error: 'Invalid authentication. Please login again.' };
+    }
+
+    if (userInfo.role !== 'admin') {
+      return { success: false, error: 'Admin access required to submit reviews' };
     }
 
     // Log the request body for debugging

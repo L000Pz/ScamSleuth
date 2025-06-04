@@ -3,8 +3,8 @@
 
 import { cookies } from 'next/headers';
 
-// User login response interface
-interface UserLoginResponse {
+// User response interface based on your API
+interface UserTokenResponse {
   user_id: number;
   username: string;
   email: string;
@@ -15,21 +15,18 @@ interface UserLoginResponse {
   role: string;
 }
 
-// Admin login response interface
-interface AdminLoginResponse {
+// Admin response interface (assuming similar structure)
+interface AdminTokenResponse {
   admin_id: number;
   username: string;
   email: string;
   name: string;
-  contact_info: string;
-  bio: string;
+  contact_info?: string;
+  bio?: string;
   profile_picture_id: number | null;
   token: string;
   role: string;
 }
-
-// Union type for both response types
-type LoginResponse = UserLoginResponse | AdminLoginResponse;
 
 type LoginResult = 
   | {
@@ -38,22 +35,22 @@ type LoginResult =
     }
   | {
       success: true;
-      data: LoginResponse & { is_verified?: boolean };
+      data: {
+        user_id?: number;
+        admin_id?: number;
+        username: string;
+        email: string;
+        name: string;
+        profile_picture_id: number | null;
+        is_verified: boolean;
+        role: string;
+      };
     };
-
-// Type guard to check if response is a user login response
-function isUserLoginResponse(data: LoginResponse): data is UserLoginResponse {
-  return 'user_id' in data && 'is_verified' in data;
-}
-
-// Type guard to check if response is an admin login response
-function isAdminLoginResponse(data: LoginResponse): data is AdminLoginResponse {
-  return 'admin_id' in data && !('is_verified' in data);
-}
 
 export async function login(formData: { email: string; password: string }): Promise<LoginResult> {
   try {
-    const response = await fetch('http://localhost:8080/IAM/authentication/Login', {
+    // First, perform the login to get the token
+    const loginResponse = await fetch('http://localhost:8080/IAM/authentication/Login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -62,75 +59,72 @@ export async function login(formData: { email: string; password: string }): Prom
       }),
     });
 
-    if (!response.ok) {
+    if (!loginResponse.ok) {
       return {
         success: false,
-        message: response.status === 400
+        message: loginResponse.status === 400
           ? 'Invalid credentials. Please check your email and password.'
           : 'Server error. Please try again later.',
       };
     }
 
-    const data: LoginResponse = await response.json();
+    const loginData = await loginResponse.json();
+    const token = loginData.token;
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Login failed: No token received.',
+      };
+    }
+
+    // Now use the token to get complete user information
+    const userInfoResponse = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!userInfoResponse.ok) {
+      return {
+        success: false,
+        message: 'Failed to retrieve user information.',
+      };
+    }
+
+    const userInfo: UserTokenResponse | AdminTokenResponse = await userInfoResponse.json();
     
-    // Set the token in cookies
+    // Only store the essential token
     const cookiesStore = await cookies();
     
     cookiesStore.set({
       name: 'token',
-      value: data.token,
+      value: userInfo.token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/'
     });
 
-    // Store the user's name
-    cookiesStore.set({
-      name: 'userName',
-      value: data.name,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
+    // Handle is_verified flag
+    const isVerified = 'is_verified' in userInfo ? userInfo.is_verified : true; // Admins default to verified
 
-    // Set userType based on role
-    cookiesStore.set({
-      name: 'userType',
-      value: data.role,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
-    
-    // Handle is_verified flag - only exists for regular users, not admins
-    let isVerified = 'true'; // Default for admins
-    
-    if (isUserLoginResponse(data)) {
-      // Regular user - use the is_verified field from response
-      isVerified = data.is_verified.toString();
-    } else if (isAdminLoginResponse(data)) {
-      // Admin - they're always considered verified
-      isVerified = 'true';
-    }
-    
-    cookiesStore.set({
-      name: 'isVerified',
-      value: isVerified,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
-
-    // Return the data with is_verified included for consistency
+    // Return simplified data structure
     return { 
       success: true,
       data: {
-        ...data,
-        is_verified: isVerified === 'true'
+        ...(('user_id' in userInfo) && { user_id: userInfo.user_id }),
+        ...(('admin_id' in userInfo) && { admin_id: userInfo.admin_id }),
+        username: userInfo.username,
+        email: userInfo.email,
+        name: userInfo.name,
+        profile_picture_id: userInfo.profile_picture_id,
+        is_verified: isVerified,
+        role: userInfo.role,
       }
     };
   } catch (error) {

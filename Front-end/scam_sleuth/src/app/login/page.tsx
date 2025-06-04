@@ -60,7 +60,6 @@ export default function LoginPage() {
       // Check role to determine where to redirect
       if (response.data.role === 'admin') {
         // Admin login successful
-        router.refresh();
         router.push('/admin-dashboard');
       } else {
         // Regular user login
@@ -68,12 +67,12 @@ export default function LoginPage() {
           router.push('/otp');
           return;
         }
-        router.refresh();
         router.push('/dashboard');
       }
     } catch (error) {
       console.error('Error logging in:', error);
       setApiError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };

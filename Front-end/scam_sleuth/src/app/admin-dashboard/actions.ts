@@ -11,6 +11,29 @@ interface TransformedReport {
   financial_loss: number;
 }
 
+async function getUserInfoFromToken(token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
 export async function getReports() {
   try {
     const cookieStore = await cookies();
@@ -18,6 +41,17 @@ export async function getReports() {
 
     if (!token) {
       return { success: false, error: 'Authentication required' };
+    }
+
+    // Verify user is admin
+    const userInfo = await getUserInfoFromToken(token);
+    
+    if (!userInfo) {
+      return { success: false, error: 'Invalid authentication. Please login again.' };
+    }
+
+    if (userInfo.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
     }
 
     // First API call - Get scam types
@@ -36,7 +70,7 @@ export async function getReports() {
         'accept': '*/*'
       }
     });
-    console.log(reportsRes)
+    console.log(reportsRes);
 
     const [scamTypes, reports] = await Promise.all([
       scamTypesRes.json(),
@@ -81,8 +115,8 @@ export async function logout() {
       }
     }
 
+    // Only delete the token cookie
     cookieStore.delete('token');
-    cookieStore.delete('userType');
 
     return { success: true };
   } catch (error) {

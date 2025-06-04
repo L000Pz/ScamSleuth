@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { FiMenu, FiX, FiUser } from 'react-icons/fi';
-import {checkAuth} from './actions'
+import { checkAuth } from './actions';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -37,6 +37,10 @@ export default function Navbar() {
     } else {
       router.push('/dashboard');
     }
+  };
+
+  const handleAskAI = () => {
+    router.push('/ask-ai');
   };
 
   const toggleMenu = () => {
@@ -74,6 +78,9 @@ export default function Navbar() {
           <Link href="/scams" className="relative">
             <span className="relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-red after:transition-all after:duration-300 after:ease-in-out hover:after:w-full">Scams</span>
           </Link>
+          <button onClick={handleAskAI} className="relative">
+            <span className="relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-red after:transition-all after:duration-300 after:ease-in-out hover:after:w-full">Ask AI</span>
+          </button>
           <Link href="/report" className="relative">
             <span className="relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-red after:transition-all after:duration-300 after:ease-in-out hover:after:w-full">Report a scam</span>
           </Link>
@@ -102,6 +109,7 @@ export default function Navbar() {
           <div className="absolute top-16 right-8 flex flex-col items-end space-y-4 z-50">
             <Link href="/" onClick={toggleMenu} className="text-[20px] font-medium">Home</Link>
             <Link href="/scams" onClick={toggleMenu} className="text-[20px] font-medium">Scams</Link>
+            <button onClick={() => { handleAskAI(); toggleMenu(); }} className="text-[20px] font-medium">Ask AI</button>
             <Link href="/report" onClick={toggleMenu} className="text-[20px] font-medium">Report a scam</Link>
             <Link href="/about" onClick={toggleMenu} className="text-[20px] font-medium">About us</Link>
           </div>
