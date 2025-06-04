@@ -33,6 +33,20 @@ public class UserRepository:IUserRepository
         await _context.SaveChangesAsync();
         return users;
     }
+    public async Task<Users?> ChangeUsername(Users users, string username)
+    {
+        users.username = username;
+        _context.users.Update(users);
+        await _context.SaveChangesAsync();
+        return users;
+    }
+    public async Task<Users?> ChangeName(Users users, string name)
+    {
+        users.name = name;
+        _context.users.Update(users);
+        await _context.SaveChangesAsync();
+        return users;
+    }
     public async Task<Report?> SubmitReport(Report report)
     {
         _context.report.Add(report);
@@ -119,6 +133,11 @@ public class UserRepository:IUserRepository
             .Select(m => m.media_id)
             .ToListAsync();
         return media;
+    }
+    public async Task<Admins?> GetAdminByUsername(string username)
+    {
+        return _context.admins.SingleOrDefault(admin => admin.username == username);
+
     }
  
 }

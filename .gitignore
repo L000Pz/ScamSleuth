@@ -302,3 +302,5 @@ Pipfile.lock
 # End of .gitignore
 
 Services/DB_Handler/alembic/__pycache__/env.cpython-311.pyc
+Services/DB_Handler/alembic/versions/
+

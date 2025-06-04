@@ -7,7 +7,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<IChangePassword, ChangePassword>();
+        services.AddScoped<IEditUserInfo, EditUserInfo>();
         services.AddScoped<ISubmitReport, SubmitReport>();
         services.AddScoped<IRemoveReport, RemoveReport>();
         services.AddScoped<IReturnReportById, ReturnReportById>();
