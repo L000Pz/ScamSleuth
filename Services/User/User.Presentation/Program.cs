@@ -1,5 +1,3 @@
-using System.Text;
-using Microsoft.OpenApi.Models;
 using User.Application;
 using User.Infrastructure;
 using User.Presentation;

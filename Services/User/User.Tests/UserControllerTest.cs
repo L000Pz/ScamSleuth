@@ -16,7 +16,7 @@ namespace User.Tests
 {
     public class UserControllerTests
     {
-        private readonly Mock<IChangePassword> _mockChangePassword;
+        private readonly Mock<IEditUserInfo> _mockChangePassword;
         private readonly Mock<IGetUserReports> _mockGetUserReports;
         private readonly Mock<ISubmitReport> _mockSubmitReport;
         private readonly Mock<IReturnReportById> _mockReturnReportById;
@@ -28,7 +28,7 @@ namespace User.Tests
 
         public UserControllerTests()
         {
-            _mockChangePassword = new Mock<IChangePassword>();
+            _mockChangePassword = new Mock<IEditUserInfo>();
             _mockGetUserReports = new Mock<IGetUserReports>();
             _mockSubmitReport = new Mock<ISubmitReport>();
             _mockReturnReportById = new Mock<IReturnReportById>();
@@ -173,18 +173,18 @@ namespace User.Tests
         public async Task ChangePassword_ValidRequest_ReturnsOkResult()
         {
             // Arrange
-            var passwordChange = new PasswordChange(
+            var passwordChange = new EditInfo(
                 email: "test@example.com",
                 password: "newpass123"
             );
 
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "test@example.com");
-            _mockChangePassword.Setup(x => x.Handle(It.IsAny<PasswordChange>()))
+            _mockChangePassword.Setup(x => x.Handle(It.IsAny<EditInfo>()))
                 .ReturnsAsync("success");
 
             // Act
-            var result = await _controller.ChangePassword(passwordChange);
+            var result = await _controller.EditUserInfo(passwordChange);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -195,12 +195,12 @@ namespace User.Tests
         public async Task ChangePassword_InvalidToken_ReturnsBadRequest()
         {
             // Arrange
-            var passwordChange = new PasswordChange("test@example.com", "newpass123");
+            var passwordChange = new EditInfo("test@example.com", "newpass123");
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer invalid-token";
             SetupMockHttpMessageHandler(HttpStatusCode.Unauthorized, "unauthorized");
 
             // Act
-            var result = await _controller.ChangePassword(passwordChange);
+            var result = await _controller.EditUserInfo(passwordChange);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -211,12 +211,12 @@ namespace User.Tests
         public async Task ChangePassword_EmailMismatch_ReturnsBadRequest()
         {
             // Arrange
-            var passwordChange = new PasswordChange("test@example.com", "newpass123");
+            var passwordChange = new EditInfo("test@example.com", "newpass123");
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "different@example.com");
 
             // Act
-            var result = await _controller.ChangePassword(passwordChange);
+            var result = await _controller.EditUserInfo(passwordChange);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -227,14 +227,14 @@ namespace User.Tests
         public async Task ChangePassword_OperationFailed_ReturnsBadRequest()
         {
             // Arrange
-            var passwordChange = new PasswordChange("test@example.com", "newpass123");
+            var passwordChange = new EditInfo("test@example.com", "newpass123");
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "test@example.com");
-            _mockChangePassword.Setup(x => x.Handle(It.IsAny<PasswordChange>()))
+            _mockChangePassword.Setup(x => x.Handle(It.IsAny<EditInfo>()))
                 .ReturnsAsync((string)null);
 
             // Act
-            var result = await _controller.ChangePassword(passwordChange);
+            var result = await _controller.EditUserInfo(passwordChange);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -245,14 +245,14 @@ namespace User.Tests
         public async Task ChangePassword_InvalidPasswordFormat_ReturnsBadRequest()
         {
             // Arrange
-            var passwordChange = new PasswordChange("test@example.com", "short");
+            var passwordChange = new EditInfo("test@example.com", "short");
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "test@example.com");
-            _mockChangePassword.Setup(x => x.Handle(It.IsAny<PasswordChange>()))
+            _mockChangePassword.Setup(x => x.Handle(It.IsAny<EditInfo>()))
                 .ReturnsAsync("format");
 
             // Act
-            var result = await _controller.ChangePassword(passwordChange);
+            var result = await _controller.EditUserInfo(passwordChange);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);

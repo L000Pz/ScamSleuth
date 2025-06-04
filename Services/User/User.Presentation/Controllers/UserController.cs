@@ -16,7 +16,7 @@ namespace User.Presentation.Controllers;
 [Route("userManagement")]
 public class UserController: ControllerBase
 {
-    private readonly IChangePassword _changePassword;
+    private readonly IEditUserInfo _editUserInfo;
     private readonly IGetUserReports _getUserReports;
     private readonly ISubmitReport _submitReport;
     private readonly IReturnReportById _returnReportById;
@@ -27,9 +27,9 @@ public class UserController: ControllerBase
     private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
     private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
 
-    public UserController(IChangePassword changePassword,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration, IReturnReportById returnReportById)
+    public UserController(IEditUserInfo editUserInfo,HttpClient httpClient, IGetUserReports getUserReports, ISubmitReport submitReport,IRemoveReport removeReport, IConfiguration configuration, IReturnReportById returnReportById)
     {
-        _changePassword = changePassword;
+        _editUserInfo = editUserInfo;
         _httpClient = httpClient;
         _getUserReports = getUserReports;
         _submitReport = submitReport;
@@ -37,9 +37,9 @@ public class UserController: ControllerBase
         _configuration = configuration;
         _returnReportById = returnReportById;
     }
-    [HttpPut("ChangePassword")]
+    [HttpPut("EditUserInfo")]
     [Authorize]
-    public async Task<ActionResult> ChangePassword([FromBody] PasswordChange passwordChange)
+    public async Task<ActionResult> EditUserInfo([FromBody] EditInfo editInfo)
     {
         string? token = HttpContext.Request.Headers.Authorization;
         token = token.Split(" ")[1];
@@ -49,15 +49,30 @@ public class UserController: ControllerBase
         {
             return BadRequest("Could not validate the token.");
         }
-        if (passwordChange.email != token)
+        if (editInfo.email != token)
         {
             return BadRequest("Email doesn't match!");
         }
 
-        String? result = await _changePassword.Handle(passwordChange);
+        if (editInfo.old_password == null)
+        {
+            return BadRequest("You must enter your password first!");
+        }
+
+        String? result = await _editUserInfo.Handle(editInfo);
         if (result is null)
         {
             return BadRequest("Operation failed!");
+        }
+
+        if (result == "password")
+        {
+            return BadRequest("Incorrect Password!");
+        }
+
+        if (result=="username")
+        {
+            return BadRequest("Username already exists!");
         }
 
         if (result == "format")
