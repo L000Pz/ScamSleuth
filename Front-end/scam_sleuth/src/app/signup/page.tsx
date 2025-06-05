@@ -274,11 +274,18 @@ export default function SignupPage() {
             </button>
           )}
           
-          {/* Validation icon */}
+          {/* Validation icon with hover tooltip for non-password fields */}
           {validation && name !== 'username' && name !== 'password' && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 group">
               {validation.isValid ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div className="relative">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 cursor-help" />
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    {validation.message}
+                    <div className="absolute top-full right-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
               ) : (
                 <AlertCircle className="w-5 h-5" style={{ color: '#E14048' }} />
               )}
@@ -287,9 +294,16 @@ export default function SignupPage() {
           
           {/* Password strength icon - positioned to not conflict with eye button */}
           {name === 'password' && validation && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 group">
               {validation.isValid ? (
-                <CheckCircle2 className="w-5 h-5" style={{ color: validation.strength?.color }} />
+                <div className="relative">
+                  <CheckCircle2 className="w-5 h-5 cursor-help" style={{ color: validation.strength?.color }} />
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    {validation.message}
+                    <div className="absolute top-full right-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
               ) : (
                 <AlertCircle className="w-5 h-5" style={{ color: validation.strength?.color || '#E14048' }} />
               )}
@@ -304,16 +318,10 @@ export default function SignupPage() {
           )}
         </div>
         
-        {/* Validation message */}
-        {validation && name !== 'username' && name !== 'password' && (
-          <div className={`flex items-center gap-2 text-sm ${
-            validation.isValid ? 'text-green-600' : ''
-          }`} style={!validation.isValid ? { color: '#E14048' } : {}}>
-            {validation.isValid ? (
-              <CheckCircle2 className="w-4 h-4" />
-            ) : (
-              <AlertCircle className="w-4 h-4" />
-            )}
+        {/* Validation message - only show errors, not success messages */}
+        {validation && name !== 'username' && name !== 'password' && !validation.isValid && (
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#E14048' }}>
+            <AlertCircle className="w-4 h-4" />
             <span>{validation.message}</span>
           </div>
         )}
@@ -341,7 +349,7 @@ export default function SignupPage() {
             
             {/* Requirements checklist */}
             <div className="grid grid-cols-1 gap-1 text-xs">
-              {validation?.strength?.checks.map((check, index) => (
+              {validation?.strength?.checks.map((check) => (
                 <div key={check.id} className="flex items-center gap-2">
                   {check.test ? (
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
@@ -446,7 +454,7 @@ export default function SignupPage() {
                 </p>
 
                 {/* Login Link */}
-                <div className="text-center pt-6 border-t" style={{ borderColor: '#A5918A', borderOpacity: 0.3 }}>
+                <div className="text-center pt-6 border-t" style={{ borderColor: 'rgba(165, 145, 138, 0.3)' }}>
                   <p style={{ color: '#0F1217', opacity: 0.8 }}>
                     Already have an account?{' '}
                     <Link 
@@ -466,9 +474,9 @@ export default function SignupPage() {
           <div className="hidden lg:flex w-2/5 relative overflow-hidden" style={{ background: `linear-gradient(to bottom right, #0F1217, #E14048)` }}>
             {/* Background pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-1/4 left-1/4 w-32 h-32 border rounded-full" style={{ borderColor: '#FFFFFF', borderOpacity: 0.2 }}></div>
-              <div className="absolute top-3/4 right-1/4 w-24 h-24 border rounded-full" style={{ borderColor: '#FFFFFF', borderOpacity: 0.2 }}></div>
-              <div className="absolute top-1/2 left-1/2 w-16 h-16 border rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ borderColor: '#FFFFFF', borderOpacity: 0.2 }}></div>
+              <div className="absolute top-1/4 left-1/4 w-32 h-32 border rounded-full" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}></div>
+              <div className="absolute top-3/4 right-1/4 w-24 h-24 border rounded-full" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}></div>
+              <div className="absolute top-1/2 left-1/2 w-16 h-16 border rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}></div>
             </div>
             
             <div className="relative z-10 flex flex-col items-center justify-center p-12 text-center">

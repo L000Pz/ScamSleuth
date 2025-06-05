@@ -1,10 +1,11 @@
 "use client"
-import React, { useState } from 'react';
-import { Search, Star, Globe, Shield, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, JSX } from 'react';
+import { Search, Star, Globe, Shield, AlertTriangle, RefreshCw } from 'lucide-react';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import heroImage from '@/assets/images/hero.png';
 import { quickAnalyzeWebsite } from '../website-analysis/actions';
+import { getRecentWebsites, getRecentWebsiteStats, type TransformedWebsite } from './actions';
 
 interface Website {
   id: string;
@@ -23,23 +24,29 @@ interface Review {
   date: string;
 }
 
+interface WebsiteStats {
+  totalAnalyzed: number;
+  highRiskCount: number;
+  mediumRiskCount: number;
+  lowRiskCount: number;
+  averageScore: number;
+}
+
 const WebsiteAnalysisPage: React.FC = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<Website | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  
+  // Real data states
+  const [recentWebsites, setRecentWebsites] = useState<Website[]>([]);
+  const [isLoadingWebsites, setIsLoadingWebsites] = useState<boolean>(true);
+  const [websitesError, setWebsitesError] = useState<string | null>(null);
+  const [websiteStats, setWebsiteStats] = useState<WebsiteStats | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Mock data for recent websites (you can replace this with real data later)
-  const [recentWebsites] = useState<Website[]>([
-    { id: '1', name: 'amazon.com', score: 95, riskLevel: 'low', lastChecked: '2 hours ago' },
-    { id: '2', name: 'suspicious-deals.net', score: 23, riskLevel: 'high', lastChecked: '1 hour ago' },
-    { id: '3', name: 'paypal.com', score: 98, riskLevel: 'low', lastChecked: '30 minutes ago' },
-    { id: '4', name: 'fake-bank-login.com', score: 12, riskLevel: 'high', lastChecked: '15 minutes ago' },
-    { id: '5', name: 'legitimate-store.com', score: 78, riskLevel: 'medium', lastChecked: '5 minutes ago' }
-  ]);
-
-  // Mock data for recent reviews
+  // Mock data for recent reviews (keeping this as mock since we don't have an endpoint for reviews)
   const [recentReviews] = useState<Review[]>([
     {
       id: '1',
@@ -67,7 +74,55 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   ]);
 
-  const handleSearch = async (e: React.FormEvent | React.MouseEvent) => {
+  // Fetch recent websites on component mount
+  useEffect(() => {
+    fetchRecentWebsites();
+  }, []);
+
+  const fetchRecentWebsites = async (): Promise<void> => {
+    try {
+      setIsLoadingWebsites(true);
+      setWebsitesError(null);
+      
+      // Fetch both recent websites and stats
+      const [websitesResult, statsResult] = await Promise.all([
+        getRecentWebsites(),
+        getRecentWebsiteStats()
+      ]);
+      
+      if (websitesResult.success && websitesResult.data) {
+        // Transform the data to match our interface
+        const transformedWebsites: Website[] = websitesResult.data.map((website: TransformedWebsite) => ({
+          id: website.id,
+          name: website.name,
+          score: website.score,
+          riskLevel: website.riskLevel,
+          lastChecked: website.lastChecked
+        }));
+        
+        setRecentWebsites(transformedWebsites);
+      } else {
+        setWebsitesError(websitesResult.error || 'Failed to load recent websites');
+      }
+
+      if (statsResult.success && statsResult.data) {
+        setWebsiteStats(statsResult.data);
+      }
+
+      setLastRefresh(new Date());
+    } catch (error) {
+      console.error('Error fetching recent websites:', error);
+      setWebsitesError('An unexpected error occurred while loading websites');
+    } finally {
+      setIsLoadingWebsites(false);
+    }
+  };
+
+  const handleRefresh = (): void => {
+    fetchRecentWebsites();
+  };
+
+  const handleSearch = async (e: React.FormEvent | React.MouseEvent): Promise<void> => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
@@ -104,23 +159,23 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const handleWebsiteClick = (website: Website) => {
+  const handleWebsiteClick = (website: Website): void => {
     router.push(`/website-analysis?site=${encodeURIComponent(website.name)}`);
   };
 
   const getScoreColor = (score: number): string => {
     if (score >= 70) return 'text-green-600';
     if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
+    return 'text-red';
   };
 
   const getScoreBgColor = (score: number): string => {
     if (score >= 70) return 'bg-green-100';
     if (score >= 40) return 'bg-yellow-100';
-    return 'bg-red-100';
+    return 'bg-red/10';
   };
 
-  const getRiskIcon = (riskLevel: string) => {
+  const getRiskIcon = (riskLevel: string): JSX.Element => {
     switch (riskLevel) {
       case 'low':
         return <Shield className="w-4 h-4 text-green-600" />;
@@ -133,7 +188,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number): JSX.Element[] => {
     return Array.from({ length: 5 }, (_, index) => (
       <Star
         key={index}
@@ -142,6 +197,21 @@ const WebsiteAnalysisPage: React.FC = () => {
         }`}
       />
     ));
+  };
+
+  const formatLastRefresh = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
   };
 
   return (
@@ -181,6 +251,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                 disabled={isSearching}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     handleSearch(e as any);
                   }
                 }}
@@ -235,6 +306,30 @@ const WebsiteAnalysisPage: React.FC = () => {
             </div>
           )}
 
+          {/* Stats Summary */}
+          {websiteStats && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
+                  <div className="text-2xl font-bold text-blue-600">{websiteStats.totalAnalyzed}</div>
+                  <div className="text-sm text-gray-600">Analyzed</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
+                  <div className="text-2xl font-bold text-red">{websiteStats.highRiskCount}</div>
+                  <div className="text-sm text-gray-600">High Risk</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
+                  <div className="text-2xl font-bold text-yellow-600">{websiteStats.mediumRiskCount}</div>
+                  <div className="text-sm text-gray-600">Medium Risk</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
+                  <div className="text-2xl font-bold text-green-600">{websiteStats.lowRiskCount}</div>
+                  <div className="text-sm text-gray-600">Low Risk</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <p className="text-lg md:text-xl text-black max-w-4xl mx-auto leading-relaxed">
             Don&apos;t let scams catch you off guard—be one step ahead with ScamSleuth. Our AI-powered 
@@ -249,33 +344,98 @@ const WebsiteAnalysisPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Websites Card */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-            <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-              <Globe className="w-6 h-6" />
-              Recent Websites
-            </h3>
-            <div className="space-y-4">
-              {recentWebsites.map((website) => (
-                <div 
-                  key={website.id} 
-                  onClick={() => handleWebsiteClick(website)}
-                  className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 rounded px-2 transition-colors"
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <Globe className="w-6 h-6" />
+                Recent Websites
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  Updated {formatLastRefresh(lastRefresh)}
+                </span>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoadingWebsites}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+                  title="Refresh recent websites"
                 >
-                  <div className="flex items-center gap-3">
-                    {getRiskIcon(website.riskLevel)}
-                    <div>
-                      <p className="font-medium text-gray-800">{website.name}</p>
-                      <p className="text-sm text-gray-500">Checked {website.lastChecked}</p>
+                  <RefreshCw className={`w-4 h-4 text-gray-500 ${isLoadingWebsites ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {isLoadingWebsites && (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                        <div>
+                          <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
+                          <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      </div>
+                      <div className="w-12 h-6 bg-gray-200 rounded-full"></div>
                     </div>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreBgColor(website.score)} ${getScoreColor(website.score)}`}>
-                    {website.score}
+                ))}
+              </div>
+            )}
+
+            {/* Error State */}
+            {websitesError && !isLoadingWebsites && (
+              <div className="text-center py-8">
+                <div className="text-red text-sm mb-4">{websitesError}</div>
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {/* Websites List */}
+            {!isLoadingWebsites && !websitesError && (
+              <div className="space-y-4">
+                {recentWebsites.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent website analyses found</p>
+                    <button
+                      onClick={handleRefresh}
+                      className="mt-2 text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Refresh
+                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  recentWebsites.map((website) => (
+                    <div 
+                      key={website.id} 
+                      onClick={() => handleWebsiteClick(website)}
+                      className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 rounded px-2 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {getRiskIcon(website.riskLevel)}
+                        <div>
+                          <p className="font-medium text-gray-800">{website.name}</p>
+                          <p className="text-sm text-gray-500">Checked {website.lastChecked}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreBgColor(website.score)} ${getScoreColor(website.score)}`}>
+                        {website.score}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Recent Reviews Card */}
+          {/* Recent Reviews Card - Still using mock data */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
             <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
               <Star className="w-6 h-6" />

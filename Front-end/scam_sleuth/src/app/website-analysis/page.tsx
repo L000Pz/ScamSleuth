@@ -2,11 +2,29 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Star, ArrowLeft, MessageSquare, AlertTriangle } from 'lucide-react';
+import { 
+  Search, 
+  Star, 
+  ArrowLeft, 
+  MessageSquare, 
+  AlertTriangle, 
+  Camera, 
+  RefreshCw, 
+  Download, 
+  Maximize2,
+  Globe,
+  Calendar,
+  Building,
+  Shield,
+  Server,
+  Mail,
+  Phone,
+  MapPin
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
-import { analyzeWebsite, type AnalysisResult } from './actions';
+import { analyzeWebsite, getLatestScreenshotByDomain, getWhoisData, type AnalysisResult, type WhoisData } from './actions';
 
 interface UserReview {
   id: string;
@@ -42,6 +60,18 @@ const WebsiteAnalysisPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
   const [hoveredRating, setHoveredRating] = useState<number>(0);
+  
+  // Screenshot state
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [screenshotLoading, setScreenshotLoading] = useState<boolean>(false);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState<boolean>(false);
+
+  // WHOIS state
+  const [whoisData, setWhoisData] = useState<WhoisData | null>(null);
+  const [whoisLoading, setWhoisLoading] = useState<boolean>(false);
+  const [whoisError, setWhoisError] = useState<string | null>(null);
+
   const [userReviews, setUserReviews] = useState<UserReview[]>([
     { 
       id: '1', 
@@ -72,6 +102,44 @@ const WebsiteAnalysisPage: React.FC = () => {
     ratingBreakdown: { 5: 100, 4: 75, 3: 50, 2: 25, 1: 10 }
   };
 
+  // Format date helper
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'Not available';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  // Calculate domain age helper
+  const calculateDomainAge = (createdDate: string | undefined): string => {
+    if (!createdDate) return 'Unknown';
+    try {
+      const created = new Date(createdDate);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - created.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const years = Math.floor(diffDays / 365);
+      const months = Math.floor((diffDays % 365) / 30);
+      
+      if (years > 0) {
+        return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` and ${months} month${months > 1 ? 's' : ''}` : ''}`;
+      } else if (months > 0) {
+        return `${months} month${months > 1 ? 's' : ''}`;
+      } else {
+        return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+      }
+    } catch {
+      return 'Unknown';
+    }
+  };
+
   // Fetch analysis data
   const performAnalysis = async (website: string) => {
     setIsLoading(true);
@@ -83,6 +151,24 @@ const WebsiteAnalysisPage: React.FC = () => {
       if (result.success && result.data) {
         setAnalysisResult(result.data);
         setCurrentWebsite(website);
+        
+        // Set screenshot if available
+        if (result.data.screenshotUrl) {
+          setScreenshotUrl(result.data.screenshotUrl);
+          setScreenshotError(null);
+        } else {
+          setScreenshotUrl(null);
+          setScreenshotError('No screenshot available');
+        }
+
+        // Set WHOIS data if available
+        if (result.data.whoisData) {
+          setWhoisData(result.data.whoisData);
+          setWhoisError(null);
+        } else {
+          setWhoisData(null);
+          setWhoisError('WHOIS data not available');
+        }
       } else {
         setError(result.error || 'Failed to analyze website');
       }
@@ -91,6 +177,77 @@ const WebsiteAnalysisPage: React.FC = () => {
       console.error('Analysis error:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Refresh screenshot - just get the latest existing one
+  const refreshScreenshot = async () => {
+    if (!currentWebsite) return;
+    
+    setScreenshotLoading(true);
+    setScreenshotError(null);
+    
+    try {
+      // Just get the latest screenshot (don't capture new)
+      const result = await getLatestScreenshotByDomain(currentWebsite);
+      
+      if (result.success && result.screenshotUrl) {
+        setScreenshotUrl(result.screenshotUrl);
+      } else {
+        setScreenshotError(result.error || 'No screenshot available yet');
+      }
+    } catch (err) {
+      setScreenshotError('An error occurred while loading screenshot');
+      console.error('Screenshot error:', err);
+    } finally {
+      setScreenshotLoading(false);
+    }
+  };
+
+  // Refresh WHOIS data
+  const refreshWhoisData = async () => {
+    if (!currentWebsite) return;
+    
+    setWhoisLoading(true);
+    setWhoisError(null);
+    
+    try {
+      const result = await getWhoisData(currentWebsite);
+      
+      if (result.success && result.data) {
+        setWhoisData(result.data);
+      } else {
+        setWhoisError(result.error || 'WHOIS data not available');
+      }
+    } catch (err) {
+      setWhoisError('An error occurred while loading WHOIS data');
+      console.error('WHOIS error:', err);
+    } finally {
+      setWhoisLoading(false);
+    }
+  };
+
+  // Download screenshot
+  const downloadScreenshot = async () => {
+    if (!screenshotUrl) return;
+    
+    try {
+      // Convert base64 data URL to blob for download
+      const response = await fetch(screenshotUrl);
+      const blob = await response.blob();
+      
+      const link = document.createElement('a');
+      const blobUrl = URL.createObjectURL(blob);
+      link.href = blobUrl;
+      link.download = `${currentWebsite}-screenshot.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download error:', err);
     }
   };
 
@@ -204,6 +361,57 @@ const WebsiteAnalysisPage: React.FC = () => {
     setHoveredRating(0);
   };
 
+  // Screenshot Modal Component
+  const ScreenshotModal = () => {
+    if (!isScreenshotModalOpen || !screenshotUrl) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+        onClick={() => setIsScreenshotModalOpen(false)}
+      >
+        <div 
+          className="relative max-w-6xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Screenshot: {currentWebsite}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadScreenshot}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsScreenshotModalOpen(false)}
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 max-h-[calc(90vh-80px)] overflow-auto">
+            <Image
+              src={screenshotUrl}
+              alt={`Screenshot of ${currentWebsite}`}
+              width={1200}
+              height={800}
+              className="w-full h-auto rounded-lg shadow-lg"
+              unoptimized
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading && !isSearching) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -226,14 +434,14 @@ const WebsiteAnalysisPage: React.FC = () => {
           <div className="space-y-3">
             <Button 
               variant="outline" 
-              onClick={() => window.location.reload()} 
+              onClick={() => router.push('/ask-ai')} 
               className="w-full font-bold"
             >
               Try Again
             </Button>
             <Button 
               variant="ghost" 
-              onClick={() => router.back()} 
+              onClick={() => router.push('/ask-ai')} 
               className="w-full font-medium"
             >
               Go Back
@@ -264,7 +472,7 @@ const WebsiteAnalysisPage: React.FC = () => {
         {/* Back Button */}
         <Button 
           variant="ghost" 
-          onClick={() => router.back()}
+          onClick={() => router.push('/ask-ai')}
           className="mb-6 flex items-center gap-2 font-medium text-[16px]"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -457,22 +665,325 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Description Box */}
-                <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
-                  <h3 className="text-xl font-bold mb-4 text-gray-800">Description</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                    {analysisResult.description}
-                  </p>
-                </div>
+                {/* Removed Description Box from here - moved to full-width section above review */}
               </div>
 
-              {/* Right Column - Screenshot */}
-              <div className="bg-gray-200 rounded-2xl shadow-lg p-8 flex items-center justify-center h-[320px] border border-gray-300">
-                <div className="text-center text-gray-500">
-                  <div className="text-7xl mb-4 opacity-60">🌐</div>
-                  <h3 className="text-2xl font-bold mb-2 text-gray-700">Screenshot</h3>
-                  <p className="text-sm">Website preview would appear here</p>
+              {/* Right Column - Screenshot and WHOIS */}
+              <div className="space-y-6">
+                {/* Screenshot Card */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden max-h-[480px]">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Camera className="w-5 h-5" />
+                        Website Screenshot
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshScreenshot}
+                          disabled={screenshotLoading}
+                          className="flex items-center gap-2"
+                          title="Refresh screenshot"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${screenshotLoading ? 'animate-spin' : ''}`} />
+                          {screenshotLoading ? 'Loading...' : 'Refresh'}
+                        </Button>
+                        {screenshotUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadScreenshot}
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="relative h-[280px] bg-gray-50 overflow-hidden">
+                    {screenshotLoading ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                          <p className="text-sm text-gray-600">Loading screenshot...</p>
+                        </div>
+                      </div>
+                    ) : screenshotUrl ? (
+                      <div className="relative h-full group cursor-pointer" onClick={() => setIsScreenshotModalOpen(true)}>
+                        <Image
+                          src={screenshotUrl}
+                          alt={`Screenshot of ${currentWebsite}`}
+                          fill
+                          className="object-cover object-top"
+                          sizes="400px"
+                          unoptimized
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="bg-white rounded-full p-3 shadow-lg">
+                              <Maximize2 className="w-6 h-6 text-gray-800" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          Click to enlarge
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-center p-4">
+                        <div className="text-gray-500">
+                          {screenshotError ? (
+                            <>
+                              <div className="text-4xl mb-3">📷</div>
+                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Screenshot Unavailable</h4>
+                              <p className="text-sm text-gray-600 mb-3">{screenshotError}</p>
+                              <p className="text-xs text-gray-500 mb-3">A new screenshot may be generating in the background</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={refreshScreenshot}
+                                className="flex items-center gap-2 mx-auto"
+                                title="Check for new screenshot"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                Check Again
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-6xl mb-4 opacity-60">🌐</div>
+                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Screenshot</h4>
+                              <p className="text-sm">Please wait...</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* WHOIS Information Card */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Globe className="w-5 h-5" />
+                        Domain Information
+                      </h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={refreshWhoisData}
+                        disabled={whoisLoading}
+                        className="flex items-center gap-2"
+                        title="Refresh WHOIS data"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${whoisLoading ? 'animate-spin' : ''}`} />
+                        {whoisLoading ? 'Loading...' : 'Refresh'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 max-h-[400px] overflow-y-auto">
+                    {whoisLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
+                          <p className="text-sm text-gray-600">Loading domain information...</p>
+                        </div>
+                      </div>
+                    ) : whoisData ? (
+                      <div className="space-y-4 text-sm">
+                        {/* Domain Information */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                            <Globe className="w-4 h-4" />
+                            Domain Details
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Domain:</span>
+                              <span className="font-medium">{whoisData.domain.domain}</span>
+                            </div>
+                            {whoisData.domain.created_date && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Created:</span>
+                                <span className="font-medium">{formatDate(whoisData.domain.created_date)}</span>
+                              </div>
+                            )}
+                            {whoisData.domain.created_date && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Age:</span>
+                                <span className="font-medium">{calculateDomainAge(whoisData.domain.created_date)}</span>
+                              </div>
+                            )}
+                            {whoisData.domain.expiration_date && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expires:</span>
+                                <span className="font-medium">{formatDate(whoisData.domain.expiration_date)}</span>
+                              </div>
+                            )}
+                            {whoisData.domain.updated_date && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Updated:</span>
+                                <span className="font-medium">{formatDate(whoisData.domain.updated_date)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Registrar Information */}
+                        {whoisData.registrar && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Building className="w-4 h-4" />
+                              Registrar
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                              {whoisData.registrar.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Name:</span>
+                                  <span className="font-medium">{whoisData.registrar.name}</span>
+                                </div>
+                              )}
+                              {whoisData.registrar.email && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">Email:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Mail className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium text-xs">{whoisData.registrar.email}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {whoisData.registrar.phone && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">Phone:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">{whoisData.registrar.phone}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Name Servers */}
+                        {whoisData.domain.name_servers && whoisData.domain.name_servers.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Server className="w-4 h-4" />
+                              Name Servers
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="space-y-1">
+                                {whoisData.domain.name_servers.map((ns, index) => (
+                                  <div key={index} className="text-xs font-mono bg-white px-2 py-1 rounded">
+                                    {ns}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Organization Information */}
+                        {whoisData.registrant && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Building className="w-4 h-4" />
+                              Registrant
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                              {whoisData.registrant.organization && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Organization:</span>
+                                  <span className="font-medium">{whoisData.registrant.organization}</span>
+                                </div>
+                              )}
+                              {(whoisData.registrant.country || whoisData.registrant.province) && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">Location:</span>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">
+                                      {[whoisData.registrant.province, whoisData.registrant.country]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Domain Status */}
+                        {whoisData.domain.status && whoisData.domain.status.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Shield className="w-4 h-4" />
+                              Status
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="space-y-1">
+                                {whoisData.domain.status.map((status, index) => (
+                                  <div key={index} className="text-xs bg-white px-2 py-1 rounded flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    {status}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-8 text-center">
+                        <div className="text-gray-500">
+                          {whoisError ? (
+                            <>
+                              <div className="text-4xl mb-3">🌐</div>
+                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Domain Info Unavailable</h4>
+                              <p className="text-sm text-gray-600 mb-3">{whoisError}</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={refreshWhoisData}
+                                className="flex items-center gap-2 mx-auto"
+                                title="Retry WHOIS lookup"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                Try Again
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-6xl mb-4 opacity-60">🌐</div>
+                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Domain Info</h4>
+                              <p className="text-sm">Please wait...</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Description Box - Moved here as a full-width section */}
+            <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">Analysis Description</h3>
+              <div className="prose max-w-none">
+                <p className="text-base text-gray-700 leading-relaxed">
+                  {analysisResult.description}
+                </p>
               </div>
             </div>
 
@@ -534,6 +1045,9 @@ const WebsiteAnalysisPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Screenshot Modal */}
+      <ScreenshotModal />
     </div>
   );
 };
