@@ -3,7 +3,9 @@
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Pencil, FileText, Eye, EyeOff, Download } from 'lucide-react';
+import { ArrowLeft, Pencil, FileText, Eye, EyeOff, Download } from 'lucide-react';
+import Image from 'next/image';
+import React from 'react';
 import { getAdminReport } from './actions';
 
 interface ScamReport {
@@ -12,17 +14,13 @@ interface ScamReport {
   name: string;
   description: string;
   date: string;
-  status: string;
   reporterName: string;
   contactInfo: string;
   evidence?: string[];
-  timeline?: string;
   writer: {
-    id: number;
     username: string;
     email: string;
     name: string;
-    profilePicture: string | null;
   };
   media: Array<{
     report_id: number;
@@ -30,20 +28,28 @@ interface ScamReport {
   }>;
 }
 
-export default function ScamReviewPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function ScamReviewPage({ params }: PageProps) {
   const router = useRouter();
   const [report, setReport] = useState<ScamReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
   const [previewingIds, setPreviewingIds] = useState<Set<number>>(new Set());
+
+  // Unwrap the params promise
+  const resolvedParams = React.use(params);
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
         setIsLoading(true);
-        const result = await getAdminReport(params.id);
+        const result = await getAdminReport(resolvedParams.id);
         
         if (result.success && result.data) {
           setReport(result.data);
@@ -59,21 +65,21 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
     };
 
     fetchReport();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
-  const handleStatusUpdate = async (newStatus: 'resolved' | 'pending') => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (report) {
-        setReport({ ...report, status: newStatus });
-      }
-      
-      setTimeout(() => router.push('/admin-dashboard/write-review'), 500);
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
+  const handleWriteReview = () => {
+    router.push('/admin-dashboard/write-review');
   };
+
+  // const handleMarkResolved = async () => {
+  //   try {
+  //     // For now, just redirect. You can add API call here later if needed
+  //     await new Promise(resolve => setTimeout(resolve, 500));
+  //     router.push('/admin-dashboard');
+  //   } catch (error) {
+  //     console.error('Error marking as resolved:', error);
+  //   }
+  // };
 
   const handleMediaDownload = (mediaId: number) => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
@@ -120,7 +126,7 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -134,18 +140,11 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
         <div className="flex items-center gap-3 min-w-fit">
           <Button
             variant="outline"
-            onClick={() => handleStatusUpdate('pending')}
+            onClick={handleWriteReview}
             className="rounded-full font-bold whitespace-nowrap"
           >
             <Pencil className="mr-2 h-4 w-4" />
             Write a Review
-          </Button>
-          <Button
-            onClick={() => handleStatusUpdate('resolved')}
-            className="rounded-full px-6 font-bold bg-black hover:bg-gray-800 whitespace-nowrap"
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Resolved
           </Button>
         </div>
       </div>
@@ -155,23 +154,25 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
         {/* Left Column - Basic Info */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-background rounded-xl p-4 md:p-6 shadow-md">
-            <h3 className="text-xl font-bold mb-4">Basic Information</h3>
+            <h3 className="text-xl font-bold mb-4">Report Information</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500">Type</label>
+                <label className="block text-sm font-medium text-gray-500">Scam Type</label>
                 <p className="text-lg break-words">{report.type}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500">Name</label>
+                <label className="block text-sm font-medium text-gray-500">Title</label>
                 <p className="text-lg break-words">{report.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500">Description</label>
-                <p className="text-lg whitespace-pre-wrap break-words max-h-64 overflow-y-auto">{report.description}</p>
+                <label className="block text-sm font-medium text-gray-500">Date Reported</label>
+                <p className="text-lg break-words">{report.date}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500">Timeline</label>
-                <p className="text-lg break-words">{report.timeline}</p>
+                <label className="block text-sm font-medium text-gray-500">Description</label>
+                <p className="text-lg whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                  {report.description}
+                </p>
               </div>
             </div>
           </div>
@@ -182,7 +183,7 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
               <h3 className="text-xl font-bold mb-4">Media Evidence</h3>
               <div className="space-y-4">
                 {report.media.map((media, index) => (
-                  <div key={media.media_id} className="border rounded-lg p-3 md:p-4">
+                  <div key={`media-${media.media_id}-${index}`} className="border rounded-lg p-3 md:p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-gray-500" />
@@ -225,10 +226,14 @@ export default function ScamReviewPage({ params }: { params: { id: string } }) {
                     {/* Preview Section */}
                     {previewingIds.has(media.media_id) && (
                       <div className="mt-2 rounded-lg overflow-hidden bg-gray-50 p-2">
-                        <img
+                        <Image
                           src={`http://localhost:8080/Media/mediaManager/Get?id=${media.media_id}`}
                           alt={`Preview ${index + 1}`}
+                          width={800}
+                          height={600}
                           className="w-full h-auto max-h-96 object-contain rounded-lg"
+                          unoptimized={true}
+                          priority={false}
                         />
                       </div>
                     )}

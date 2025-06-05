@@ -70,7 +70,6 @@ export async function getReports() {
         'accept': '*/*'
       }
     });
-    console.log(reportsRes);
 
     const [scamTypes, reports] = await Promise.all([
       scamTypesRes.json(),
