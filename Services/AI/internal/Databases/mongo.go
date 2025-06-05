@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -74,4 +75,160 @@ func (db *MongoDB) SaveScreenshot(collectionName string, domain string, screensh
 
 	return primitive.NilObjectID, fmt.Errorf("could not convert inserted Id to Object Id ")
 
+}
+
+// ScreenshotDocument represents the structure of a screenshot document in MongoDB
+type ScreenshotDocument struct {
+	ID         primitive.ObjectID `bson:"_id,omitempty"`
+	Domain     string             `bson:"domain"`
+	Screenshot []byte             `bson:"screenshot"`
+	CreatedAt  time.Time          `bson:"createdAt"`
+}
+
+// ScreenshotInfo represents screenshot metadata without the actual image data
+type ScreenshotInfo struct {
+	ID        string    `json:"id" bson:"_id"`
+	Domain    string    `json:"domain" bson:"domain"`
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	Size      int       `json:"size,omitempty"`
+}
+
+// GetScreenshotByID retrieves a screenshot by its ObjectID
+func (db *MongoDB) GetScreenshotByID(collectionName string, id primitive.ObjectID) ([]byte, string, error) {
+	collection := db.Client.Database("scamsleuth").Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var result ScreenshotDocument
+	err := collection.FindOne(ctx, bson.M{"_id": id}).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, "", fmt.Errorf("screenshot not found")
+		}
+		return nil, "", fmt.Errorf("failed to retrieve screenshot: %v", err)
+	}
+
+	return result.Screenshot, result.Domain, nil
+}
+
+// GetLatestScreenshotByDomain retrieves the most recent screenshot for a specific domain
+func (db *MongoDB) GetLatestScreenshotByDomain(collectionName string, domain string) ([]byte, error) {
+	collection := db.Client.Database("scamsleuth").Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Find the most recent screenshot for the domain
+	opts := options.FindOne().SetSort(bson.D{{"createdAt", -1}})
+
+	var result ScreenshotDocument
+	err := collection.FindOne(ctx, bson.M{"domain": domain}, opts).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("no screenshot found for domain: %s", domain)
+		}
+		return nil, fmt.Errorf("failed to retrieve screenshot: %v", err)
+	}
+
+	return result.Screenshot, nil
+}
+
+// ListScreenshots retrieves metadata for all screenshots (without the actual image data)
+func (db *MongoDB) ListScreenshots(collectionName string) ([]ScreenshotInfo, error) {
+	collection := db.Client.Database("scamsleuth").Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Only retrieve metadata, exclude the large screenshot data
+	opts := options.Find().
+		SetProjection(bson.M{"screenshot": 0}). // Exclude screenshot data
+		SetSort(bson.D{{"createdAt", -1}})      // Sort by creation time, newest first
+
+	cursor, err := collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find screenshots: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	var screenshots []ScreenshotInfo
+	for cursor.Next(ctx) {
+		var doc ScreenshotDocument
+		if err := cursor.Decode(&doc); err != nil {
+			log.Printf("Failed to decode screenshot document: %v", err)
+			continue
+		}
+
+		screenshots = append(screenshots, ScreenshotInfo{
+			ID:        doc.ID.Hex(),
+			Domain:    doc.Domain,
+			CreatedAt: doc.CreatedAt,
+		})
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error: %v", err)
+	}
+
+	return screenshots, nil
+}
+
+// GetScreenshotsByDomain retrieves all screenshots for a specific domain (metadata only)
+func (db *MongoDB) GetScreenshotsByDomain(collectionName string, domain string) ([]ScreenshotInfo, error) {
+	collection := db.Client.Database("scamsleuth").Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Only retrieve metadata, exclude the large screenshot data
+	opts := options.Find().
+		SetProjection(bson.M{"screenshot": 0}). // Exclude screenshot data
+		SetSort(bson.D{{"createdAt", -1}})      // Sort by creation time, newest first
+
+	cursor, err := collection.Find(ctx, bson.M{"domain": domain}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find screenshots for domain %s: %v", domain, err)
+	}
+	defer cursor.Close(ctx)
+
+	var screenshots []ScreenshotInfo
+	for cursor.Next(ctx) {
+		var doc ScreenshotDocument
+		if err := cursor.Decode(&doc); err != nil {
+			log.Printf("Failed to decode screenshot document: %v", err)
+			continue
+		}
+
+		screenshots = append(screenshots, ScreenshotInfo{
+			ID:        doc.ID.Hex(),
+			Domain:    doc.Domain,
+			CreatedAt: doc.CreatedAt,
+		})
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error: %v", err)
+	}
+
+	return screenshots, nil
+}
+
+// DeleteScreenshot deletes a screenshot by its ObjectID
+func (db *MongoDB) DeleteScreenshot(collectionName string, id primitive.ObjectID) error {
+	collection := db.Client.Database("scamsleuth").Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := collection.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return fmt.Errorf("failed to delete screenshot: %v", err)
+	}
+
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("screenshot not found")
+	}
+
+	return nil
 }
