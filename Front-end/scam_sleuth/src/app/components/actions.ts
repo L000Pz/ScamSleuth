@@ -79,6 +79,44 @@ export async function getUserData(): Promise<UserData | { name: string }> {
   }
 }
 
+export async function logout(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    
+    // Call backend logout endpoint first
+    if (token) {
+      try {
+        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        // Continue with logout even if backend call fails
+        console.warn('Backend logout call failed, but will clear token anyway');
+      }
+    }
+    
+    // Clear all auth-related cookies
+    cookieStore.delete('token');
+    cookieStore.delete('userType');
+    cookieStore.delete('isVerified');
+    cookieStore.delete('userName');
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    console.error('Logout error:', error);
+    return {
+      success: false,
+      message: 'Failed to logout. Please try again.'
+    };
+  }
+}
+
 export async function getRecentReviews() {
   try {
     const cookieStore = await cookies();

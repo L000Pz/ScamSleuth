@@ -237,11 +237,11 @@ const WebsiteAnalysisPage: React.FC = () => {
 
           {/* Description */}
           <p className="text-lg md:text-xl text-black max-w-4xl mx-auto leading-relaxed">
-            Don't let scams catch you off guard—be one step ahead with ScamSleuth. Our AI-powered 
+            Don&apos;t let scams catch you off guard—be one step ahead with ScamSleuth. Our AI-powered 
             detective meticulously analyzes websites in real-time, uncovering hidden dangers, phishing 
             traps, and fraudulent schemes before they can deceive you. With a clear safety score and 
             expert insights, ScamSleuth helps you navigate the web fearlessly. Just drop a URL above, 
-            and let's unmask the truth together!
+            and let&apos;s unmask the truth together!
           </p>
         </div>
 

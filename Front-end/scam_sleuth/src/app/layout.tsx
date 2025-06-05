@@ -70,7 +70,9 @@ export default function RootLayout({
     <html lang="en" className={Montserrat.className}>
       <body className="bg-background flex flex-col">
         <Navbar />
-        <main className="flex-grow">{children}</main>
+        <div className="pt-2 md:pt-5">
+          <main className="flex-grow">{children}</main>
+        </div>
         <Footer />
       </body>
     </html>

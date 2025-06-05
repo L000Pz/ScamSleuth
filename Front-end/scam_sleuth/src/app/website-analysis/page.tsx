@@ -31,14 +31,17 @@ interface ReviewStats {
 const WebsiteAnalysisPage: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const website = searchParams.get('site') || 'example.com';
+  const initialWebsite = searchParams.get('site') || 'example.com';
   
   // State management
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>(initialWebsite);
+  const [currentWebsite, setCurrentWebsite] = useState<string>(initialWebsite);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
-  const [hoveredRating, setHoveredRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [userReviews, setUserReviews] = useState<UserReview[]>([
     { 
       id: '1', 
@@ -69,30 +72,73 @@ const WebsiteAnalysisPage: React.FC = () => {
     ratingBreakdown: { 5: 100, 4: 75, 3: 50, 2: 25, 1: 10 }
   };
 
-  // Fetch analysis data on component mount
-  useEffect(() => {
-    const performAnalysis = async () => {
-      setIsLoading(true);
-      setError(null);
+  // Fetch analysis data
+  const performAnalysis = async (website: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await analyzeWebsite(website);
       
-      try {
-        const result = await analyzeWebsite(website);
-        
-        if (result.success && result.data) {
-          setAnalysisResult(result.data);
-        } else {
-          setError(result.error || 'Failed to analyze website');
-        }
-      } catch (err) {
-        setError('An unexpected error occurred during analysis');
-        console.error('Analysis error:', err);
-      } finally {
-        setIsLoading(false);
+      if (result.success && result.data) {
+        setAnalysisResult(result.data);
+        setCurrentWebsite(website);
+      } else {
+        setError(result.error || 'Failed to analyze website');
       }
-    };
+    } catch (err) {
+      setError('An unexpected error occurred during analysis');
+      console.error('Analysis error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    performAnalysis();
-  }, [website]);
+  // Initial analysis on component mount
+  useEffect(() => {
+    performAnalysis(initialWebsite);
+  }, [initialWebsite]);
+
+  // Handle search functionality
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    
+    if (!searchQuery.trim() || isSearching) return;
+    
+    const cleanQuery = searchQuery.trim();
+    
+    // Don't search if it's the same website
+    if (cleanQuery === currentWebsite) return;
+    
+    setIsSearching(true);
+    
+    try {
+      // Update URL without page reload
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('site', cleanQuery);
+      window.history.pushState({}, '', newUrl);
+      
+      // Perform new analysis
+      await performAnalysis(cleanQuery);
+      
+      // Reset review form
+      setNewReview({ rating: 0, comment: '' });
+      setHoveredRating(0);
+      
+    } catch (err) {
+      console.error('Search error:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle enter key in search input
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch(e as any);
+    }
+  };
 
   const getTrustScoreColor = (score: number): string => {
     if (score >= 70) return 'bg-green-500';
@@ -107,13 +153,11 @@ const WebsiteAnalysisPage: React.FC = () => {
   };
 
   const handleContactSpecialist = () => {
-    // Navigate to contact page or open contact modal
     router.push('/contact');
   };
 
   const handleReportScam = () => {
-    // Navigate to report page with pre-filled website
-    router.push(`/report?website=${encodeURIComponent(website)}`);
+    router.push(`/report?website=${encodeURIComponent(currentWebsite)}`);
   };
 
   const handleHelpfulClick = (reviewId: string) => {
@@ -125,59 +169,6 @@ const WebsiteAnalysisPage: React.FC = () => {
       )
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-          <p className="text-xl font-semibold text-gray-700">Analyzing website...</p>
-          <p className="text-gray-500">This may take a few moments</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl shadow-lg p-8 max-w-md">
-          <div className="text-red text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Analysis Failed</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.reload()} 
-              className="w-full font-bold"
-            >
-              Try Again
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => router.back()} 
-              className="w-full font-medium"
-            >
-              Go Back
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analysisResult) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-red mb-4">No analysis data available</p>
-          <Button variant="outline" onClick={() => router.back()} className="font-bold">
-            Go Back
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const renderStars = (rating: number, interactive = false, onRate?: (rating: number) => void) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -213,6 +204,46 @@ const WebsiteAnalysisPage: React.FC = () => {
     setHoveredRating(0);
   };
 
+  if (isLoading && !isSearching) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+          <p className="text-xl font-semibold text-gray-700">Analyzing website...</p>
+          <p className="text-gray-500">This may take a few moments</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !analysisResult) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl shadow-lg p-8 max-w-md">
+          <div className="text-red text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Analysis Failed</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-y-3">
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()} 
+              className="w-full font-bold"
+            >
+              Try Again
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => router.back()} 
+              className="w-full font-medium"
+            >
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background relative">
       {/* Background Hero Image */}
@@ -240,231 +271,267 @@ const WebsiteAnalysisPage: React.FC = () => {
           Back to Search
         </Button>
 
-        {/* Search Bar */}
+        {/* Functional Search Bar */}
         <div className="mb-8">
-          <div className="relative max-w-lg mx-auto">
+          <form onSubmit={handleSearch} className="relative max-w-lg mx-auto">
             <input
               type="text"
-              value={website}
-              readOnly
-              className="w-full px-6 py-4 pr-14 rounded-full border-2 border-gray-300 bg-white text-center font-medium shadow-lg focus:outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter website URL (e.g., example.com)"
+              disabled={isSearching || isLoading}
+              className="w-full px-6 py-4 pr-14 rounded-full border-2 border-gray-300 bg-white text-center font-medium shadow-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-              <Search className="w-5 h-5 text-gray-400" />
+            <button
+              type="submit"
+              disabled={isSearching || isLoading || !searchQuery.trim()}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded-full p-1 transition-colors"
+            >
+              {isSearching ? (
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Search className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+          </form>
+          
+          {/* Loading indicator for search */}
+          {isSearching && (
+            <div className="text-center mt-4">
+              <p className="text-blue-600 font-medium">Analyzing new website...</p>
             </div>
-          </div>
+          )}
           
           {/* Score Badge */}
-          <div className="text-center mt-6">
-            <div className="inline-flex items-center bg-white rounded-full px-6 py-3 shadow-lg border">
-              <span className="font-semibold text-gray-800 mr-3">{analysisResult.website}</span>
-              <span className={`px-4 py-2 rounded-full text-white text-sm font-bold shadow-sm ${getTrustScoreColor(analysisResult.trustScore)}`}>
-                Score: {analysisResult.trustScore}/100
-              </span>
+          {analysisResult && (
+            <div className="text-center mt-6">
+              <div className="inline-flex items-center bg-white rounded-full px-6 py-3 shadow-lg border">
+                <span className="font-semibold text-gray-800 mr-3">{analysisResult.website}</span>
+                <span className={`px-4 py-2 rounded-full text-white text-sm font-bold shadow-sm ${getTrustScoreColor(analysisResult.trustScore)}`}>
+                  Score: {analysisResult.trustScore}/100
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Trust Score Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-              <h3 className="text-xl font-bold text-center mb-6 text-gray-800">Trust Score</h3>
-              <div className="text-center">
-                <div className="relative mb-6">
-                  <div className="text-5xl font-black mb-2 text-gray-800">{analysisResult.trustScore}</div>
-                  <div className="text-gray-500 text-xl font-medium">/100</div>
-                  <div className={`text-sm font-bold mt-2 ${
-                    analysisResult.trustScore >= 70 ? 'text-green-600' : 
-                    analysisResult.trustScore >= 40 ? 'text-yellow-600' : 'text-red'
-                  }`}>
-                    {getTrustScoreLabel(analysisResult.trustScore)}
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
-                  <div 
-                    className={`h-4 rounded-full transition-all duration-1000 shadow-sm ${getTrustScoreColor(analysisResult.trustScore)}`}
-                    style={{ width: `${analysisResult.trustScore}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-4">
-              <Button 
-                variant="ghost" 
-                size="lg"
-                onClick={handleContactSpecialist}
-                className="w-full py-4 text-[16px] font-medium text-white bg-black flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="w-5 h-5" />
-                Need help? Contact our Specialist
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={handleReportScam}
-                className="w-full py-4 text-[16px] font-bold flex items-center justify-center gap-2 hover:bg-red hover:text-white hover:border-red transition-all duration-200"
-              >
-                <AlertTriangle className="w-5 h-5" />
-                Report Scam!
-              </Button>
-            </div>
-
-            {/* User Reviews Summary */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-              <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-4xl font-bold text-gray-800">{reviewStats.averageRating}</span>
-                <div className="flex">
-                  {renderStars(Math.round(reviewStats.averageRating))}
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                From {reviewStats.totalReviews} total reviews.
+        {/* Error Message */}
+        {error && analysisResult && (
+          <div className="mb-6 max-w-2xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <p className="text-red-600 text-center">
+                <strong>Search Error:</strong> {error}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content - Only show if we have analysis results */}
+        {analysisResult && (
+          <>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
-              {/* Rating Breakdown */}
-              <div className="space-y-3">
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <div key={rating} className="flex items-center gap-3 text-sm">
-                    <span className="w-3 font-medium">{rating}</span>
-                    <Star className="w-4 h-4 text-green-500 fill-current flex-shrink-0" />
-                    <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+              {/* Left Column */}
+              <div className="space-y-6">
+                {/* Trust Score Card */}
+                <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+                  <h3 className="text-xl font-bold text-center mb-6 text-gray-800">Trust Score</h3>
+                  <div className="text-center">
+                    <div className="relative mb-6">
+                      <div className="text-5xl font-black mb-2 text-gray-800">{analysisResult.trustScore}</div>
+                      <div className="text-gray-500 text-xl font-medium">/100</div>
+                      <div className={`text-sm font-bold mt-2 ${
+                        analysisResult.trustScore >= 70 ? 'text-green-600' : 
+                        analysisResult.trustScore >= 40 ? 'text-yellow-600' : 'text-red'
+                      }`}>
+                        {getTrustScoreLabel(analysisResult.trustScore)}
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
                       <div 
-                        className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${(reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown] / reviewStats.totalReviews) * 100}%` }}
+                        className={`h-4 rounded-full transition-all duration-1000 shadow-sm ${getTrustScoreColor(analysisResult.trustScore)}`}
+                        style={{ width: `${analysisResult.trustScore}%` }}
                       />
                     </div>
-                    <span className="w-8 text-xs text-gray-500 text-right">
-                      {reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown]}
-                    </span>
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-4 italic">
-                Reviews are made by registered members.
-              </p>
-            </div>
-          </div>
-
-          {/* Middle Column - Details and Description */}
-          <div className="space-y-6">
-            {/* Details Box */}
-            <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
-              <h3 className="text-xl font-bold mb-6 text-gray-800">Details</h3>
-              
-              {/* Positive Points */}
-              <div className="mb-8">
-                <h4 className="text-sm font-bold text-green-600 mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  Positive points
-                </h4>
-                <ul className="space-y-3">
-                  {analysisResult.positivePoints.map((point, index) => (
-                    <li key={index} className="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
-                      <span></span>
-                      <span className="flex-1">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Negative Points */}
-              <div>
-                <h4 className="text-sm font-bold text-red mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red rounded-full"></span>
-                  Negative points
-                </h4>
-                <ul className="space-y-3">
-                  {analysisResult.negativePoints.map((point, index) => (
-                    <li key={index} className="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
-                      <span></span>
-                      <span className="flex-1">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Description Box */}
-            <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Description</h3>
-              <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                {analysisResult.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Right Column - Screenshot */}
-          <div className="bg-gray-200 rounded-2xl shadow-lg p-8 flex items-center justify-center h-[320px] border border-gray-300">
-            <div className="text-center text-gray-500">
-              <div className="text-7xl mb-4 opacity-60">🌐</div>
-              <h3 className="text-2xl font-bold mb-2 text-gray-700">Screenshot</h3>
-              <p className="text-sm">Website preview would appear here</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Write a Review Section */}
-        <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <h3 className="text-2xl font-bold mb-6 text-gray-800">Write a review!</h3>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex">
-              {renderStars(newReview.rating, true, (rating) => setNewReview({...newReview, rating}))}
-            </div>
-            <span className="text-sm text-gray-600 font-medium">
-              {newReview.rating > 0 ? `${newReview.rating} star${newReview.rating > 1 ? 's' : ''}` : 'Click to rate'}
-            </span>
-          </div>
-          <textarea
-            value={newReview.comment}
-            onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
-            placeholder="Share your experience with this website..."
-            className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all mb-6"
-          />
-          <Button 
-            variant="outline"
-            size="lg"
-            onClick={handleSubmitReview}
-            disabled={newReview.rating === 0 || !newReview.comment.trim()}
-            className="px-8 py-3 hover:border-black border border-transparent font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Submit Review
-          </Button>
-        </div>
-
-        {/* User Reviews List */}
-        {userReviews.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-xl font-bold mb-6 text-gray-800">Recent Reviews</h3>
-            <div className="space-y-4">
-              {userReviews.map((review) => (
-                <div key={review.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      {renderStars(review.rating)}
-                      <span className="text-sm text-gray-500">{review.date}</span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleHelpfulClick(review.id)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium"
-                    >
-                      👍 {review.helpful}
-                    </Button>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">{review.comment}</p>
                 </div>
-              ))}
+
+                {/* Action Buttons */}
+                <div className="space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    size="lg"
+                    onClick={handleContactSpecialist}
+                    className="w-full py-4 text-[16px] font-medium text-white bg-black flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    Need help? Contact our Specialist
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={handleReportScam}
+                    className="w-full py-4 text-[16px] font-bold flex items-center justify-center gap-2 hover:bg-red hover:text-white hover:border-red transition-all duration-200"
+                  >
+                    <AlertTriangle className="w-5 h-5" />
+                    Report Scam!
+                  </Button>
+                </div>
+
+                {/* User Reviews Summary */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                  <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-4xl font-bold text-gray-800">{reviewStats.averageRating}</span>
+                    <div className="flex">
+                      {renderStars(Math.round(reviewStats.averageRating))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-6">
+                    From {reviewStats.totalReviews} total reviews.
+                  </p>
+                  
+                  {/* Rating Breakdown */}
+                  <div className="space-y-3">
+                    {[5, 4, 3, 2, 1].map((rating) => (
+                      <div key={rating} className="flex items-center gap-3 text-sm">
+                        <span className="w-3 font-medium">{rating}</span>
+                        <Star className="w-4 h-4 text-green-500 fill-current flex-shrink-0" />
+                        <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                            style={{ width: `${(reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown] / reviewStats.totalReviews) * 100}%` }}
+                          />
+                        </div>
+                        <span className="w-8 text-xs text-gray-500 text-right">
+                          {reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-4 italic">
+                    Reviews are made by registered members.
+                  </p>
+                </div>
+              </div>
+
+              {/* Middle Column - Details and Description */}
+              <div className="space-y-6">
+                {/* Details Box */}
+                <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
+                  <h3 className="text-xl font-bold mb-6 text-gray-800">Details</h3>
+                  
+                  {/* Positive Points */}
+                  <div className="mb-8">
+                    <h4 className="text-sm font-bold text-green-600 mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Positive points
+                    </h4>
+                    <ul className="space-y-3">
+                      {analysisResult.positivePoints.map((point, index) => (
+                        <li key={index} className="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
+                          <span className="text-green-500 mt-1">✓</span>
+                          <span className="flex-1">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Negative Points */}
+                  <div>
+                    <h4 className="text-sm font-bold text-red mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red rounded-full"></span>
+                      Negative points
+                    </h4>
+                    <ul className="space-y-3">
+                      {analysisResult.negativePoints.map((point, index) => (
+                        <li key={index} className="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
+                          <span className="text-red mt-1">⚠</span>
+                          <span className="flex-1">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Description Box */}
+                <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
+                  <h3 className="text-xl font-bold mb-4 text-gray-800">Description</h3>
+                  <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                    {analysisResult.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column - Screenshot */}
+              <div className="bg-gray-200 rounded-2xl shadow-lg p-8 flex items-center justify-center h-[320px] border border-gray-300">
+                <div className="text-center text-gray-500">
+                  <div className="text-7xl mb-4 opacity-60">🌐</div>
+                  <h3 className="text-2xl font-bold mb-2 text-gray-700">Screenshot</h3>
+                  <p className="text-sm">Website preview would appear here</p>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Write a Review Section */}
+            <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">Write a review!</h3>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex">
+                  {renderStars(newReview.rating, true, (rating) => setNewReview({...newReview, rating}))}
+                </div>
+                <span className="text-sm text-gray-600 font-medium">
+                  {newReview.rating > 0 ? `${newReview.rating} star${newReview.rating > 1 ? 's' : ''}` : 'Click to rate'}
+                </span>
+              </div>
+              <textarea
+                value={newReview.comment}
+                onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
+                placeholder="Share your experience with this website..."
+                className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all mb-6"
+              />
+              <Button 
+                variant="outline"
+                size="lg"
+                onClick={handleSubmitReview}
+                disabled={newReview.rating === 0 || !newReview.comment.trim()}
+                className="px-8 py-3 hover:border-black border border-transparent font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit Review
+              </Button>
+            </div>
+
+            {/* User Reviews List */}
+            {userReviews.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-bold mb-6 text-gray-800">Recent Reviews</h3>
+                <div className="space-y-4">
+                  {userReviews.map((review) => (
+                    <div key={review.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {renderStars(review.rating)}
+                          <span className="text-sm text-gray-500">{review.date}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleHelpfulClick(review.id)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium"
+                        >
+                          👍 {review.helpful}
+                        </Button>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
