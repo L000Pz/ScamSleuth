@@ -3,6 +3,19 @@
 
 import { cookies } from 'next/headers';
 
+// User response interface based on your API
+interface UserTokenResponse {
+  user_id: number;
+  username: string;
+  email: string;
+  name: string;
+  profile_picture_id: number | null;
+  is_verified: boolean;
+  token: string;
+  role: string;
+}
+
+// SignupResponse interface for the registration endpoint
 interface SignupResponse {
   users: {
     user_id: number;
@@ -15,86 +28,106 @@ interface SignupResponse {
   token: string;
 }
 
-export async function signup(formData: {
-  email: string;
-  username: string;
-  password: string;
-  name: string;
-}): Promise<
+type SignupResult = 
   | {
       success: false;
       message: string;
     }
   | {
       success: true;
-      userData: SignupResponse['users'];
-    }
-> {
+      data: {
+        user_id: number;
+        username: string;
+        email: string;
+        name: string;
+        profile_picture_id: number | null;
+        is_verified: boolean;
+        role: string;
+      };
+    };
+
+export async function signup(formData: {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+}): Promise<SignupResult> {
   try {
-    const response = await fetch('http://localhost:8080/IAM/authentication/Register', {
+    // First, perform the registration to get the token
+    const signupResponse = await fetch('http://localhost:8080/IAM/authentication/Register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        name: formData.name
+      }),
     });
 
-    if (!response.ok) {
+    if (!signupResponse.ok) {
       return {
         success: false,
-        message: 'Registration failed. Please try again.',
+        message: signupResponse.status === 400
+          ? 'Registration failed. Please check your information and try again.'
+          : 'Server error. Please try again later.',
       };
     }
 
-    const data: SignupResponse = await response.json();
+    const signupData: SignupResponse = await signupResponse.json();
+    const token = signupData.token;
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Registration failed: No token received.',
+      };
+    }
+
+    // Now use the token to get complete user information
+    const userInfoResponse = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!userInfoResponse.ok) {
+      return {
+        success: false,
+        message: 'Failed to retrieve user information.',
+      };
+    }
+
+    const userInfo: UserTokenResponse = await userInfoResponse.json();
     
-    // Set the token in cookies
-    const cookieStore = await cookies();
-    cookieStore.set({
+    // Only store the essential token
+    const cookiesStore = await cookies();
+    
+    cookiesStore.set({
       name: 'token',
-      value: data.token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
-    
-    cookieStore.set({
-      name: 'userType',
-      value: 'user',
+      value: userInfo.token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/'
     });
 
-    // Check if is_verified exists before using it
-    const isVerified = data.users?.is_verified !== undefined 
-      ? data.users.is_verified.toString() 
-      : 'false'; // Default to false if not provided
-      
-    cookieStore.set({
-      name: 'isVerified',
-      value: isVerified,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
-    
-    const userName = data.users.name;
-    cookieStore.set({
-      name: 'userName',
-      value: userName,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/'
-    });
-
-    return {
+    // Return simplified data structure
+    return { 
       success: true,
-      userData: data.users
+      data: {
+        user_id: userInfo.user_id,
+        username: userInfo.username,
+        email: userInfo.email,
+        name: userInfo.name,
+        profile_picture_id: userInfo.profile_picture_id,
+        is_verified: userInfo.is_verified,
+        role: userInfo.role,
+      }
     };
   } catch (error) {
     console.error('Signup error:', error);

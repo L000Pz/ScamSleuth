@@ -74,7 +74,7 @@ export default function CodeVerificationPage() {
         <div className="w-full lg:w-3/5 p-4 sm:p-6 lg:p-8">
           <h2 className="text-2xl sm:text-3xl lg:text-[40px] text-center font-bold mb-6">Enter Code</h2>
           <p className="text-center text-base sm:text-lg mb-4 text-gray-600">
-            We've sent a one-time code to your email. Please enter it below to continue.
+            We&apos;ve sent a one-time code to your email. Please enter it below to continue.
           </p>
           
           <form className="space-y-4 mx-4 sm:mx-8 lg:mx-[90px]" onSubmit={handleSubmit}>
@@ -104,7 +104,7 @@ export default function CodeVerificationPage() {
           </form>
 
           <p className="text-center text-sm mt-4">
-            Didn't receive the code?{' '}
+            Didn&apos;t receive the code?{' '}
             <button 
               type="button" 
               onClick={handleResendCode} 
