@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -133,11 +134,11 @@ func SendToAI(site string) models.CompletionResponse {
 	fmt.Println("this is enamad data")
 	fmt.Println(string(jsonEnamad))
 	payload := map[string]interface{}{
-    "model": "deepseek/deepseek-r1:free",
-    "messages": []map[string]string{
-        {
-            "role": "system",
-            "content": `You are an expert website security analyst. Your task is to analyze websites for trustworthiness and reliability.
+		"model": "deepseek/deepseek-r1:free",
+		"messages": []map[string]string{
+			{
+				"role": "system",
+				"content": `You are an expert website security analyst. Your task is to analyze websites for trustworthiness and reliability.
 
 ANALYSIS CRITERIA:
 1. Domain Trust Factors:
@@ -207,10 +208,10 @@ IMPORTANT:
 - Positive flags ADD to trust score
 - Negative flags SUBTRACT from trust score
 - If you change the JSON format and its structure you will make a great system unfunctional`,
-        },
-        {
-            "role": "user", 
-            "content": fmt.Sprintf(`Analyze this website for trustworthiness and reliability:
+			},
+			{
+				"role": "user",
+				"content": fmt.Sprintf(`Analyze this website for trustworthiness and reliability:
 
 URL: %s
 
@@ -224,9 +225,9 @@ ENAMAD DATA:
 %s
 
 Provide a comprehensive trust analysis focusing on what makes this website reliable or unreliable. Score from 0 (very untrustworthy) to 100 (highly trustworthy).`, site, jsonScraperData, string(jsonWhoisData), string(jsonEnamad)),
-        },
-    },
-}
+			},
+		},
+	}
 
 	// conveting the payload to json
 	jsonPayload, err := json.Marshal(payload)
@@ -342,4 +343,231 @@ func (h *AIHandler) Scan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+// url storage handlers added:
+// GetRecentURLs handles GET requests to retrieve recent URLs
+func (h *AIHandler) GetRecentURLs(w http.ResponseWriter, r *http.Request) {
+	// Only allow GET requests
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get optional limit parameter
+	limitStr := r.URL.Query().Get("limit")
+	limit := 5 // default
+
+	if limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
+			return
+		}
+		if parsedLimit > 0 && parsedLimit <= 100 { // Cap at 100 for safety
+			limit = parsedLimit
+		}
+	}
+
+	log.Printf("Retrieving %d recent URLs from url_storage table", limit)
+
+	var records []Databases.URLStorageRecord
+	var err error
+
+	if limit == 5 {
+		records, err = h.PostgreSQL.GetRecentURLs("url_storage")
+	} else {
+		records, err = h.PostgreSQL.GetRecentURLsWithLimit("url_storage", limit)
+	}
+
+	if err != nil {
+		log.Printf("Failed to retrieve recent URLs: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to retrieve URLs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Retrieved %d records successfully", len(records))
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"status":  "success",
+		"count":   len(records),
+		"records": records,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// GetURLsByDateRange handles GET requests to retrieve URLs by date range
+func (h *AIHandler) GetURLsByDateRange(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse date parameters
+	startDateStr := r.URL.Query().Get("start_date")
+	endDateStr := r.URL.Query().Get("end_date")
+
+	if startDateStr == "" || endDateStr == "" {
+		http.Error(w, "Both start_date and end_date parameters are required (format: 2006-01-02)", http.StatusBadRequest)
+		return
+	}
+
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		http.Error(w, "Invalid start_date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		http.Error(w, "Invalid end_date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	// Set end date to end of day
+	endDate = endDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+
+	log.Printf("Retrieving URLs from %v to %v", startDate, endDate)
+
+	records, err := h.PostgreSQL.GetURLsByDateRange("url_storage", startDate, endDate)
+	if err != nil {
+		log.Printf("Failed to retrieve URLs by date range: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to retrieve URLs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Retrieved %d records for date range", len(records))
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"status":     "success",
+		"count":      len(records),
+		"start_date": startDateStr,
+		"end_date":   endDateStr,
+		"records":    records,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// SearchURLs handles GET requests to search URLs by pattern
+func (h *AIHandler) SearchURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get search pattern
+	pattern := r.URL.Query().Get("q")
+	if pattern == "" {
+		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get optional limit parameter
+	limitStr := r.URL.Query().Get("limit")
+	limit := 10 // default
+
+	if limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
+			return
+		}
+		if parsedLimit > 0 && parsedLimit <= 100 {
+			limit = parsedLimit
+		}
+	}
+
+	log.Printf("Searching URLs with pattern: '%s', limit: %d", pattern, limit)
+
+	records, err := h.PostgreSQL.GetURLsBySearchPattern("url_storage", pattern, limit)
+	if err != nil {
+		log.Printf("Failed to search URLs: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to search URLs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Found %d records matching pattern '%s'", len(records), pattern)
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"status":  "success",
+		"count":   len(records),
+		"query":   pattern,
+		"records": records,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// GetURLStats handles GET requests to get basic statistics about stored URLs
+func (h *AIHandler) GetURLStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get total count
+	var totalCount int
+	query := `SELECT COUNT(*) FROM url_storage`
+	err := h.PostgreSQL.DB.QueryRow(query).Scan(&totalCount)
+	if err != nil {
+		log.Printf("Failed to get total count: %v", err)
+		http.Error(w, "Failed to get statistics", http.StatusInternalServerError)
+		return
+	}
+
+	// Get count from last 7 days
+	var recentCount int
+	oneWeekAgo := time.Now().AddDate(0, 0, -7)
+	query = `SELECT COUNT(*) FROM url_storage WHERE search_date > $1`
+	err = h.PostgreSQL.DB.QueryRow(query, oneWeekAgo).Scan(&recentCount)
+	if err != nil {
+		log.Printf("Failed to get recent count: %v", err)
+		http.Error(w, "Failed to get statistics", http.StatusInternalServerError)
+		return
+	}
+
+	// Get oldest and newest entries
+	var oldestDate, newestDate time.Time
+	query = `SELECT MIN(search_date), MAX(search_date) FROM url_storage`
+	err = h.PostgreSQL.DB.QueryRow(query).Scan(&oldestDate, &newestDate)
+	if err != nil {
+		log.Printf("Failed to get date range: %v", err)
+		http.Error(w, "Failed to get statistics", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"status": "success",
+		"stats": map[string]interface{}{
+			"total_urls":      totalCount,
+			"recent_urls":     recentCount,
+			"oldest_entry":    oldestDate,
+			"newest_entry":    newestDate,
+			"last_week_count": recentCount,
+		},
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

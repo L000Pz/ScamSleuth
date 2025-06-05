@@ -162,3 +162,159 @@ func (db *PostgreSQL) RetreiveSavedData(site string, tableName string) string {
 	}
 	return description
 }
+
+// URLStorageRecord represents a row from the url_storage table
+type URLStorageRecord struct {
+	URLId       int64     `json:"url_id"`
+	URL         string    `json:"url"`
+	Description string    `json:"description"`
+	SearchDate  time.Time `json:"search_date"`
+}
+
+// GetRecentURLs retrieves the 5 most recent rows from the url_storage table
+func (db *PostgreSQL) GetRecentURLs(tableName string) ([]URLStorageRecord, error) {
+	query := `SELECT url_id, url, description, search_date FROM ` + tableName + ` 
+			  ORDER BY search_date DESC 
+			  LIMIT 5`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying recent URLs: %v", err)
+	}
+	defer rows.Close()
+
+	var records []URLStorageRecord
+
+	for rows.Next() {
+		var record URLStorageRecord
+		err := rows.Scan(&record.URLId, &record.URL, &record.Description, &record.SearchDate)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue // Skip this row and continue with others
+		}
+		records = append(records, record)
+	}
+
+	// Check for errors from iterating over rows
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return records, nil
+}
+
+// GetRecentURLsWithLimit retrieves the N most recent rows from the url_storage table
+func (db *PostgreSQL) GetRecentURLsWithLimit(tableName string, limit int) ([]URLStorageRecord, error) {
+	if limit <= 0 {
+		limit = 5 // Default to 5 if invalid limit provided
+	}
+
+	query := `SELECT url_id, url, description, search_date FROM ` + tableName + ` 
+			  ORDER BY search_date DESC 
+			  LIMIT $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("error querying recent URLs: %v", err)
+	}
+	defer rows.Close()
+
+	var records []URLStorageRecord
+
+	for rows.Next() {
+		var record URLStorageRecord
+		err := rows.Scan(&record.URLId, &record.URL, &record.Description, &record.SearchDate)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue // Skip this row and continue with others
+		}
+		records = append(records, record)
+	}
+
+	// Check for errors from iterating over rows
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return records, nil
+}
+
+// GetURLsByDateRange retrieves URLs within a specific date range
+func (db *PostgreSQL) GetURLsByDateRange(tableName string, startDate, endDate time.Time) ([]URLStorageRecord, error) {
+	query := `SELECT url_id, url, description, search_date FROM ` + tableName + ` 
+			  WHERE search_date BETWEEN $1 AND $2 
+			  ORDER BY search_date DESC`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("error querying URLs by date range: %v", err)
+	}
+	defer rows.Close()
+
+	var records []URLStorageRecord
+
+	for rows.Next() {
+		var record URLStorageRecord
+		err := rows.Scan(&record.URLId, &record.URL, &record.Description, &record.SearchDate)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+		records = append(records, record)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return records, nil
+}
+
+// GetURLsBySearchPattern retrieves URLs that match a search pattern
+func (db *PostgreSQL) GetURLsBySearchPattern(tableName string, pattern string, limit int) ([]URLStorageRecord, error) {
+	if limit <= 0 {
+		limit = 10 // Default limit
+	}
+
+	query := `SELECT url_id, url, description, search_date FROM ` + tableName + ` 
+			  WHERE url ILIKE $1 OR description ILIKE $1 
+			  ORDER BY search_date DESC 
+			  LIMIT $2`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	searchPattern := "%" + pattern + "%"
+	rows, err := db.DB.QueryContext(ctx, query, searchPattern, limit)
+	if err != nil {
+		return nil, fmt.Errorf("error querying URLs by pattern: %v", err)
+	}
+	defer rows.Close()
+
+	var records []URLStorageRecord
+
+	for rows.Next() {
+		var record URLStorageRecord
+		err := rows.Scan(&record.URLId, &record.URL, &record.Description, &record.SearchDate)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+		records = append(records, record)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return records, nil
+}

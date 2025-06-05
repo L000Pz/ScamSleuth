@@ -32,6 +32,7 @@ func main() {
 	defer postgresDB.DB.Close()
 	// Initializing handler with MongoDB
 	screenshotHandler := scraperHandler.NewScreenShotHandler(mongoDB)
+	// Init handler for postgre ai
 	aiHandler := aiHandlers.NewAIhandler(postgresDB)
 
 	//r := router.NewRouter()
