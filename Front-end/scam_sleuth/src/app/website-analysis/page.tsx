@@ -97,7 +97,7 @@ const WebsiteAnalysisPage: React.FC = () => {
   const getTrustScoreColor = (score: number): string => {
     if (score >= 70) return 'bg-green-500';
     if (score >= 40) return 'bg-yellow-500';
-    return 'bg-red-500';
+    return 'bg-red';
   };
 
   const getTrustScoreLabel = (score: number): string => {
@@ -142,7 +142,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-8 max-w-md">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <div className="text-red text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Analysis Failed</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
@@ -170,7 +170,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-red-600 mb-4">No analysis data available</p>
+          <p className="text-xl text-red mb-4">No analysis data available</p>
           <Button variant="outline" onClick={() => router.back()} className="font-bold">
             Go Back
           </Button>
@@ -279,7 +279,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   <div className="text-gray-500 text-xl font-medium">/100</div>
                   <div className={`text-sm font-bold mt-2 ${
                     analysisResult.trustScore >= 70 ? 'text-green-600' : 
-                    analysisResult.trustScore >= 40 ? 'text-yellow-600' : 'text-red-600'
+                    analysisResult.trustScore >= 40 ? 'text-yellow-600' : 'text-red'
                   }`}>
                     {getTrustScoreLabel(analysisResult.trustScore)}
                   </div>

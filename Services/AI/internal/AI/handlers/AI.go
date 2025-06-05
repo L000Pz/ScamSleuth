@@ -205,7 +205,8 @@ IMPORTANT:
 - Lower scores = LESS trustworthy  
 - Focus on reliability indicators
 - Positive flags ADD to trust score
-- Negative flags SUBTRACT from trust score`,
+- Negative flags SUBTRACT from trust score
+- If you change the JSON format and its structure you will make a great system unfunctional`,
         },
         {
             "role": "user", 
