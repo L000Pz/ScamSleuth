@@ -19,7 +19,7 @@ public class SubmitReport : ISubmitReport
              {
                  return "writer";
              }
-        Report report = Report.Create(reportSubmission.title, writer.user_id,reportSubmission.scam_type_id, reportSubmission.scam_date,
+        Report report = Report.Create(reportSubmission.title, writer.user_id,reportSubmission.scam_type_id, reportSubmission.scam_date,reportSubmission.report_date,
             reportSubmission.financial_loss, reportSubmission.description);
         Report? newReport=  await _userRepository.SubmitReport(report);
         if (newReport is null)
