@@ -115,7 +115,7 @@ services:
     volumes:
       - ./Services/AI:/app
     ports:
-      - "6996:6996" # Matching your main.go port
+      - "6996:6996"
     environment:
       - mongodb_container
       - ASPNETCORE_ENVIRONMENT=Development
