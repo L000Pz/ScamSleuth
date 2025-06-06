@@ -11,32 +11,39 @@ public class DeleteReview : IDeleteReview
     {
         _adminRepository = adminRepository;
     }
-    public async Task<string> Handle(int reviewId, string token)
+    public async Task<(string status, List<int>? mediaIds)> Handle(int reviewId, string token)
     {
         Admins? admin = await _adminRepository.GetAdminByEmail(token);
         if (admin is null)
         {
-            return "writer";
+            return ("writer", null);
         }
 
         Review? review = await _adminRepository.GetReviewById(reviewId);
         if (review is null)
         {
-            return "review";
+            return ("review", null);
+            
         }
+        List<int>? mediaIds = await _adminRepository.GetReviewMediaIds(review.review_content_id);
 
+        bool mediaDeleted = await _adminRepository.DeleteReviewMedia(review.review_id);
+        if (!mediaDeleted)
+        {
+            return ("media", null);
+        }
         bool reviewDeleted = await _adminRepository.DeleteReview(reviewId);
         if (!reviewDeleted)
         {
-            return "review";
+            return ("review",null);
         }
 
         bool contentDeleted = await _adminRepository.DeleteReviewContent(review.review_content_id);
         if (!contentDeleted)
         {
-            return "content";
+            return ("content",null);
         }
 
-        return "ok";
+        return ("ok",mediaIds);
     }
 }

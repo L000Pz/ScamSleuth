@@ -31,12 +31,13 @@ public class ReturnReviewById : IReturnReviewById
         {
             return null;
         }
-
+        var media = await _publicRepository.GetReviewContentMedia(review.review_id);
         var writerDetails = new ReviewWriterDetails(writer.username, writer.name, writer.profile_picture_id,writer.contact_info);
         return new ReviewDetails
         {
             Review = review,
             Content = content.review_content,
+            Media=media,
             ReviewWriterDetails = writerDetails
         };
     }

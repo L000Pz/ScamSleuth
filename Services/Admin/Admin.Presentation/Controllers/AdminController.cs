@@ -97,10 +97,19 @@ public class AdminController: ControllerBase
         }
 
         // Delete the review and get media IDs
-        string status = await _deleteReview.Handle(reviewId, token);
+        var (status, mediaIds) = await _deleteReview.Handle(reviewId, token);
         if (status != "ok")
         {
-            return BadRequest("Failed to delete review!");
+            return BadRequest($"Failed to delete review!");
+        }
+
+        // Publish messages to delete associated media
+        if (mediaIds != null && mediaIds.Any())
+        {
+            foreach (var mediaId in mediaIds)
+            {
+                _messagePublisher.PublishMediaDeletion(mediaId);
+            }
         }
 
         return Ok("Review deleted successfully.");
@@ -142,7 +151,25 @@ public class AdminController: ControllerBase
             Console.WriteLine(e);
             return BadRequest("Failed to verify scam type!");
         }
-        
+        // Validate mediaAdd commentMore actions
+        try 
+        { 
+            foreach (var media_id in reviewCreation.media)
+            {
+                HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
+
+                // If any media ID fails verification, return a bad request
+                if (!mediaResponse.IsSuccessStatusCode)
+                {
+                    return BadRequest($"Failed to verify media!");
+                }
+            }
+        }
+        catch (Exception e) 
+        { 
+            Console.WriteLine(e);
+            return BadRequest("Failed to verify media!");
+        }
 
         string result = await _createReview.Handle(reviewCreation, token);
         if (result == "report")

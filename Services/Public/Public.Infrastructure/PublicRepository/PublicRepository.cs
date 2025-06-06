@@ -79,4 +79,12 @@ public class PublicRepository : IPublicRepository
     {
         return _context.admins.SingleOrDefault(user => user.admin_id == admin_id);
     }
+
+    public async Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_id)
+    {
+        var media = await _context.review_content_media
+            .Where(m => m.review_id == review_id)
+            .ToListAsync();
+        return media;
+    }
 }

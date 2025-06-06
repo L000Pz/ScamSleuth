@@ -12,3 +12,4 @@ from .ReviewTag import ReviewTag
 from .Tag import Tag
 from .URLComment import URLComment
 from .URLStorage import URLStorage
+from .ReviewContentMedia import ReviewContentMedia

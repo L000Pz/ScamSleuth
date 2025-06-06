@@ -13,11 +13,12 @@ public class PostgreSqlContext : DbContext
     public DbSet<Review_Content> review_content { get; set; }
     public DbSet<Scam_Type> scam_type { get; set; }
     public DbSet<Admins> admins { get; set; }
+    public DbSet<Review_Content_Media> review_content_media { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Review>()
-            .HasKey(r => new { r.review_id});
+            .HasKey(r => new {r.review_id});
         modelBuilder.Entity<Scam_Type>()
             .HasKey(st => new { st.scam_type_id});
         modelBuilder.Entity<Review_Content>()
@@ -27,6 +28,8 @@ public class PostgreSqlContext : DbContext
         modelBuilder.Entity<Admins>()
             .Property(a => a.profile_picture_id)
             .IsRequired(false);
+        modelBuilder.Entity<Review_Content_Media>()
+            .HasKey(rcm => new { rcm.review_id, rcm.media_id });
         
         base.OnModelCreating(modelBuilder);
     }

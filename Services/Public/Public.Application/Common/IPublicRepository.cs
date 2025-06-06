@@ -12,4 +12,7 @@ public interface IPublicRepository
     public Task<List<Scam_Type>?> GetAllScamTypes();
     public Task<Scam_Type?> GetScamTypeById(int scam_type_id);
     public Task<Admins?> GetAdminById(int admin_id);
+    public Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_content_id);
+
+
 }

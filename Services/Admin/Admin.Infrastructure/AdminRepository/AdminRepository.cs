@@ -49,9 +49,9 @@ public class AdminRepository : IAdminRepository
         foreach (var VARIABLE in docs)
         {
             Console.WriteLine(VARIABLE[0]);
-            if (VARIABLE[0].AsInt32 > max)
+            if (VARIABLE[1].AsInt32 > max)
             {
-                max = VARIABLE[0].AsInt32;
+                max = VARIABLE[1].AsInt32;
             }
         }
 
@@ -118,12 +118,56 @@ public class AdminRepository : IAdminRepository
 
     public async Task<bool> DeleteReviewContent(int review_content_id)
     {
-        var res = await _mongoContext.Delete(review_content_id);
-        if (res is null)
+        try
+        {
+            var content = await _context.review_content
+                .FirstOrDefaultAsync(rc => rc.review_content_id == review_content_id);
+
+            if (content != null)
+            {
+                _context.review_content.Remove(content);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+        catch (Exception) {
+            return false;
+        }
+    }
+    public async Task<List<int>?> GetReviewMediaIds(int review_id)
+    {
+        return await _context.review_content_media
+            .Where(rcm => rcm.review_id == review_id)
+            .Select(rcm => rcm.media_id)
+            .ToListAsync();
+    }
+    public async Task<List<Review_Content_Media>?> SubmitReviewMedia(List<Review_Content_Media> review_media_list)
+    {
+        var submittedMedia = new List<Review_Content_Media>();
+        foreach (var media in review_media_list)
+        {
+            _context.review_content_media.Add(media);
+        }
+        await _context.SaveChangesAsync();
+        return review_media_list;
+    }
+    public async Task<bool> DeleteReviewMedia(int review_id)
+    {
+        try
+        {
+            var reviewMedia = await _context.review_content_media
+                .Where(rcm => rcm.review_id == review_id)
+                .ToListAsync();
+
+            _context.review_content_media.RemoveRange(reviewMedia);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
         {
             return false;
         }
-        return true;
     }
     public async Task<bool> UpdateReviewContent(Review_Content new_content)
     {

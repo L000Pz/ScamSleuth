@@ -21,17 +21,20 @@ public class CreateReview:ICreateReview
         {
             return "content";
         }
+
         Admins? writer = await _adminRepository.GetAdminByEmail(token);
         if (writer is null)
         {
             return "writer";
         }
         Review review = Review.Create(reviewCreation.title,writer.admin_id,reviewCreation.scam_type_id,reviewCreation.review_date,reviewContent.review_content_id);
-        Review? newReview=  await _adminRepository.SubmitReview(review);
+        Review? newReview=  await _adminRepository.SubmitReview(review);        
         if (newReview is null)
         {
             return "review";
         }
+        List<Review_Content_Media> reviewMedia = Review_Content_Media.Create(newReview.review_id, reviewCreation.media);
+        await _adminRepository.SubmitReviewMedia(reviewMedia);
         return "ok";
     }
 }
