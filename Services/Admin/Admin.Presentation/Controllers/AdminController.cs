@@ -40,7 +40,7 @@ public class AdminController: ControllerBase
         _getReportById = getReportById;
         _updateReview = updateReview;
     }
-    [HttpPut("ViewReports")]
+    [HttpGet("ViewReports")]
     [Authorize]
     public async Task<ActionResult> ViewReports()
     {
