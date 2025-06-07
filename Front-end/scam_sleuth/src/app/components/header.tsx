@@ -23,6 +23,12 @@ interface NavItem {
   onClick?: () => void;
 }
 
+interface MenuItemConfig {
+  icon: string;
+  label: string;
+  action: () => void;
+}
+
 export default function Navbar(): JSX.Element {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState<boolean>(false);
@@ -43,6 +49,92 @@ export default function Navbar(): JSX.Element {
     { href: '/report', label: 'Report a scam' },
     { href: '/about', label: 'About us' },
   ];
+
+  // Role-based menu items configuration
+  const getMenuItems = (role: string | undefined): MenuItemConfig[] => {
+    const commonItems: MenuItemConfig[] = [
+      {
+        icon: '🚪',
+        label: 'Sign out',
+        action: handleLogout
+      }
+    ];
+
+    if (role === 'admin') {
+      return [
+        {
+          icon: '📊',
+          label: 'Admin Dashboard',
+          action: () => {
+            router.push('/admin-dashboard');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '📝',
+          label: 'Reviews',
+          action: () => {
+            router.push('/admin-dashboard/reviews');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '✍️',
+          label: 'Write Review',
+          action: () => {
+            router.push('/admin-dashboard/write-review');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '📋',
+          label: 'Scam Reports',
+          action: () => {
+            router.push('/admin-dashboard');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        ...commonItems
+      ];
+    } else {
+      // Regular user menu items
+      return [
+        {
+          icon: '📊',
+          label: 'Dashboard',
+          action: () => {
+            router.push('/dashboard');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '⚙️',
+          label: 'Edit Profile',
+          action: () => {
+            router.push('/dashboard/profile-edit');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '📋',
+          label: 'My Activities',
+          action: () => {
+            router.push('/dashboard/activities');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
+          icon: '📝',
+          label: 'Report Scam',
+          action: () => {
+            router.push('/report');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        ...commonItems
+      ];
+    }
+  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -99,13 +191,9 @@ export default function Navbar(): JSX.Element {
   const handleSignup = (): void => {
     router.push('/signup');
   };
-
-  const handleAskAI = (): void => {
-    router.push('/ask-ai');
-  };
   
   const handleDashboard = (): void => {
-    if (userType === 'admin') {
+    if (userData?.role === 'admin') {
       router.push('/admin-dashboard');
     } else {
       router.push('/dashboard');
@@ -279,83 +367,79 @@ export default function Navbar(): JSX.Element {
     );
   };
 
-  const ProfileDropdown = (): JSX.Element => (
-    <AnimatePresence>
-      {isProfileDropdownOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
-        >
-          {/* User Info Header */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <ProfilePicture size="w-12 h-12" isClickable={false} />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">{userData?.name || 'User'}</p>
-                <p className="text-sm text-gray-500 truncate">
-                  {userData?.username ? `@${userData.username}` : userData?.email || 'user@example.com'}
-                </p>
-                {userData?.is_verified && (
-                  <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Verified
-                  </span>
-                )}
+  const ProfileDropdown = (): JSX.Element => {
+    const menuItems = getMenuItems(userData?.role);
+    const isAdmin = userData?.role === 'admin';
+    
+    return (
+      <AnimatePresence>
+        {isProfileDropdownOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+          >
+            {/* User Info Header */}
+            <div className="px-4 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <ProfilePicture size="w-12 h-12" isClickable={false} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{userData?.name || 'User'}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {userData?.username ? `@${userData.username}` : userData?.email || 'user@example.com'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {userData?.is_verified && (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        Verified
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Menu Items */}
-          <div className="py-2">
-            <button
-              onClick={handleDashboard}
-              className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-3"
-              type="button"
-            >
-              <span className="text-lg">📊</span>
-              Dashboard
-            </button>
-            <button
-              onClick={() => {
-                router.push('/dashboard/profile-edit');
-                setIsProfileDropdownOpen(false);
-              }}
-              className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-3"
-              type="button"
-            >
-              <span className="text-lg">⚙️</span>
-              Edit Profile
-            </button>
-            <button
-              onClick={() => {
-                router.push('/dashboard/activities');
-                setIsProfileDropdownOpen(false);
-              }}
-              className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-3"
-              type="button"
-            >
-              <span className="text-lg">📋</span>
-              My Activities
-            </button>
-          </div>
-          
-          <div className="border-t border-gray-100 py-2">
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-2 text-left text-red hover:bg-red/5 transition-colors duration-150 flex items-center gap-3"
-              type="button"
-            >
-              <span className="text-lg">🚪</span>
-              Sign out
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+            
+            {/* Menu Items */}
+            <div className="py-2">
+              {menuItems.map((item, index) => {
+                const isLogoutItem = item.label === 'Sign out';
+                const isLastItem = index === menuItems.length - 1;
+                
+                return (
+                  <div key={index}>
+                    {isLogoutItem && index > 0 && (
+                      <div className="border-t border-gray-100 my-2"></div>
+                    )}
+                    <button
+                      onClick={item.action}
+                      className={`w-full px-4 py-2 text-left transition-colors duration-150 flex items-center gap-3 ${
+                        isLogoutItem 
+                          ? 'text-red hover:bg-red/5' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      type="button"
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      {item.label}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
 
   return (
     <>
@@ -488,20 +572,21 @@ export default function Navbar(): JSX.Element {
                         <ProfilePicture size="w-12 h-12" showName={true} />
                       </div>
                       <div className="space-y-2">
-                        <Button 
-                          variant="ghost" 
-                          onClick={handleDashboard}
-                          className="w-full justify-start text-white hover:text-red hover:bg-white/10"
-                        >
-                          Go to Dashboard
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          onClick={handleLogout}
-                          className="w-full justify-start text-white hover:text-red hover:bg-white/10"
-                        >
-                          Sign out
-                        </Button>
+                        {getMenuItems(userData?.role).map((item, index) => (
+                          <Button 
+                            key={index}
+                            variant="ghost" 
+                            onClick={item.action}
+                            className={`w-full justify-start ${
+                              item.label === 'Sign out' 
+                                ? 'text-red hover:text-red hover:bg-red/10' 
+                                : 'text-white hover:text-red hover:bg-white/10'
+                            }`}
+                          >
+                            <span className="mr-2">{item.icon}</span>
+                            {item.label}
+                          </Button>
+                        ))}
                       </div>
                     </div>
                   ) : (
