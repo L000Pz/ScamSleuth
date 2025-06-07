@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "src/app/admin-dashboard/reviews/[id]/page.tsx"  ],
+, "src/app/admin-dashboard/reviews/[id]/page.tsx", "__tests__/api/admin.test.js", "__tests__/api/media-ai.test.js", "jest.config.js"  ],
   "exclude": [
     "node_modules"
   ]
