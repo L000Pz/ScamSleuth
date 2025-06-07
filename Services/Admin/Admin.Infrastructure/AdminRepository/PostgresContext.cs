@@ -15,7 +15,6 @@ public class PostgreSqlContext : DbContext
     public DbSet<Review_Content_Media> review_content_media { get; set; }
     public DbSet<Review> review { get; set; }
     public DbSet<Review_Banner> review_banner { get; set; }
-    public DbSet<Review_Content> review_content { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Report>()
@@ -31,8 +30,6 @@ public class PostgreSqlContext : DbContext
             .HasKey(r => new { r.review_id});
         modelBuilder.Entity<Review_Content_Media>()
             .HasKey(rcm => new { rcm.review_id,rcm.media_id });
-        modelBuilder.Entity<Review_Content>()
-            .HasKey(rc => new { rc.review_content_id });
         modelBuilder.Entity<Review_Banner>()
             .HasKey(rb => new { rb.review_id });
         modelBuilder.Entity<Admins>()

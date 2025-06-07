@@ -25,7 +25,7 @@ public class DeleteReview : IDeleteReview
             return ("review", null);
             
         }
-        List<int>? mediaIds = await _adminRepository.GetReviewMediaIds(review.review_content_id);
+        List<int>? mediaIds = await _adminRepository.GetReviewMediaIds(review.review_id);
 
         bool mediaDeleted = await _adminRepository.DeleteReviewMedia(review.review_id);
         if (!mediaDeleted)

@@ -120,13 +120,10 @@ public class AdminRepository : IAdminRepository
     {
         try
         {
-            var content = await _context.review_content
-                .FirstOrDefaultAsync(rc => rc.review_content_id == review_content_id);
+            var content = await _mongoContext.Delete(review_content_id);
 
             if (content != null)
             {
-                _context.review_content.Remove(content);
-                await _context.SaveChangesAsync();
                 return true;
             }
             return false;
