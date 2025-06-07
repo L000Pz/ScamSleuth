@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -8,6 +8,6 @@ class URLStorage(Base):
 
     url_id = Column(Integer, primary_key=True, nullable=False)
     url = Column(String, nullable=False)
-    description = Column(String(255))
+    description = Column(Text)
     search_date = Column(DateTime)
 
