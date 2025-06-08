@@ -22,6 +22,7 @@ export interface AnalysisResult {
   screenshotId?: string;
   screenshotUrl?: string;
   whoisData?: WhoisData;
+  enamadData?: EnamadData;
 }
 
 export interface ScreenshotCaptureResponse {
@@ -87,16 +88,35 @@ export interface WhoisResponse {
   error?: string;
 }
 
+export interface EnamadData {
+  id: number;
+  domain: string;
+  nameper: string;
+  approvedate: string;
+  expdate: string;
+  stateName: string;
+  cityName: string;
+  logolevel: number;
+  srvText: string;
+  Code: string;
+  isNewProfile: boolean;
+}
+
+export interface EnamadResponse {
+  success: boolean;
+  data?: EnamadData;
+  error?: string;
+}
+
 export async function captureScreenshot(domain: string): Promise<{
   success: boolean;
   data?: ScreenshotCaptureResponse;
   error?: string;
 }> {
   try {
-    // Clean domain - remove protocol and trailing slash
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    const response = await fetch('http://localhost:6996/scraper/screenshot', {
+    const response = await fetch('http://localhost:8080/AI/scraper/screenshot', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,14 +137,9 @@ export async function captureScreenshot(domain: string): Promise<{
       throw new Error(data.message || 'Screenshot capture failed');
     }
 
-    return {
-      success: true,
-      data
-    };
-
+    return { success: true, data };
   } catch (error) {
     console.error('Screenshot capture error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to capture screenshot'
@@ -134,7 +149,7 @@ export async function captureScreenshot(domain: string): Promise<{
 
 export async function getScreenshotById(screenshotId: string): Promise<ScreenshotResponse> {
   try {
-    const response = await fetch(`http://localhost:6996/scraper/screenshot/get?id=${screenshotId}`, {
+    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/get?id=${screenshotId}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -143,10 +158,7 @@ export async function getScreenshotById(screenshotId: string): Promise<Screensho
       throw new Error(`Screenshot fetch failed: ${response.status} ${response.statusText}`);
     }
 
-    // Get the image as array buffer
     const imageBuffer = await response.arrayBuffer();
-    
-    // Convert to base64 for client-side display
     const base64String = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:image/png;base64,${base64String}`;
 
@@ -155,10 +167,8 @@ export async function getScreenshotById(screenshotId: string): Promise<Screensho
       screenshotId,
       screenshotUrl: dataUrl
     };
-
   } catch (error) {
     console.error('Screenshot fetch error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch screenshot'
@@ -168,16 +178,14 @@ export async function getScreenshotById(screenshotId: string): Promise<Screensho
 
 export async function getLatestScreenshotByDomain(domain: string): Promise<ScreenshotResponse> {
   try {
-    // Clean domain - remove protocol and trailing slash
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    const response = await fetch(`http://localhost:6996/scraper/screenshot/domain?domain=${cleanDomain}`, {
+    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/domain?domain=${cleanDomain}`, {
       method: 'GET',
       cache: 'no-store'
     });
 
     if (!response.ok) {
-      // If no screenshot exists, return success but no data
       if (response.status === 404) {
         return {
           success: true,
@@ -187,10 +195,7 @@ export async function getLatestScreenshotByDomain(domain: string): Promise<Scree
       throw new Error(`Screenshot fetch failed: ${response.status} ${response.statusText}`);
     }
 
-    // Get the image as array buffer
     const imageBuffer = await response.arrayBuffer();
-    
-    // Convert to base64 for client-side display
     const base64String = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:image/png;base64,${base64String}`;
 
@@ -198,10 +203,8 @@ export async function getLatestScreenshotByDomain(domain: string): Promise<Scree
       success: true,
       screenshotUrl: dataUrl
     };
-
   } catch (error) {
     console.error('Screenshot fetch error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch screenshot'
@@ -211,7 +214,6 @@ export async function getLatestScreenshotByDomain(domain: string): Promise<Scree
 
 export async function captureAndGetScreenshot(domain: string): Promise<ScreenshotResponse> {
   try {
-    // First, capture the screenshot
     const captureResult = await captureScreenshot(domain);
     
     if (!captureResult.success || !captureResult.data) {
@@ -221,7 +223,6 @@ export async function captureAndGetScreenshot(domain: string): Promise<Screensho
       };
     }
 
-    // Then, fetch the screenshot using the returned ID
     const fetchResult = await getScreenshotById(captureResult.data.id);
     
     return {
@@ -230,10 +231,8 @@ export async function captureAndGetScreenshot(domain: string): Promise<Screensho
       screenshotUrl: fetchResult.screenshotUrl,
       error: fetchResult.error
     };
-
   } catch (error) {
     console.error('Capture and get screenshot error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to capture and fetch screenshot'
@@ -243,10 +242,9 @@ export async function captureAndGetScreenshot(domain: string): Promise<Screensho
 
 export async function getWhoisData(domain: string): Promise<WhoisResponse> {
   try {
-    // Clean domain - remove protocol and trailing slash
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    const response = await fetch(`http://localhost:6996/ai/whois/${cleanDomain}`, {
+    const response = await fetch(`http://localhost:8080/AI/ai/whois/${cleanDomain}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -259,18 +257,67 @@ export async function getWhoisData(domain: string): Promise<WhoisResponse> {
     }
 
     const data: WhoisData = await response.json();
-
-    return {
-      success: true,
-      data
-    };
-
+    return { success: true, data };
   } catch (error) {
     console.error('WHOIS fetch error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch WHOIS data'
+    };
+  }
+}
+
+export async function getEnamadData(domain: string): Promise<EnamadResponse> {
+  try {
+    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
+    const response = await fetch('http://localhost:8080/AI/scraper/enamad', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        domain: cleanDomain
+      }),
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: true,
+          error: 'No Enamad certification found for this domain'
+        };
+      }
+      throw new Error(`Enamad fetch failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Check if the response contains an error
+    if (data.error) {
+      return {
+        success: true,
+        error: data.error === 'Failed to fetch data' 
+          ? 'No Enamad certification found for this domain'
+          : data.error
+      };
+    }
+
+    // Validate that we have the expected Enamad data structure
+    if (!data.id || !data.domain) {
+      return {
+        success: true,
+        error: 'No Enamad certification found for this domain'
+      };
+    }
+
+    return { success: true, data: data as EnamadData };
+  } catch (error) {
+    console.error('Enamad fetch error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch Enamad data'
     };
   }
 }
@@ -281,10 +328,9 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
   error?: string;
 }> {
   try {
-    // Clean the URL - remove protocol if present
     const cleanUrl = websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    const response = await fetch(`http://localhost:6996/ai/scan/${cleanUrl}`, {
+    const response = await fetch(`http://localhost:8080/AI/ai/scan/${cleanUrl}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -298,10 +344,11 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
 
     const apiData: WebsiteAnalysisResponse = await response.json();
 
-    // Get existing screenshot and WHOIS data in parallel
-    const [screenshotData, whoisData] = await Promise.all([
+    // Get existing screenshot, WHOIS, and Enamad data in parallel
+    const [screenshotData, whoisData, enamadData] = await Promise.all([
       getLatestScreenshotByDomain(cleanUrl),
-      getWhoisData(cleanUrl)
+      getWhoisData(cleanUrl),
+      getEnamadData(cleanUrl)
     ]);
 
     // Only capture new screenshot if none exists (do it in background)
@@ -311,7 +358,6 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       });
     }
 
-    // Transform API response to match our frontend interface
     const result: AnalysisResult = {
       website: cleanUrl,
       trustScore: apiData.trustScore,
@@ -323,17 +369,13 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       technicalFlags: apiData.technicalFlags || {},
       screenshotId: screenshotData.screenshotId,
       screenshotUrl: screenshotData.screenshotUrl,
-      whoisData: whoisData.success ? whoisData.data : undefined
+      whoisData: whoisData.success ? whoisData.data : undefined,
+      enamadData: enamadData.success ? enamadData.data : undefined
     };
 
-    return {
-      success: true,
-      data: result
-    };
-
+    return { success: true, data: result };
   } catch (error) {
     console.error('Website analysis error:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to analyze website'
@@ -341,7 +383,6 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
   }
 }
 
-// Quick analysis for search results (lighter version)
 export async function quickAnalyzeWebsite(websiteUrl: string): Promise<{
   success: boolean;
   data?: {
@@ -371,7 +412,6 @@ export async function quickAnalyzeWebsite(websiteUrl: string): Promise<{
         lastChecked: result.data.lastChecked
       }
     };
-
   } catch (error) {
     return {
       success: false,

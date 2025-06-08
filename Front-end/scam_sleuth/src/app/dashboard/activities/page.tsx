@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, JSX } from 'react';
 import { ActivityList } from '@/app/components/activityCard';
 import { getActivities } from './actions';
 
@@ -14,17 +14,38 @@ interface ActivityItem {
   name: string;
   description: string;
   date: string;
+  scamDate: string;
+  financialLoss: number;
 }
 
-export default function ActivitiesPage() {
+type SortBy = 'reportDate' | 'scamDate' | 'type' | 'name' | 'financialLoss';
+type SortOrder = 'asc' | 'desc';
+
+interface SortOption {
+  value: SortBy;
+  label: string;
+  icon: string;
+}
+
+export default function ActivitiesPage(): JSX.Element {
   const router = useRouter();
-  const [sortBy, setSortBy] = useState('date');
+  const [sortBy, setSortBy] = useState<SortBy>('reportDate');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Sort options configuration
+  const sortOptions: SortOption[] = [
+    { value: 'reportDate', label: 'Report Date', icon: '📅' },
+    { value: 'scamDate', label: 'Scam Date', icon: '⚠️' },
+    { value: 'financialLoss', label: 'Financial Loss', icon: '💰' },
+    { value: 'name', label: 'Title', icon: '📝' },
+    { value: 'type', label: 'Scam Type', icon: '🏷️' },
+  ];
+
   useEffect(() => {
-    const fetchActivities = async () => {
+    const fetchActivities = async (): Promise<void> => {
       try {
         setLoading(true);
         const result = await getActivities();
@@ -35,6 +56,7 @@ export default function ActivitiesPage() {
           setError(result.error || 'Failed to fetch activities');
         }
       } catch (err) {
+        console.error('Error fetching activities:', err);
         setError('An error occurred while fetching activities');
       } finally {
         setLoading(false);
@@ -44,22 +66,70 @@ export default function ActivitiesPage() {
     fetchActivities();
   }, []);
 
-  const handleReview = (id: string) => {
+  const handleReview = (id: string): void => {
     router.push(`/dashboard/activities/${id}`);
   };
 
+  const handleRetry = (): void => {
+    window.location.reload();
+  };
+
+  const handleSortChange = (newSortBy: string): void => {
+    const newSort = newSortBy as SortBy;
+    if (newSort === sortBy) {
+      // If same sort field, toggle order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If different field, set new field with appropriate default order
+      setSortBy(newSort);
+      // Financial loss and dates default to desc (highest/newest first)
+      // Names and types default to asc (alphabetical)
+      setSortOrder(['financialLoss', 'reportDate', 'scamDate'].includes(newSort) ? 'desc' : 'asc');
+    }
+  };
+
+  const toggleSortOrder = (): void => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  // Sort activities based on selected criteria
   const sortedActivities = [...activities].sort((a, b) => {
+    let comparison = 0;
+    
     switch (sortBy) {
-      case 'date':
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case 'reportDate':
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        break;
+      case 'scamDate':
+        comparison = new Date(a.scamDate).getTime() - new Date(b.scamDate).getTime();
+        break;
       case 'type':
-        return a.type.localeCompare(b.type);
+        comparison = a.type.localeCompare(b.type);
+        break;
       case 'name':
-        return a.name.localeCompare(b.name);
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'financialLoss':
+        comparison = a.financialLoss - b.financialLoss;
+        break;
       default:
         return 0;
     }
+    
+    return sortOrder === 'desc' ? -comparison : comparison;
   });
+
+  // Calculate total financial loss
+  const totalFinancialLoss = activities.reduce((sum, activity) => sum + activity.financialLoss, 0);
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <div className="flex items-center justify-center p-4 md:p-[76px]">
@@ -80,29 +150,55 @@ export default function ActivitiesPage() {
               </Button>
             </div>
 
-            {/* Stats Card */}
+            {/* Enhanced Stats Card */}
             <div className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm font-bold">{activities.length}</span>
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-sm font-bold">{activities.length}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Total Reports</p>
+                      <p className="text-sm text-gray-500">All time submissions</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Total Activities</p>
-                    <p className="text-sm text-gray-500">All time reports</p>
-                  </div>
+                  
+                  {totalFinancialLoss > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red text-lg font-bold">$</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{formatCurrency(totalFinancialLoss)}</p>
+                        <p className="text-sm text-gray-500">Total reported losses</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-4">
+                
+                <div className="flex items-center gap-3">
                   <span className="text-lg font-semibold text-gray-700">Sort by:</span>
-                  <select 
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="p-2 px-4 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white shadow-sm"
-                  >
-                    <option value="date">Date</option>
-                    <option value="type">Type</option>
-                    <option value="name">Name</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={sortBy}
+                      onChange={(e) => handleSortChange(e.target.value)}
+                      className="p-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white shadow-sm"
+                    >
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.icon} {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={toggleSortOrder}
+                      className="p-2 border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white shadow-sm"
+                      title={`Sort ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
+                    >
+                      {sortOrder === 'asc' ? '↗️' : '↘️'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -122,7 +218,7 @@ export default function ActivitiesPage() {
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => window.location.reload()}
+                      onClick={handleRetry}
                     >
                       Try Again
                     </Button>
@@ -149,7 +245,12 @@ export default function ActivitiesPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-sm text-gray-600">
-                      Showing {sortedActivities.length} activities
+                      Showing {sortedActivities.length} activit{sortedActivities.length === 1 ? 'y' : 'ies'}
+                      {sortBy === 'financialLoss' && totalFinancialLoss > 0 && (
+                        <span className="ml-2 text-red font-medium">
+                          • Total losses: {formatCurrency(totalFinancialLoss)}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <ActivityList activities={sortedActivities} onReview={handleReview} />

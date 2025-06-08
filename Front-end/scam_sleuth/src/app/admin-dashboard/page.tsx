@@ -3,152 +3,237 @@
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getReports } from './actions';
+import { getDashboardStats, getRecentActivity } from './actions';
+import { 
+  FileText, 
+  CheckCircle,
+  Plus
+} from 'lucide-react';
 
-interface ScamReport {
-  id: string;
-  type: string;
-  name: string;
-  description: string;
-  date: string;
+interface DashboardStats {
+  totalReports: number;
+  totalReviews: number;
+  todayReports: number;
 }
 
-export default function ScamReportsPage() {
+interface RecentActivityItem {
+  id: string;
+  type: 'report' | 'review';
+  title: string;
+  date: string;
+  author?: string;
+}
+
+export default function AdminDashboard() {
   const router = useRouter();
-  const [sortBy, setSortBy] = useState('date');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [reports, setReports] = useState<ScamReport[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        const result = await getReports();
         
-        if (result.success && result.data) {
-          setReports(result.data);
+        const [statsResult, activityResult] = await Promise.all([
+          getDashboardStats(),
+          getRecentActivity()
+        ]);
+        
+        if (statsResult.success && statsResult.data) {
+          setStats(statsResult.data);
         } else {
-          setError(result.error || 'Failed to fetch reports');
+          setError(statsResult.error || 'Failed to fetch dashboard stats');
+        }
+
+        if (activityResult.success && activityResult.data) {
+          setRecentActivity(activityResult.data);
         }
       } catch (err) {
-        setError('An error occurred while fetching Reports');
+        setError('An error occurred while fetching dashboard data');
+        console.error('Dashboard error:', err);
       } finally {
         setIsLoading(false);
       }
     };
-    const reloadOnce = () => {
-      if (!window.location.hash) {
-        window.location.hash = "loaded";
-        window.location.reload();
-      }
-    };
-    reloadOnce();
-    fetchReports();
+
+    fetchDashboardData();
   }, []);
 
-  const handleSort = (criteria: string) => {
-    setSortBy(criteria);
-    const sortedReports = [...reports].sort((a, b) => {
-      switch (criteria) {
-        case 'date':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'type':
-          return a.type.localeCompare(b.type);
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default:
-          return 0;
-      }
-    });
-    setReports(sortedReports);
-  };
 
-  const formatScamType = (type: string) => {
-    if (type.toLowerCase().includes('crypto')) {
-      return 'Crypto Scam';
-    }
-    const words = type.split(',');
-    if (words.length > 1) {
-      return words.map(word => word.trim()).join('\n');
-    }
-    return type;
-  };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-full">Loading...</div>;
-  }
-
-  if (error) {
     return (
-      <div className="flex justify-center items-center h-full text-red-500">
-        {error}
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Scam Reports</h2>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-lg sm:text-xl">Sort by:</span>
-          <select 
-            value={sortBy}
-            onChange={(e) => handleSort(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 w-full sm:w-auto"
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800">
+            Admin Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Welcome back! Here&apos;s what&apos;s happening with Scam Sleuth today.
+          </p>
+        </div>
+        
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/admin-dashboard/write-review')}
+            className="flex items-center gap-2"
           >
-            <option value="date">Date</option>
-            <option value="type">Type</option>
-            <option value="name">Name</option>
-          </select>
+            <Plus className="w-4 h-4" />
+            Write Review
+          </Button>
         </div>
       </div>
 
-      {reports.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">
-          No scam reports found.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {reports.map((report) => (
-            <div 
-              key={report.id}
-              className="flex flex-col sm:flex-row items-stretch bg-background rounded-xl overflow-hidden shadow-md min-h-[160px] sm:h-32"
-            >
-              <div className="bg-black text-white py-2 px-4 sm:p-4 w-full sm:w-24 flex items-center justify-center min-h-[40px] sm:min-h-full">
-                <span className="text-xs font-medium text-center whitespace-pre-line sm:[writing-mode:vertical-rl] sm:rotate-180 sm:h-20 leading-tight">
-                  {formatScamType(report.type)}
-                </span>
-              </div>
-
-              <div className="flex-grow p-4">
-                <div className="flex flex-col justify-between h-full gap-4">
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <h3 className="text-lg font-bold truncate max-w-[calc(100%-100px)]">
-                        {report.name.length > 50 ? `${report.name.substring(0, 50)}...` : report.name}
-                      </h3>
-                      <span className="text-gray-500 text-sm whitespace-nowrap">{report.date}</span>
-                    </div>
-                    <p className="text-gray-600 text-sm line-clamp-2 max-w-xl">{report.description}</p>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button 
-                      variant="outline"
-                      onClick={() => router.push(`/admin-dashboard/${report.id}`)}
-                      className="rounded-full px-4 sm:px-6 text-sm font-bold"
-                    >
-                      Review
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
+          {error}
         </div>
       )}
+
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Total Reports</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalReports}</p>
+                <p className="text-xs text-green-600 mt-1">
+                  +{stats.todayReports} today
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Published Reviews</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalReviews}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  By admin team
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin-dashboard/reports')}
+              className="w-full justify-start hover:bg-blue-50 hover:border-blue-300"
+            >
+              <FileText className="w-4 h-4 mr-3" />
+              View All Reports
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin-dashboard/reviews')}
+              className="w-full justify-start hover:bg-green-50 hover:border-green-300"
+            >
+              <CheckCircle className="w-4 h-4 mr-3" />
+              Manage Reviews
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin-dashboard/write-review')}
+              className="w-full justify-start hover:bg-purple-50 hover:border-purple-300"
+            >
+              <Plus className="w-4 h-4 mr-3" />
+              Write New Review
+            </Button>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800">Recent Activity</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/admin-dashboard/reports')}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              View All
+            </Button>
+          </div>
+          
+          {recentActivity.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No recent activity</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (activity.type === 'report') {
+                      router.push(`/admin-dashboard/reports/${activity.id}`);
+                    } else {
+                      router.push(`/admin-dashboard/reviews/${activity.id}`);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      {activity.type === 'report' ? (
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{activity.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">{activity.date}</span>
+                        {activity.author && (
+                          <>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-gray-500">by {activity.author}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

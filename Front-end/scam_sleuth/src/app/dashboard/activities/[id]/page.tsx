@@ -1,33 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, JSX } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/images/hero.png';
 import { useRouter } from 'next/navigation';
 import { getSpecificReport } from './actions';
-import { Download, FileText, Eye, EyeOff, User } from 'lucide-react';
+import { Download, FileText, Eye, EyeOff, User, Calendar, Clock } from 'lucide-react';
 
 interface ScamReport {
   id: string;
   type: string;
   name: string;
   description: string;
-  date: string;
+  scamDate: string; // When the scam occurred
+  reportDate: string; // When the report was submitted
   reportedBy: string;
   status: string;
   details: {
     platform: string;
     location: string;
-    amount?: string;
-    evidence?: string;
+    amount: string;
+    evidence: string;
   };
   writer: {
     id: number;
     username: string;
     email: string;
     name: string;
-    profilePicture: string | null;
+    profilePicture: number | null;
   };
   media: Array<{
     report_id: number;
@@ -39,7 +40,7 @@ interface PageParams {
   params: Promise<{ id: string }>;
 }
 
-export default function ScamReportPage({ params }: PageParams) {
+export default function ScamReportPage({ params }: PageParams): JSX.Element {
   const router = useRouter();
   const [report, setReport] = useState<ScamReport | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -50,7 +51,7 @@ export default function ScamReportPage({ params }: PageParams) {
   
   const resolvedParams = React.use(params);
 
-  const handleMediaDownload = (mediaId: number) => {
+  const handleMediaDownload = (mediaId: number): void => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
     const downloadUrl = `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
     window.open(downloadUrl, '_blank');
@@ -64,7 +65,7 @@ export default function ScamReportPage({ params }: PageParams) {
     }, 1000);
   };
 
-  const togglePreview = (mediaId: number) => {
+  const togglePreview = (mediaId: number): void => {
     setPreviewingIds(prev => {
       const newSet = new Set(prev);
       if (newSet.has(mediaId)) {
@@ -76,7 +77,7 @@ export default function ScamReportPage({ params }: PageParams) {
     });
   };
 
-  const truncateDescription = (text: string, maxLength: number = 300) => {
+  const truncateDescription = (text: string, maxLength: number = 300): string => {
     if (text.length <= maxLength) return text;
     const truncated = text.slice(0, maxLength);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
@@ -86,7 +87,7 @@ export default function ScamReportPage({ params }: PageParams) {
   };
 
   useEffect(() => {
-    const fetchReport = async () => {
+    const fetchReport = async (): Promise<void> => {
       try {
         setIsLoading(true);
         const result = await getSpecificReport(resolvedParams.id);
@@ -97,6 +98,7 @@ export default function ScamReportPage({ params }: PageParams) {
           setError(result.error || 'Failed to fetch report');
         }
       } catch (err) {
+        console.error('Error fetching report:', err);
         setError('An error occurred while fetching the report');
       } finally {
         setIsLoading(false);
@@ -210,13 +212,26 @@ export default function ScamReportPage({ params }: PageParams) {
                     </span>
                   </div>
                   <div className="text-left sm:text-right bg-white p-3 rounded-lg border border-gray-200 flex-shrink-0">
-                    <p className="text-gray-600 text-sm"><span className="font-medium">Report ID:</span> {report.id}</p>
-                    <p className="text-gray-600 text-sm"><span className="font-medium">Date:</span> {report.date}</p>
+                    <p className="text-gray-600 text-sm mb-2">
+                      <span className="font-medium">Report ID:</span> {report.id}
+                    </p>
+                    {/* Compact Date Information */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="w-3 h-3 text-red" />
+                        <span>Scam: {report.scamDate}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Clock className="w-3 h-3 text-blue-500" />
+                        <span>Reported: {report.reportDate}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
                 {/* Description with proper text handling */}
                 <div className="break-words">
+                  <h5 className="font-medium text-gray-700 mb-2">Description:</h5>
                   <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {isDescriptionExpanded || !isLongDescription 
                       ? report.description 
@@ -334,8 +349,8 @@ export default function ScamReportPage({ params }: PageParams) {
               <Image 
                 src={heroImage} 
                 alt="Detective Dog" 
-                layout="fill"
-                objectFit="contain"
+                fill
+                className="object-contain"
                 priority
               />
             </div>

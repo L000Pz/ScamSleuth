@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Image from "next/image";
@@ -7,10 +8,11 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { updateUserProfile, getCurrentUserInfo, uploadProfilePicture, deleteProfilePicture } from "./actions";
-import { User, Camera, X } from "lucide-react";
+import { User, Camera, X, Lock } from "lucide-react";
 
+// Updated schema - removed email validation since it's now read-only
 const ProfileSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+  email: z.string().email({ message: "Invalid email address" }), // Keep for type safety but won't be validated
   username: z.string().min(3, { message: "Username must be at least 3 characters long" }),
   name: z.string().min(1, { message: "Name is required" }),
   oldPassword: z.string().min(1, { message: "Current password is required" }),
@@ -217,6 +219,10 @@ export default function EditProfilePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Prevent email changes
+    if (name === 'email') return;
+    
     setFormData(prev => ({ ...prev, [name]: value }));
     
     // Clear errors for the field being edited
@@ -259,7 +265,7 @@ export default function EditProfilePage() {
 
     try {
       const response = await updateUserProfile({
-        email: formData.email,
+        email: formData.email, // Keep original email
         username: formData.username,
         name: formData.name,
         oldPassword: formData.oldPassword,
@@ -402,19 +408,29 @@ export default function EditProfilePage() {
               </h3>
               
               <div className="space-y-4">
+                {/* Email Field - Now Read-only */}
                 <div>
-                  <label className="block text-[16px] md:text-[18px] font-bold mb-2">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                    required
-                    disabled={isLoading}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  <label className="block text-[16px] md:text-[18px] font-bold mb-2 flex items-center gap-2">
+                    Email
+                    <Lock className="w-4 h-4 text-gray-400" />
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed transition-all"
+                      disabled={true}
+                      readOnly={true}
+                      placeholder="Enter your email"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Lock className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Email cannot be changed for security reasons
+                  </p>
                 </div>
 
                 <div>

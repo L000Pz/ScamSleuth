@@ -61,7 +61,7 @@ export async function getRecentWebsites(limit: number = 5): Promise<{
   error?: string;
 }> {
   try {
-    const response = await fetch(`http://localhost:6996/ai/urls/recent?limit=${limit}`, {
+    const response = await fetch(`http://localhost:8080/AI/ai/urls/recent?limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

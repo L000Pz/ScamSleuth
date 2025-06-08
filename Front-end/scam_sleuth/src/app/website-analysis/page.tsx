@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -19,12 +20,22 @@ import {
   Server,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  Award,
+  CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
-import { analyzeWebsite, getLatestScreenshotByDomain, getWhoisData, type AnalysisResult, type WhoisData } from './actions';
+import { 
+  analyzeWebsite, 
+  getLatestScreenshotByDomain, 
+  getWhoisData, 
+  getEnamadData,
+  type AnalysisResult, 
+  type WhoisData,
+  type EnamadData 
+} from './actions';
 
 interface UserReview {
   id: string;
@@ -72,6 +83,11 @@ const WebsiteAnalysisPage: React.FC = () => {
   const [whoisLoading, setWhoisLoading] = useState<boolean>(false);
   const [whoisError, setWhoisError] = useState<string | null>(null);
 
+  // Enamad state
+  const [enamadData, setEnamadData] = useState<EnamadData | null>(null);
+  const [enamadLoading, setEnamadLoading] = useState<boolean>(false);
+  const [enamadError, setEnamadError] = useState<string | null>(null);
+
   const [userReviews, setUserReviews] = useState<UserReview[]>([
     { 
       id: '1', 
@@ -102,7 +118,14 @@ const WebsiteAnalysisPage: React.FC = () => {
     ratingBreakdown: { 5: 100, 4: 75, 3: 50, 2: 25, 1: 10 }
   };
 
-  // Format date helper
+  // Format date helper for Persian dates
+  const formatPersianDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'Not available';
+    // Persian dates are already formatted, just return as is
+    return dateString;
+  };
+
+  // Format date helper for standard dates
   const formatDate = (dateString: string | undefined): string => {
     if (!dateString) return 'Not available';
     try {
@@ -140,6 +163,24 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
+  // Get Enamad logo level color and description
+  const getEnamadLevelInfo = (logolevel: number) => {
+    switch (logolevel) {
+      case 1:
+        return { color: 'bg-gray-500', text: 'Basic', description: 'Basic verification' };
+      case 2:
+        return { color: 'bg-blue-500', text: 'Standard', description: 'Standard verification' };
+      case 3:
+        return { color: 'bg-yellow-500', text: 'Enhanced', description: 'Enhanced verification' };
+      case 4:
+        return { color: 'bg-green-500', text: 'Premium', description: 'Premium verification' };
+      case 5:
+        return { color: 'bg-purple-500', text: 'Elite', description: 'Elite verification' };
+      default:
+        return { color: 'bg-gray-400', text: 'Unknown', description: 'Unknown level' };
+    }
+  };
+
   // Fetch analysis data
   const performAnalysis = async (website: string) => {
     setIsLoading(true);
@@ -168,6 +209,15 @@ const WebsiteAnalysisPage: React.FC = () => {
         } else {
           setWhoisData(null);
           setWhoisError('WHOIS data not available');
+        }
+
+        // Set Enamad data if available
+        if (result.data.enamadData) {
+          setEnamadData(result.data.enamadData);
+          setEnamadError(null);
+        } else {
+          setEnamadData(null);
+          setEnamadError('Enamad certification not found');
         }
       } else {
         setError(result.error || 'Failed to analyze website');
@@ -224,6 +274,29 @@ const WebsiteAnalysisPage: React.FC = () => {
       console.error('WHOIS error:', err);
     } finally {
       setWhoisLoading(false);
+    }
+  };
+
+  // Refresh Enamad data
+  const refreshEnamadData = async () => {
+    if (!currentWebsite) return;
+    
+    setEnamadLoading(true);
+    setEnamadError(null);
+    
+    try {
+      const result = await getEnamadData(currentWebsite);
+      
+      if (result.success && result.data) {
+        setEnamadData(result.data);
+      } else {
+        setEnamadError(result.error || 'Enamad certification not found');
+      }
+    } catch (err) {
+      setEnamadError('An error occurred while loading Enamad data');
+      console.error('Enamad error:', err);
+    } finally {
+      setEnamadLoading(false);
     }
   };
 
@@ -664,11 +737,9 @@ const WebsiteAnalysisPage: React.FC = () => {
                     </ul>
                   </div>
                 </div>
-
-                {/* Removed Description Box from here - moved to full-width section above review */}
               </div>
 
-              {/* Right Column - Screenshot and WHOIS */}
+              {/* Right Column - Screenshot, WHOIS, and Enamad */}
               <div className="space-y-6">
                 {/* Screenshot Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden max-h-[480px]">
@@ -758,6 +829,180 @@ const WebsiteAnalysisPage: React.FC = () => {
                             <>
                               <div className="text-6xl mb-4 opacity-60">🌐</div>
                               <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Screenshot</h4>
+                              <p className="text-sm">Please wait...</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Enamad Certification Card */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Award className="w-5 h-5" />
+                        Enamad Certification
+                      </h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={refreshEnamadData}
+                        disabled={enamadLoading}
+                        className="flex items-center gap-2"
+                        title="Refresh Enamad data"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${enamadLoading ? 'animate-spin' : ''}`} />
+                        {enamadLoading ? 'Loading...' : 'Refresh'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 max-h-[400px] overflow-y-auto">
+                    {enamadLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
+                          <p className="text-sm text-gray-600">Loading Enamad information...</p>
+                        </div>
+                      </div>
+                    ) : enamadData ? (
+                      <div className="space-y-4 text-sm">
+                        {/* Certification Status */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            Certification Status
+                          </h4>
+                          <div className="bg-green-50 rounded-lg p-3 space-y-2 border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Status:</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="font-medium text-green-700">Certified</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Level:</span>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 ${getEnamadLevelInfo(enamadData.logolevel).color} rounded-full`}></div>
+                                <span className="font-medium">{getEnamadLevelInfo(enamadData.logolevel).text}</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Certificate ID:</span>
+                              <span className="font-medium text-xs font-mono bg-white px-2 py-1 rounded">
+                                {enamadData.id}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Business Information */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                            <Building className="w-4 h-4" />
+                            Business Information
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Business Name:</span>
+                              <span className="font-medium text-right max-w-[60%]" dir="rtl">
+                                {enamadData.nameper}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Location:</span>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-gray-400" />
+                                <span className="font-medium">
+                                  {enamadData.cityName}, {enamadData.stateName}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Certification Dates */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Certification Period
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Approved:</span>
+                              <span className="font-medium">{formatPersianDate(enamadData.approvedate)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Expires:</span>
+                              <span className="font-medium">{formatPersianDate(enamadData.expdate)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Services */}
+                        {enamadData.srvText && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Building className="w-4 h-4" />
+                              Services
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="space-y-1">
+                                {enamadData.srvText.split(',').filter(service => service.trim()).map((service, index) => (
+                                  <div key={index} className="text-xs bg-white px-2 py-1 rounded flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <span className="flex-1" dir="rtl">{service.trim()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Verification Code */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Verification
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Verification Code:</span>
+                              <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
+                                {enamadData.Code}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-8 text-center">
+                        <div className="text-gray-500">
+                          {enamadError ? (
+                            <>
+                              <div className="text-4xl mb-3">🏆</div>
+                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Enamad Not Found</h4>
+                              <p className="text-sm text-gray-600 mb-3">{enamadError}</p>
+                              <p className="text-xs text-gray-500 mb-3">This website may not be certified with Enamad</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={refreshEnamadData}
+                                className="flex items-center gap-2 mx-auto"
+                                title="Retry Enamad lookup"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                Try Again
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-6xl mb-4 opacity-60">🏆</div>
+                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Enamad Info</h4>
                               <p className="text-sm">Please wait...</p>
                             </>
                           )}

@@ -5,6 +5,7 @@ import localFont from 'next/font/local';
 import Footer from './components/Footer';
 import Navbar from "./components/header";
 
+
 const Montserrat = localFont({
   src: [
     {

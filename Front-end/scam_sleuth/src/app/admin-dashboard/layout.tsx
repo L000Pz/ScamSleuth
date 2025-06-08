@@ -3,14 +3,15 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, Menu, X, FileText, List, PenSquare } from 'lucide-react';
+import { LogOut, Menu, X, FileText, List, PenSquare, BarChart3 } from 'lucide-react';
 import Script from 'next/script';
 import { config } from '@/app/config/env';
 import { logout } from './actions';
 import { useState, useEffect } from 'react';
 
 const navItems = [
-  { name: 'Scam Reports', href: '/admin-dashboard', icon: <List className="w-5 h-5" /> },
+  { name: 'Dashboard', href: '/admin-dashboard', icon: <BarChart3 className="w-5 h-5" /> },
+  { name: 'Scam Reports', href: '/admin-dashboard/reports', icon: <List className="w-5 h-5" /> },
   { name: 'Reviews', href: '/admin-dashboard/reviews', icon: <FileText className="w-5 h-5" /> },
   { name: 'Write a Review', href: '/admin-dashboard/write-review', icon: <PenSquare className="w-5 h-5" /> },
 ];
@@ -27,7 +28,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     router.refresh();
-  }, [pathname]);
+  }, [pathname, router]);
 
   const handleLogout = async () => {
     try {
