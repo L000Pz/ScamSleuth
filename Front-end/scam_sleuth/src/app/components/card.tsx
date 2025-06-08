@@ -9,7 +9,7 @@ interface CardProps {
   imageUrl: string;
 }
 
-export default function ScamCard({ id, name, description, imageUrl }: CardProps) {
+export default function ScamCard({ id, name, imageUrl }: CardProps) {
   const isEven = id % 2 === 0;
   
   return (
@@ -28,21 +28,21 @@ export default function ScamCard({ id, name, description, imageUrl }: CardProps)
         </div>
       </div>
 
-      {/* Content */}
-      <div className="text-center px-4 py-1">
-        <h3 className="text-lg font-bold">{name}</h3>
-        <p className="text-sm font-medium">
-          {description}
-        </p>
-      </div>
-
-      {/* Button */}
-      <div className="flex justify-center">
-        <Link href={`/scams/${id}`}>
-          <Button variant="outline" className="text-md font-medium">
-            View more
-          </Button>
-        </Link>
+      {/* Content - Fixed layout to prevent button movement */}
+      <div className="flex flex-col h-[166px] px-4">
+        {/* Title container with fixed height */}
+        <div className="flex-grow flex items-center justify-center py-2">
+          <h3 className="text-lg font-bold text-center line-clamp-3">{name}</h3>
+        </div>
+        
+        {/* Button container with fixed position at bottom */}
+        <div className="flex justify-center pb-4">
+          <Link href={`/scams/${id}`}>
+            <Button variant="outline" className="text-md font-medium">
+              View more
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
