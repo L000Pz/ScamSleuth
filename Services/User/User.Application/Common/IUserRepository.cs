@@ -4,7 +4,7 @@ namespace User.Application.Common;
 
 public interface IUserRepository
 {
-    public Task<Users?> GetUserByUsername(String username);
+    public Task<Users?> GetUserByUsername(string username);
     public Task<Users?> GetUserById(int user_id);
     public Task<Users?> ChangePassword(Users users, string password);
     public Task<Users?> ChangeUsername(Users users, string username);
@@ -17,7 +17,8 @@ public interface IUserRepository
     public Task<bool> DeleteReport(int review_id);
     public Task<Report?> GetReportById(int report_id);
     public Task<List<int>> GetReportMedia(int report_id);
-    Task<Admins?> GetAdminByUsername(String username);
-
-
+    Task<Admins?> GetAdminByUsername(string username);
+    public Task<ReviewComment?> WriteComment(ReviewComment reviewComment);
+    Task<Review?> GetReviewById(int review_id);
+    Task<ReviewComment?> GetCommentById(int? comment_id);
 }

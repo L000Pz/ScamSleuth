@@ -2,5 +2,5 @@
 
 public interface IHasher
 {
-    String Hash(String password);
+    string Hash(string password);
 }

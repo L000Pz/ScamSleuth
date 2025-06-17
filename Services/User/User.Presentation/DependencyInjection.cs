@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using User.Infrastructure.JWT;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using User.Infrastructure.JWT;
 
 namespace User.Presentation;
 

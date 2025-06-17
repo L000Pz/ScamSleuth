@@ -7,5 +7,4 @@ public record EditInfo(
     string? new_name,
     string? old_password,
     string? new_password
-    );
-
+);

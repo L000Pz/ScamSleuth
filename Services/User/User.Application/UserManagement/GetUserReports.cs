@@ -1,5 +1,5 @@
-﻿using User.Domain;
-using User.Application.Common;
+﻿using User.Application.Common;
+using User.Domain;
 
 namespace User.Application.UserManagement;
 
@@ -15,10 +15,7 @@ public class GetUserReports : IGetUserReports
     public async Task<List<Report>?> Handle(string token)
     {
         var user = await _userRepository.GetUserByEmail(token);
-        if (user is null)
-        {
-            return null;
-        }
+        if (user is null) return null;
         return await _userRepository.GetUserReports(user.user_id);
     }
 }

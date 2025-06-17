@@ -25,8 +25,18 @@ public class PublicRepository : IPublicRepository
         {
             return null;
         }
+
         return reviews;
     }
+
+    public async Task<List<ReviewComment?>> GetAllReviewComments(int review_id)
+    {
+        var comments = await _context.review_comment
+            .Where(rc => rc.review_id == review_id)
+            .ToListAsync();
+        return comments;
+    }
+
     public async Task<List<Scam_Type>?> GetAllScamTypes()
     {
         var scamTypes = await _context.scam_type
@@ -35,39 +45,44 @@ public class PublicRepository : IPublicRepository
         {
             return null;
         }
+
         return scamTypes;
     }
+
     public async Task<List<Review>?> GetRecentReviews(int numberOfReviews)
     {
         var recentReviews = await _context.review
-            .OrderByDescending(r => r.review_date) 
+            .OrderByDescending(r => r.review_date)
             .Take(numberOfReviews)
             .ToListAsync();
         if (recentReviews.Count == 0)
         {
             return null;
         }
+
         return recentReviews;
     }
+
     public async Task<Review?> GetReviewById(int review_id)
     {
         var review = await _context.review
             .FirstOrDefaultAsync(r => r.review_id == review_id);
         return review;
     }
+
     public async Task<Review_Content?> GetReviewContent(int review_content_id)
     {
         var bsonContent = await _mongoContext.GetDoc(review_content_id);
         if (bsonContent == null)
             return null;
-        
-        
+
+
         bsonContent.Remove("_id");
 
         var reviewContent = BsonSerializer.Deserialize<Review_Content>(bsonContent);
         return reviewContent;
     }
-    
+
 
     public async Task<Scam_Type?> GetScamTypeById(int scam_type_id)
     {
@@ -75,6 +90,7 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(c => c.scam_type_id == scam_type_id);
         return scamType;
     }
+
     public async Task<Admins?> GetAdminById(int admin_id)
     {
         return _context.admins.SingleOrDefault(user => user.admin_id == admin_id);

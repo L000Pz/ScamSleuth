@@ -2,7 +2,7 @@
 
 namespace User.Application.UserManagement;
 
-public class RemoveReport:IRemoveReport
+public class RemoveReport : IRemoveReport
 {
     private readonly IUserRepository _userRepository;
 
@@ -13,14 +13,10 @@ public class RemoveReport:IRemoveReport
 
     public async Task<List<int>?> Handle(int report_id)
     {
-        var isRemoved=  await _userRepository.DeleteReport(report_id);
-        if (isRemoved is false)
-        {
-            return null;
-        }
+        var isRemoved = await _userRepository.DeleteReport(report_id);
+        if (isRemoved is false) return null;
 
-        List<int> media_id = await _userRepository.GetReportMedia(report_id);
+        var media_id = await _userRepository.GetReportMedia(report_id);
         return media_id;
     }
-
 }

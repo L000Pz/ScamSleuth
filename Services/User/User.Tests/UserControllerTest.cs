@@ -60,7 +60,7 @@ namespace User.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
+                    ItExpr.Is<HttpRequestMessage>(req =>
                         expectedUrl == null || req.RequestUri.ToString().Contains(expectedUrl)),
                     ItExpr.IsAny<CancellationToken>()
                 )
@@ -71,7 +71,7 @@ namespace User.Tests
                 });
         }
 
-        
+
         [Fact]
         public async Task GetReports_ValidRequest_ReturnsOkResult()
         {
@@ -168,7 +168,7 @@ namespace User.Tests
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Equal("Report information could not be found!", badRequestResult.Value);
         }
-       
+
         [Fact]
         public async Task ChangePassword_ValidRequest_ReturnsOkResult()
         {
@@ -274,7 +274,7 @@ namespace User.Tests
 
             _controller.ControllerContext.HttpContext.Request.Headers["Authorization"] = "Bearer test-token";
             SetupMockHttpMessageHandler(HttpStatusCode.OK, "test@example.com", "Check Token");
-            
+
             var scamTypes = new List<Scam_Type> { new Scam_Type { scam_type_id = 1 } };
             _mockHttpMessageHandler
                 .Protected()
@@ -449,3 +449,4 @@ namespace User.Tests
         }
     }
 }*/
+

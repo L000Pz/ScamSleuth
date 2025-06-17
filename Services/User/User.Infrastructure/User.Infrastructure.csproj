@@ -7,13 +7,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\User.Application\User.Application.csproj" />
-      <ProjectReference Include="..\User.Domain\User.Domain.csproj" />
+        <ProjectReference Include="..\User.Application\User.Application.csproj"/>
+        <ProjectReference Include="..\User.Domain\User.Domain.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18"/>
     </ItemGroup>
 
 </Project>

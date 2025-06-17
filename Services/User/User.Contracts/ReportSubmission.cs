@@ -1,6 +1,4 @@
-﻿using System.Data.SqlTypes;
-
-namespace User.Contracts;
+﻿namespace User.Contracts;
 
 public record ReportSubmission(
     string title,

@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddScoped<IGetScamTypes, GetScamTypes>();
         services.AddScoped<IShowRecentReviews, ShowRecentReviews>();
         services.AddScoped<IReturnReviewById, ReturnReviewById>();
+        services.AddScoped<IShowReviewComments, ShowReviewComments>();
         return services;
     }
 }
