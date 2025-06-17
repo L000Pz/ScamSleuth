@@ -40,7 +40,7 @@
 ## Technologies Used
 
 - **Frontend**: Next.js
-- **Backend**: .NET 7.0
+- **Backend**: .NET 7.0, Golang
 - **Database**: PostgreSQL, MongoDB
 - **Authentication**: JWT
 
@@ -53,6 +53,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 For questions or inquiries, please contact:
 
 - **Front-End Developer Email**: [mahbodseyedzadegan@gmail.com](mailto:mahbodseyedzadegan@gmail.com)
-- **Back-End Developer Email**: [arianaariaee83@gmail.com](mailto:arianaariaee83@gmail.com)
+- **Back-End Developers Email**: [arianaariaee83@gmail.com](mailto:arianaariaee83@gmail.com),[armin890ebp@gmail.com](mailto:armin890ebp@gmail.com)
 - **GitHub**: [https://github.com/L000Pz/ScamSleuth](https://github.com/L000Pz/ScamSleuth)
 
