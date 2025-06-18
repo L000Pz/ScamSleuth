@@ -145,22 +145,36 @@ public class UserRepository : IUserRepository
         return _context.admins.SingleOrDefault(admin => admin.username == username);
     }
 
-    public async Task<ReviewComment?> WriteComment(ReviewComment reviewComment)
+    public async Task<ReviewComment?> WriteReviewComment(ReviewComment reviewComment)
     {
         _context.review_comment.Add(reviewComment);
         await _context.SaveChangesAsync();
         return reviewComment;
     }
-
+    public async Task<UrlComment?> WriteUrlComment(UrlComment urlComment)
+    {
+        _context.url_comment.Add(urlComment);
+        await _context.SaveChangesAsync();
+        return urlComment;
+    }
     public async Task<Review?> GetReviewById(int review_id)
     {
         return await _context.review
             .FirstOrDefaultAsync(r => r.review_id == review_id);
     }
-
-    public async Task<ReviewComment?> GetCommentById(int? comment_id)
+    public async Task<UrlStorage?> GetUrlById(int url_id)
+    {
+        return await _context.url_storage
+            .FirstOrDefaultAsync(us => us.url_id == url_id);
+    }
+    public async Task<ReviewComment?> GetReviewCommentById(int? comment_id)
     {
         return await _context.review_comment
+            .FirstOrDefaultAsync(rc => rc.comment_id == comment_id);
+    }
+    public async Task<UrlComment?> GetUrlCommentById(int? comment_id)
+    {
+        return await _context.url_comment
             .FirstOrDefaultAsync(rc => rc.comment_id == comment_id);
     }
 }

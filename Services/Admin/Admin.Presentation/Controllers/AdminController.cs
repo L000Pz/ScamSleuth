@@ -10,12 +10,10 @@ using RabbitMQ.Client;
 
 namespace Admin.Presentation.Controllers;
 
-
-
 [ApiController]
 [Produces("application/json")]
 [Route("adminManagement")]
-public class AdminController: ControllerBase
+public class AdminController : ControllerBase
 {
     private readonly IShowAllReports _showAllReports;
     private readonly IGetAdminReviews _getAdminReviews;
@@ -23,13 +21,18 @@ public class AdminController: ControllerBase
     private readonly IDeleteReview _deleteReview;
     private readonly IGetReportById _getReportById;
     private readonly IUpdateReview _updateReview;
+    private readonly IDeleteReviewComment _deleteReviewComment;
+    private readonly IDeleteUrlComment _deleteUrlComment;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
     private const string scamTypeUrl = "http://gateway-api:80/Public/publicManager/scamTypes";
     private const string mediaUrl = "http://gateway-api:80/Media/mediaManager/Get";
 
-    public AdminController(HttpClient httpClient, IShowAllReports showAllReports,IGetAdminReviews getAdminReviews, ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,IGetReportById getReportById, IUpdateReview updateReview)
+    public AdminController(HttpClient httpClient, IShowAllReports showAllReports, IGetAdminReviews getAdminReviews,
+        ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,
+        IGetReportById getReportById, IUpdateReview updateReview, IDeleteReviewComment deleteReviewComment,
+        IDeleteUrlComment deleteUrlComment)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
@@ -39,7 +42,10 @@ public class AdminController: ControllerBase
         _messagePublisher = messagePublisher;
         _getReportById = getReportById;
         _updateReview = updateReview;
+        _deleteReviewComment = deleteReviewComment;
+        _deleteUrlComment = deleteUrlComment;
     }
+
     [HttpGet("ViewReports")]
     [Authorize]
     public async Task<ActionResult> ViewReports()
@@ -52,14 +58,14 @@ public class AdminController: ControllerBase
         {
             return BadRequest("You don't have access to this property!");
         }
-        
+
         var reports = await _showAllReports.Handle();
         if (reports is null)
             return BadRequest("No reports were found!");
 
         return Ok(reports);
     }
-    
+
 
     [HttpGet("GetAdminReviews")]
     [Authorize]
@@ -73,6 +79,7 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
+
         List<Review>? reviews = await _getAdminReviews.Handle(token);
         if (reviews is null)
         {
@@ -82,7 +89,7 @@ public class AdminController: ControllerBase
         return Ok(reviews);
     }
 
-    
+
     [HttpDelete("DeleteReview")]
     [Authorize]
     public async Task<ActionResult> DeleteReview(int reviewId)
@@ -114,8 +121,74 @@ public class AdminController: ControllerBase
 
         return Ok("Review deleted successfully.");
     }
-    
-    
+
+
+    [HttpDelete("DeleteReviewComment")]
+    [Authorize]
+    public async Task<ActionResult> DeleteReviewComment(int comment_id)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+
+        var result = await _deleteReviewComment.Handle(comment_id, token);
+        if (result == "writer")
+        {
+            return BadRequest($"You are not allowed to remove any comments!");
+        }
+
+        if (result == "commentExist")
+        {
+            return BadRequest("The comment you are trying to delete does not exist!");
+        }
+
+
+        if (result == "comment")
+        {
+            return BadRequest("Failed to remove the comment!");
+        }
+
+        return Ok("Comment deleted successfully.");
+    }
+
+    [HttpDelete("DeleteUrlComment")]
+    [Authorize]
+    public async Task<ActionResult> DeleteUrlComment(int comment_id)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+
+        var result = await _deleteUrlComment.Handle(comment_id, token);
+        if (result == "writer")
+        {
+            return BadRequest($"You are not allowed to remove any comments!");
+        }
+
+        if (result == "commentExist")
+        {
+            return BadRequest("The comment you are trying to delete does not exist!");
+        }
+
+
+        if (result == "comment")
+        {
+            return BadRequest("Failed to remove the comment!");
+        }
+
+        return Ok("Comment deleted successfully.");
+    }
+
     [HttpPost("WriteReview")]
     [Authorize]
     public async Task<ActionResult> CreateReview([FromBody] ReviewCreation reviewCreation)
@@ -128,19 +201,19 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
-    
+
         // Validate scam type
-        try 
+        try
         {
             HttpResponseMessage scamTypeResponse = await _httpClient.GetAsync(scamTypeUrl);
             if (!scamTypeResponse.IsSuccessStatusCode)
             {
                 return BadRequest("Failed to verify scam type!");
             }
-        
+
             var validScamTypes = JsonConvert.DeserializeObject<List<Scam_Type>>(
                 await scamTypeResponse.Content.ReadAsStringAsync());
-            
+
             if (!validScamTypes.Any(st => st.scam_type_id == reviewCreation.scam_type_id))
             {
                 return BadRequest("Invalid scam type! Please select from available scam types.");
@@ -151,22 +224,21 @@ public class AdminController: ControllerBase
             Console.WriteLine(e);
             return BadRequest("Failed to verify scam type!");
         }
-        // Validate mediaAdd commentMore actions
-        try 
-        { 
+
+        try
+        {
             foreach (var media_id in reviewCreation.media)
             {
                 HttpResponseMessage mediaResponse = await _httpClient.GetAsync($"{mediaUrl}?id={media_id}");
 
-                // If any media ID fails verification, return a bad request
                 if (!mediaResponse.IsSuccessStatusCode)
                 {
                     return BadRequest($"Failed to verify media!");
                 }
             }
         }
-        catch (Exception e) 
-        { 
+        catch (Exception e)
+        {
             Console.WriteLine(e);
             return BadRequest("Failed to verify media!");
         }
@@ -181,9 +253,10 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Failed to authenticate user!");
         }
+
         return Ok("Report submitted successfully.");
     }
-    
+
     [HttpGet("GetReportById")]
     public async Task<ActionResult> GetReportById(int report_id)
     {
@@ -194,7 +267,8 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
-        var reportInfo = await _getReportById.Handle(report_id,token);
+
+        var reportInfo = await _getReportById.Handle(report_id, token);
         if (reportInfo == null)
         {
             return BadRequest("Report information could not be found!");
@@ -204,8 +278,10 @@ public class AdminController: ControllerBase
         {
             return BadRequest("You do not have access to this report.");
         }
+
         return Ok(reportInfo);
     }
+
     [HttpPost("UpdateReviewContent")]
     [Authorize]
     public async Task<ActionResult> UpdateReviewContent([FromBody] ReviewContentUpdate reviewContentUpdate)
@@ -217,11 +293,15 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
-        var result = await _updateReview.HandleReviewContent(reviewContentUpdate.review_id,reviewContentUpdate.new_content,token);
+
+        var result =
+            await _updateReview.HandleReviewContent(reviewContentUpdate.review_id, reviewContentUpdate.new_content,
+                token);
         if (result == "review")
         {
             return BadRequest("Review information could not be found!");
         }
+
         if (result == "admin")
         {
             return BadRequest("You do not have access to this review.");
@@ -231,9 +311,10 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Could not Update Review content!");
         }
+
         return Ok("Review content has been updated successfully");
     }
-    
+
     [HttpPost("UpdateReviewTitle")]
     [Authorize]
     public async Task<ActionResult> UpdateReviewTitle([FromBody] TitleUpdate titleUpdate)
@@ -246,11 +327,13 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Authentication failed!");
         }
-        var result = await _updateReview.HandleReviewTitle(titleUpdate.review_id,titleUpdate.new_title,token);
+
+        var result = await _updateReview.HandleReviewTitle(titleUpdate.review_id, titleUpdate.new_title, token);
         if (result == "review")
         {
             return BadRequest("Review information could not be found!");
         }
+
         if (result == "admin")
         {
             return BadRequest("You do not have access to this review.");
@@ -260,9 +343,10 @@ public class AdminController: ControllerBase
         {
             return BadRequest("Could not Update Review title!");
         }
+
         return Ok("Review title has been updated successfully");
     }
-    
+
     private async Task<String> CheckToken(String token)
     {
         try
@@ -270,9 +354,9 @@ public class AdminController: ControllerBase
             string jsonToken = JsonConvert.SerializeObject(token);
             HttpContent content = new StringContent(jsonToken, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await _httpClient.PostAsync(checkUrl, content);
-            
+
             if (!response.IsSuccessStatusCode)
-            {            
+            {
                 Console.WriteLine(response);
                 return "unsuccessful";
             }

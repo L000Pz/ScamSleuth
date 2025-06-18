@@ -13,6 +13,8 @@ public static class DependencyInjection
         services.AddScoped<IDeleteReview, DeleteReview>();
         services.AddScoped<IGetReportById, GetReportById>();
         services.AddScoped<IUpdateReview, UpdateReview>();
+        services.AddScoped<IDeleteReviewComment, DeleteReviewComment>();
+        services.AddScoped<IDeleteUrlComment, DeleteUrlComment>();
         return services;
     }
 }

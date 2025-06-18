@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddScoped<IShowRecentReviews, ShowRecentReviews>();
         services.AddScoped<IReturnReviewById, ReturnReviewById>();
         services.AddScoped<IShowReviewComments, ShowReviewComments>();
+        services.AddScoped<IShowUrlComments, ShowUrlComments>();
         return services;
     }
 }

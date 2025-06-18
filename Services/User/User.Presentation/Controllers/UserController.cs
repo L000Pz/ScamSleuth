@@ -23,11 +23,12 @@ public class UserController : ControllerBase
     private readonly IRemoveReport _removeReport;
     private readonly IReturnReportById _returnReportById;
     private readonly ISubmitReport _submitReport;
-    private readonly IWriteComment _writeComment;
+    private readonly IWriteReviewComment _writeReviewComment;
+    private readonly IWriteUrlComment _writeUrlComment;
 
     public UserController(IEditUserInfo editUserInfo, HttpClient httpClient, IGetUserReports getUserReports,
         ISubmitReport submitReport, IRemoveReport removeReport, IConfiguration configuration,
-        IReturnReportById returnReportById, IWriteComment writeComment)
+        IReturnReportById returnReportById, IWriteReviewComment writeReviewComment, IWriteUrlComment writeUrlComment)
     {
         _editUserInfo = editUserInfo;
         _httpClient = httpClient;
@@ -36,7 +37,8 @@ public class UserController : ControllerBase
         _removeReport = removeReport;
         _configuration = configuration;
         _returnReportById = returnReportById;
-        _writeComment = writeComment;
+        _writeReviewComment = writeReviewComment;
+        _writeUrlComment = writeUrlComment;
     }
 
     [HttpPut("EditUserInfo")]
@@ -144,17 +146,17 @@ public class UserController : ControllerBase
         if (reportInfo.WriterDetails == null) return BadRequest("You do not have access to this report.");
         return Ok(reportInfo);
     }
-    
-    [HttpPost("WriteComment")]
+
+    [HttpPost("WriteReviewComment")]
     [Authorize]
-    public async Task<ActionResult> WriteComment([FromBody] CommentContent commentContent)
+    public async Task<ActionResult> WriteReviewComment([FromBody] ReviewCommentContent reviewCommentContent)
     {
         string? token = HttpContext.Request.Headers.Authorization;
         token = token.Split(" ")[1];
 
         token = await CheckToken(token);
         if (token == "unsuccessful") return BadRequest("Authentication failed!");
-        var result = await _writeComment.Handle(commentContent, token);
+        var result = await _writeReviewComment.Handle(reviewCommentContent, token);
         if (result == "writer") return BadRequest("You are not a registered user!");
         if (result == "review")
         {
@@ -170,6 +172,40 @@ public class UserController : ControllerBase
         {
             return BadRequest("Failed to submit the comment!");
         }
+
+        return Ok("Comment submitted successfully.");
+    }
+
+    [HttpPost("WriteUrlComment")]
+    [Authorize]
+    public async Task<ActionResult> WriteUrlComment([FromBody] UrlCommentContent urlCommentContent)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful") return BadRequest("Authentication failed!");
+        var result = await _writeUrlComment.Handle(urlCommentContent, token);
+        if (result == "writer") return BadRequest("You are not a registered user!");
+        if (result == "rating")
+        {
+            return BadRequest("Rating must be between 1 to 5!");
+        }
+        if (result == "url")
+        {
+            return BadRequest("Could not find the url!");
+        }
+
+        if (result == "root")
+        {
+            return BadRequest("Root comment could not be found!");
+        }
+
+        if (result == "comment")
+        {
+            return BadRequest("Failed to submit the comment!");
+        }
+
         return Ok("Comment submitted successfully.");
     }
 

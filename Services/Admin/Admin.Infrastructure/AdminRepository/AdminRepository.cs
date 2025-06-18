@@ -25,7 +25,7 @@ public class AdminRepository : IAdminRepository
     {
         _context.review.Add(review);
         await _context.SaveChangesAsync();
-        return review;    
+        return review;
     }
 
     public async Task<Review_Content?> SubmitReviewContent(Review_Content reviewContent)
@@ -40,11 +40,13 @@ public class AdminRepository : IAdminRepository
             Console.WriteLine(e);
             return null;
         }
+
         return reviewContent;
     }
+
     public async Task<int> GetLastContentId()
     {
-        var docs =await _mongoContext.GetAllDocs();
+        var docs = await _mongoContext.GetAllDocs();
         int max = 0;
         foreach (var VARIABLE in docs)
         {
@@ -57,15 +59,15 @@ public class AdminRepository : IAdminRepository
 
         return max + 1;
     }
-    
+
     public async Task<Review_Banner?> SubmitReviewBanner(Review_Banner reviewBanner)
     {
         _context.review_banner.Add(reviewBanner);
         await _context.SaveChangesAsync();
         return reviewBanner;
     }
-    
-    
+
+
     public async Task<List<Report>?> GetAllReports()
     {
         var reports = await _context.report
@@ -75,12 +77,14 @@ public class AdminRepository : IAdminRepository
         {
             return null;
         }
+
         return reports;
     }
+
     public async Task<List<Review>> GetAdminReviews(int writer_id)
     {
         return await _context.review
-            .Join( 
+            .Join(
                 _context.admins,
                 review => review.writer_id,
                 admin => admin.admin_id,
@@ -89,6 +93,7 @@ public class AdminRepository : IAdminRepository
             .Where(review => review.writer_id == writer_id)
             .ToListAsync();
     }
+
     public async Task<Review?> GetReviewById(int review_id)
     {
         return await _context.review
@@ -108,6 +113,7 @@ public class AdminRepository : IAdminRepository
                 await _context.SaveChangesAsync();
                 return true;
             }
+
             return false;
         }
         catch (Exception)
@@ -126,12 +132,15 @@ public class AdminRepository : IAdminRepository
             {
                 return true;
             }
+
             return false;
         }
-        catch (Exception) {
+        catch (Exception)
+        {
             return false;
         }
     }
+
     public async Task<List<int>?> GetReviewMediaIds(int review_id)
     {
         return await _context.review_content_media
@@ -139,16 +148,18 @@ public class AdminRepository : IAdminRepository
             .Select(rcm => rcm.media_id)
             .ToListAsync();
     }
+
     public async Task<List<Review_Content_Media>?> SubmitReviewMedia(List<Review_Content_Media> review_media_list)
     {
-        var submittedMedia = new List<Review_Content_Media>();
         foreach (var media in review_media_list)
         {
             _context.review_content_media.Add(media);
         }
+
         await _context.SaveChangesAsync();
         return review_media_list;
     }
+
     public async Task<bool> DeleteReviewMedia(int review_id)
     {
         try
@@ -166,6 +177,68 @@ public class AdminRepository : IAdminRepository
             return false;
         }
     }
+
+    public async Task<bool> DeleteReviewComment(int comment_id)
+    {
+        try
+        {
+            var comment = await _context.review_comment
+                .FirstOrDefaultAsync(r => r.comment_id == comment_id);
+
+            if (comment != null)
+            {
+                _context.review_comment.Remove(comment);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+    public async Task<bool> DeleteUrlComment(int comment_id)
+    {
+        try
+        {
+            var comment = await _context.url_comment
+                .FirstOrDefaultAsync(r => r.comment_id == comment_id);
+
+            if (comment != null)
+            {
+                _context.url_comment.Remove(comment);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+    private async Task<List<ReviewComment>> GetAllDescendantComments(int rootId)
+    {
+        var result = new List<ReviewComment>();
+
+        var directChildren = await _context.review_comment
+            .Where(rc => rc.root_id == rootId)
+            .ToListAsync();
+
+        foreach (var child in directChildren)
+        {
+            result.Add(child);
+            var nestedDescendants = await GetAllDescendantComments(child.comment_id);
+            result.AddRange(nestedDescendants);
+        }
+
+        return result;
+    }
+
+
     public async Task<bool> UpdateReviewContent(Review_Content new_content)
     {
         var res = await _mongoContext.Update(new_content);
@@ -173,16 +246,26 @@ public class AdminRepository : IAdminRepository
         {
             return false;
         }
+
         return true;
     }
+
     public async Task<bool> UpdateReviewTitle(int review_id, string new_title)
     {
         var review = await _context.review.FirstOrDefaultAsync(r => r.review_id == review_id);
-        if (review == null) 
-            return false; 
+        if (review == null)
+            return false;
         review.title = new_title;
         await _context.SaveChangesAsync();
-        return true; 
+        return true;
     }
 
+    public async Task<ReviewComment?> GetReviewCommentById(int comment_id)
+    {
+        return _context.review_comment.SingleOrDefault(c => c.comment_id == comment_id);
+    }
+    public async Task<UrlComment?> GetUrlCommentById(int comment_id)
+    {
+        return _context.url_comment.SingleOrDefault(c => c.comment_id == comment_id);
+    }
 }

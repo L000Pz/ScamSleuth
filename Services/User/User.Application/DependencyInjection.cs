@@ -12,7 +12,8 @@ public static class DependencyInjection
         services.AddScoped<IRemoveReport, RemoveReport>();
         services.AddScoped<IReturnReportById, ReturnReportById>();
         services.AddScoped<IGetUserReports, GetUserReports>();
-        services.AddScoped<IWriteComment, WriteComment>();
+        services.AddScoped<IWriteReviewComment, WriteReviewComment>();
+        services.AddScoped<IWriteUrlComment, WriteUrlComment>();
         return services;
     }
 }

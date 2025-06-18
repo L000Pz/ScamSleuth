@@ -19,5 +19,12 @@ public interface IAdminRepository
     Task<List<int>?> GetReviewMediaIds(int review_content_id);
     Task<bool> DeleteReviewMedia(int review_content_id);
     public Task<List<Review_Content_Media>?> SubmitReviewMedia(List<Review_Content_Media> review_media_list);
+    public Task<bool> DeleteReviewComment(int opmment_id);
+    public Task<ReviewComment?> GetReviewCommentById(int comment_id);
+    public Task<bool> DeleteUrlComment(int cpmment_id);
+    public Task<UrlComment?> GetUrlCommentById(int comment_id);
+
+
+
 
 }

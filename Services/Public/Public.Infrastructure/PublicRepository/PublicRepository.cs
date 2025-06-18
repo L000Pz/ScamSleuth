@@ -36,7 +36,13 @@ public class PublicRepository : IPublicRepository
             .ToListAsync();
         return comments;
     }
-
+    public async Task<List<UrlComment?>> GetAllUrlComments(int url_id)
+    {
+        var comments = await _context.url_comment
+            .Where(uc => uc.url_id == url_id)
+            .ToListAsync();
+        return comments;
+    }
     public async Task<List<Scam_Type>?> GetAllScamTypes()
     {
         var scamTypes = await _context.scam_type
@@ -69,7 +75,12 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(r => r.review_id == review_id);
         return review;
     }
-
+    public async Task<UrlStorage?> GetUrlById(int url_id)
+    {
+        var review = await _context.url_storage
+            .FirstOrDefaultAsync(us => us.url_id == url_id);
+        return review;
+    }
     public async Task<Review_Content?> GetReviewContent(int review_content_id)
     {
         var bsonContent = await _mongoContext.GetDoc(review_content_id);

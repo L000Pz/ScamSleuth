@@ -16,16 +16,18 @@ public class PublicController : ControllerBase
     private readonly IReturnReviewById _returnReviewById;
     private readonly IGetScamTypes _getScamTypes;
     private readonly IShowReviewComments _showReviewComments;
+    private readonly IShowUrlComments _showUrlComments;
     private const int RecentReviewsCount = 10;
 
     public PublicController(IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews,
-        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments)
+        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments)
     {
         _showAllReviews = showAllReviews;
         _showRecentReviews = showRecentReviews;
         _returnReviewById = returnReviewById;
         _getScamTypes = getScamTypes;
         _showReviewComments = showReviewComments;
+        _showUrlComments = showUrlComments;
     }
 
     [HttpGet("recentReviews")]
@@ -77,6 +79,17 @@ public class PublicController : ControllerBase
         if (comments == null)
         {
             return BadRequest("No comments could be found for this review!");
+        }
+
+        return Ok(comments);
+    }
+    [HttpGet("UrlComments")]
+    public async Task<ActionResult> GetUrlComments(int url_id)
+    {
+        var comments = await _showUrlComments.Handle(url_id);
+        if (comments == null)
+        {
+            return BadRequest("No comments could be found for this url!");
         }
 
         return Ok(comments);

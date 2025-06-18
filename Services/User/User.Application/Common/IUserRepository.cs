@@ -18,7 +18,12 @@ public interface IUserRepository
     public Task<Report?> GetReportById(int report_id);
     public Task<List<int>> GetReportMedia(int report_id);
     Task<Admins?> GetAdminByUsername(string username);
-    public Task<ReviewComment?> WriteComment(ReviewComment reviewComment);
+    public Task<ReviewComment?> WriteReviewComment(ReviewComment reviewComment);
     Task<Review?> GetReviewById(int review_id);
-    Task<ReviewComment?> GetCommentById(int? comment_id);
+    Task<ReviewComment?> GetReviewCommentById(int? comment_id);
+    Task<UrlComment?> WriteUrlComment(UrlComment urlComment);
+    Task<UrlStorage?> GetUrlById(int url_id);
+    Task<UrlComment?> GetUrlCommentById(int? comment_id);
+
+
 }
