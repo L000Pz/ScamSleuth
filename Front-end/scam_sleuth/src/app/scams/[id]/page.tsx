@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File } from 'lucide-react';
+import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File, Reply } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -35,6 +35,363 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// CommentAvatar component
+const CommentAvatar = ({ author, size = "w-8 h-8" }: { 
+  author: Comment['author']; 
+  size?: string;
+}) => {
+  const [imageError, setImageError] = useState(false);
+
+  if (author.profile_picture_id && !imageError) {
+    return (
+      <div className={`${size} rounded-full overflow-hidden border-2 border-gray-200 shadow-md flex-shrink-0`}>
+        <Image
+          src={getMediaUrl(author.profile_picture_id)}
+          alt={author.name}
+          width={32}
+          height={32}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+          unoptimized
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${size} rounded-full bg-gradient-to-br from-red via-red/80 to-red/60 flex items-center justify-center flex-shrink-0 border-2 border-gray-200 shadow-md`}>
+      <User className="w-4 h-4 text-white" />
+    </div>
+  );
+};
+
+// Reddit-style CommentItem component with expandable threads
+const CommentItem = ({ 
+  comment, 
+  depth = 0,
+  currentUser,
+  replyingTo,
+  replyContent,
+  isSubmittingReply,
+  likedComments,
+  expandedThreads,
+  onToggleLike,
+  onStartReply,
+  onCancelReply,
+  onReplyChange,
+  onSubmitReply,
+  onToggleThread
+}: { 
+  comment: Comment; 
+  depth?: number;
+  currentUser: any;
+  replyingTo: string | null;
+  replyContent: string;
+  isSubmittingReply: boolean;
+  likedComments: Set<string>;
+  expandedThreads: Set<string>;
+  onToggleLike: (commentId: string) => void;
+  onStartReply: (commentId: string) => void;
+  onCancelReply: () => void;
+  onReplyChange: (content: string) => void;
+  onSubmitReply: (commentId: string) => void;
+  onToggleThread: (commentId: string) => void;
+}) => {
+  const isReplying = replyingTo === comment.id;
+  const maxDepth = 3; // Limit nesting depth
+  const hasReplies = comment.replies && comment.replies.length > 0;
+  const isThreadExpanded = expandedThreads.has(comment.id);
+  const shouldShowExpandButton = hasReplies && depth >= maxDepth;
+  
+  // Function to count total nested replies
+  const countNestedReplies = (replies: Comment[]): number => {
+    return replies.reduce((total, reply) => {
+      return total + 1 + (reply.replies ? countNestedReplies(reply.replies) : 0);
+    }, 0);
+  };
+
+  // Flatten deeply nested comments for thread view
+  const flattenComments = (comments: Comment[], startDepth: number = 0): Array<Comment & { threadDepth: number }> => {
+    const flattened: Array<Comment & { threadDepth: number }> = [];
+    
+    comments.forEach((comment, index) => {
+      flattened.push({ ...comment, threadDepth: startDepth });
+      if (comment.replies && comment.replies.length > 0) {
+        flattened.push(...flattenComments(comment.replies, startDepth + 1));
+      }
+    });
+    
+    return flattened;
+  };
+  
+  return (
+    <div className={`${depth > 0 ? 'ml-6 mt-4' : ''}`}>
+      <div className="flex gap-3">
+        <CommentAvatar author={comment.author} />
+        <div className="flex-1 min-w-0">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="font-semibold text-black text-sm">{comment.author.name}</span>
+              <span className="text-gray-500 text-xs">@{comment.author.username}</span>
+              <span className="text-gray-500 text-xs">•</span>
+              <span className="text-gray-500 text-xs">{comment.timestamp}</span>
+              {depth > 0 && (
+                <>
+                  <span className="text-gray-500 text-xs">•</span>
+                  <span className="text-blue-600 text-xs bg-blue-100 px-2 py-0.5 rounded">
+                    Reply
+                  </span>
+                </>
+              )}
+            </div>
+            {/* Comment content with proper text wrapping */}
+            <div className="text-black text-sm leading-relaxed break-words whitespace-pre-wrap">
+              {comment.content}
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4 mt-3 text-xs">
+            <button 
+              onClick={() => onToggleLike(comment.id)}
+              className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all ${
+                likedComments.has(comment.id)
+                  ? 'text-red bg-red/10 border-red/20'
+                  : 'text-gray-500 hover:text-red hover:bg-red/10 border-gray-300 hover:border-red/20'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
+              <span>{comment.likes}</span>
+            </button>
+            
+            {currentUser && (depth < maxDepth || isThreadExpanded) && (
+              <button 
+                onClick={() => {
+                  if (isReplying) {
+                    onCancelReply();
+                  } else {
+                    onStartReply(comment.id);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-1 rounded-full text-gray-500 hover:text-black hover:bg-gray-100 border border-gray-300 transition-all"
+              >
+                <Reply className="w-4 h-4" />
+                {isReplying ? 'Cancel' : 'Reply'}
+              </button>
+            )}
+
+            {hasReplies && !shouldShowExpandButton && (
+              <span className="text-blue-600 text-xs bg-blue-100 px-2 py-0.5 rounded flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" />
+                {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
+              </span>
+            )}
+          </div>
+
+          {/* Reply form */}
+          {isReplying && currentUser && (
+            <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex gap-3">
+                <CommentAvatar author={currentUser} size="w-6 h-6" />
+                <div className="flex-1 min-w-0">
+                  <textarea
+                    value={replyContent}
+                    onChange={(e) => onReplyChange(e.target.value)}
+                    placeholder={`Reply to ${comment.author.name}...`}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white resize-none focus:outline-none focus:ring-2 focus:ring-red focus:border-red transition-all"
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
+                    <p className="text-xs text-gray-500">
+                      Replying to @{comment.author.username}
+                      {depth >= maxDepth && <span className="text-blue-600"> • In expanded thread</span>}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onCancelReply}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => onSubmitReply(comment.id)}
+                        disabled={!replyContent.trim() || isSubmittingReply}
+                        size="sm"
+                        className="bg-red hover:bg-red/90 text-white px-4 disabled:opacity-50 border-0"
+                      >
+                        {isSubmittingReply ? 'Posting...' : 'Reply'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Normal nested replies - show when depth is less than max */}
+          {hasReplies && depth < maxDepth && !shouldShowExpandButton && (
+            <div className="mt-4 space-y-4">
+              {comment.replies!.map((reply) => (
+                <CommentItem 
+                  key={reply.id} 
+                  comment={reply} 
+                  depth={depth + 1}
+                  currentUser={currentUser}
+                  replyingTo={replyingTo}
+                  replyContent={replyContent}
+                  isSubmittingReply={isSubmittingReply}
+                  likedComments={likedComments}
+                  expandedThreads={expandedThreads}
+                  onToggleLike={onToggleLike}
+                  onStartReply={onStartReply}
+                  onCancelReply={onCancelReply}
+                  onReplyChange={onReplyChange}
+                  onSubmitReply={onSubmitReply}
+                  onToggleThread={onToggleThread}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Expandable thread button for deeply nested comments */}
+          {shouldShowExpandButton && (
+            <div className="mt-4">
+              <button
+                onClick={() => onToggleThread(comment.id)}
+                className="w-full p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition-all text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {isThreadExpanded ? 'Collapse thread' : 'Continue this thread'}
+                    </span>
+                    <span className="text-xs bg-blue-200 px-2 py-1 rounded">
+                      {countNestedReplies(comment.replies!)} {countNestedReplies(comment.replies!) === 1 ? 'reply' : 'replies'}
+                    </span>
+                  </div>
+                  <div className={`text-blue-600 transition-transform ${isThreadExpanded ? 'rotate-180' : ''}`}>
+                    <ChevronLeft className="w-4 h-4 rotate-90" />
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Expanded thread view - Reddit style flattened comments */}
+          {shouldShowExpandButton && isThreadExpanded && hasReplies && (
+            <div className="mt-4 border-l-2 border-blue-500 pl-4">
+              <div className="space-y-3 bg-blue-50/30 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center gap-2 text-blue-600 text-sm font-medium mb-3">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Thread continuation ({countNestedReplies(comment.replies!)} replies)</span>
+                </div>
+                
+                {flattenComments(comment.replies!).map((reply, index) => (
+                  <div key={reply.id} className={`bg-white rounded-lg p-3 shadow-sm border border-gray-200 ${reply.threadDepth > 0 ? 'ml-4' : ''}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CommentAvatar author={reply.author} size="w-6 h-6" />
+                      <span className="font-semibold text-black text-sm">{reply.author.name}</span>
+                      <span className="text-gray-500 text-xs">@{reply.author.username}</span>
+                      <span className="text-gray-500 text-xs">•</span>
+                      <span className="text-gray-500 text-xs">{reply.timestamp}</span>
+                      <span className="text-blue-600 text-xs bg-blue-100 px-2 py-0.5 rounded">
+                        #{index + 1}
+                      </span>
+                      {reply.threadDepth > 0 && (
+                        <span className="text-purple-600 text-xs bg-purple-100 px-2 py-0.5 rounded">
+                          Depth {reply.threadDepth + 1}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-black text-sm leading-relaxed break-words whitespace-pre-wrap mb-3">
+                      {reply.content}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-xs">
+                      <button 
+                        onClick={() => onToggleLike(reply.id)}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all ${
+                          likedComments.has(reply.id)
+                            ? 'text-red bg-red/10 border-red/20'
+                            : 'text-gray-500 hover:text-red hover:bg-red/10 border-gray-300 hover:border-red/20'
+                        }`}
+                      >
+                        <Heart className={`w-4 h-4 ${likedComments.has(reply.id) ? 'fill-current' : ''}`} />
+                        <span>{reply.likes}</span>
+                      </button>
+                      
+                      {currentUser && (
+                        <button 
+                          onClick={() => {
+                            if (replyingTo === reply.id) {
+                              onCancelReply();
+                            } else {
+                              onStartReply(reply.id);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-3 py-1 rounded-full text-gray-500 hover:text-black hover:bg-gray-100 border border-gray-300 transition-all"
+                        >
+                          <Reply className="w-4 h-4" />
+                          {replyingTo === reply.id ? 'Cancel' : 'Reply'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Reply form for thread items */}
+                    {replyingTo === reply.id && currentUser && (
+                      <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex gap-3">
+                          <CommentAvatar author={currentUser} size="w-5 h-5" />
+                          <div className="flex-1">
+                            <textarea
+                              value={replyContent}
+                              onChange={(e) => onReplyChange(e.target.value)}
+                              placeholder={`Reply to ${reply.author.name}...`}
+                              className="w-full p-2 border border-gray-300 rounded text-sm bg-white resize-none focus:outline-none focus:ring-2 focus:ring-red focus:border-red transition-all"
+                              rows={2}
+                              autoFocus
+                            />
+                            <div className="flex justify-between items-center mt-2">
+                              <p className="text-xs text-gray-500">
+                                Replying to @{reply.author.username} in thread
+                              </p>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={onCancelReply}
+                                  className="text-gray-500 hover:text-gray-700 text-xs px-2 py-1"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => onSubmitReply(reply.id)}
+                                  disabled={!replyContent.trim() || isSubmittingReply}
+                                  size="sm"
+                                  className="bg-red hover:bg-red/90 text-white px-3 py-1 disabled:opacity-50 border-0 text-xs"
+                                >
+                                  {isSubmittingReply ? 'Posting...' : 'Reply'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ReviewPage({ params }: PageProps) {
   const router = useRouter();
   const [review, setReview] = useState<TransformedReview | null>(null);
@@ -53,29 +410,31 @@ export default function ReviewPage({ params }: PageProps) {
     documents: MediaItem[];
   }>({ visualMedia: [], documents: [] });
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [refreshingComments, setRefreshingComments] = useState(false);
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   
   // Media library states
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Helper function to determine media type - actually working detection
+  // Helper function to determine media type
   const getMediaType = async (mediaId: number): Promise<'image' | 'video' | 'document'> => {
     try {
-      // Try to load the media URL and check the response
       const response = await fetch(getMediaUrl(mediaId), { 
         method: 'GET',
         headers: {
-          'Range': 'bytes=0-1023' // Only get first 1KB to check file type
+          'Range': 'bytes=0-1023'
         },
         cache: 'no-store'
       });
       
       if (response.ok) {
         const contentType = response.headers.get('content-type') || '';
-        console.log(`Media ID ${mediaId} - Content-Type: ${contentType}`); // Debug log
         
-        // Check content type
         if (contentType.includes('image/')) {
           return 'image';
         } else if (contentType.includes('video/')) {
@@ -90,11 +449,9 @@ export default function ReviewPage({ params }: PageProps) {
           return 'document';
         }
         
-        // If no content-type, try to determine from response data
         const arrayBuffer = await response.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         
-        // Check file signatures (magic numbers)
         if (bytes.length >= 4) {
           // PNG signature
           if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
@@ -108,14 +465,6 @@ export default function ReviewPage({ params }: PageProps) {
           if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
             return 'image';
           }
-          // MP4 signature
-          if (bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
-            return 'video';
-          }
-          // AVI signature
-          if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
-            return 'video';
-          }
           // PDF signature
           if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
             return 'document';
@@ -126,17 +475,14 @@ export default function ReviewPage({ params }: PageProps) {
       console.warn('Failed to detect media type for ID:', mediaId, error);
     }
     
-    // Final fallback - default to image
-    console.log(`Media ID ${mediaId} - Defaulting to image`);
     return 'image';
   };
 
-  // Separate media items into visual (images/videos) and documents - now async
+  // Separate media items into visual and documents
   const separateMedia = async (media: any[]): Promise<{ visualMedia: MediaItem[], documents: MediaItem[] }> => {
     const visualMedia: MediaItem[] = [];
     const documents: MediaItem[] = [];
 
-    // Process media items sequentially to avoid overwhelming the server
     for (const item of media) {
       const mediaType = await getMediaType(item.media_id);
       const mediaItem: MediaItem = {
@@ -173,7 +519,6 @@ export default function ReviewPage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
-        // Fetch review and comments in parallel
         const [reviewResult, commentsResult, userResult] = await Promise.all([
           getPublicReview(resolvedParams.id),
           getReviewComments(resolvedParams.id),
@@ -195,7 +540,6 @@ export default function ReviewPage({ params }: PageProps) {
           setCurrentUser(userResult.data);
         }
 
-        // Process media types after review is loaded
         if (reviewResult.success && reviewResult.data && reviewResult.data.media.length > 0) {
           setIsLoadingMedia(true);
           try {
@@ -203,7 +547,6 @@ export default function ReviewPage({ params }: PageProps) {
             setSeparatedMedia(separated);
           } catch (error) {
             console.error('Error processing media:', error);
-            // Fallback to simple separation if type detection fails
             setSeparatedMedia({
               visualMedia: reviewResult.data.media.map(item => ({
                 media_id: item.media_id,
@@ -228,6 +571,23 @@ export default function ReviewPage({ params }: PageProps) {
     fetchReviewData();
   }, [resolvedParams]);
 
+  // Function to refresh comments after submission
+  const refreshComments = async () => {
+    if (!resolvedParams) return;
+    
+    setRefreshingComments(true);
+    try {
+      const commentsResult = await getReviewComments(resolvedParams.id);
+      if (commentsResult.success && commentsResult.data) {
+        setComments(commentsResult.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing comments:', error);
+    } finally {
+      setRefreshingComments(false);
+    }
+  };
+
   const handleMediaDownload = async (mediaId: number) => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
     
@@ -235,7 +595,6 @@ export default function ReviewPage({ params }: PageProps) {
       const result = await downloadMedia(mediaId);
       
       if (result.success) {
-        // Open the media URL in a new tab for download
         const downloadUrl = getMediaUrl(mediaId);
         window.open(downloadUrl, '_blank');
       } else {
@@ -279,9 +638,10 @@ export default function ReviewPage({ params }: PageProps) {
 
       const result = await submitComment(commentData);
 
-      if (result.success && result.data) {
-        setComments(prev => [result.data!, ...prev]);
+      if (result.success) {
         setNewComment('');
+        // Refresh comments to get the latest data from server
+        await refreshComments();
       } else {
         console.error('Comment submission failed:', result.error);
       }
@@ -289,6 +649,35 @@ export default function ReviewPage({ params }: PageProps) {
       console.error('Error submitting comment:', error);
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleSubmitReply = async (parentCommentId: string) => {
+    if (!replyContent.trim() || !review || isSubmittingReply) return;
+
+    setIsSubmittingReply(true);
+
+    try {
+      const commentData: CommentSubmission = {
+        reviewId: review.id,
+        content: replyContent.trim(),
+        parentCommentId: parentCommentId
+      };
+
+      const result = await submitComment(commentData);
+
+      if (result.success) {
+        setReplyContent('');
+        setReplyingTo(null);
+        // Refresh comments to get the latest data from server
+        await refreshComments();
+      } else {
+        console.error('Reply submission failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+    } finally {
+      setIsSubmittingReply(false);
     }
   };
 
@@ -309,7 +698,6 @@ export default function ReviewPage({ params }: PageProps) {
           return newSet;
         });
 
-        // Update the comment's like count
         if (result.newLikeCount !== undefined) {
           setComments(prev => prev.map(comment => 
             comment.id === commentId 
@@ -321,6 +709,34 @@ export default function ReviewPage({ params }: PageProps) {
     } catch (error) {
       console.error('Error toggling comment like:', error);
     }
+  };
+
+  // Reply handlers
+  const handleStartReply = (commentId: string) => {
+    setReplyingTo(commentId);
+    setReplyContent('');
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setReplyContent('');
+  };
+
+  const handleReplyChange = (content: string) => {
+    setReplyContent(content);
+  };
+
+  // Thread expansion handler
+  const handleToggleThread = (commentId: string) => {
+    setExpandedThreads(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
   };
 
   // Media library functions
@@ -355,32 +771,6 @@ export default function ReviewPage({ params }: PageProps) {
   const zoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
   const zoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5));
   const rotate = () => setRotation(prev => (prev + 90) % 360);
-
-  const CommentAvatar = ({ author, size = "w-8 h-8" }: { author: Comment['author']; size?: string }) => {
-    const [imageError, setImageError] = useState(false);
-
-    if (author.profile_picture_id && !imageError) {
-      return (
-        <div className={`${size} rounded-full overflow-hidden border-2 border-gray-200 shadow-md flex-shrink-0`}>
-          <Image
-            src={getMediaUrl(author.profile_picture_id)}
-            alt={author.name}
-            width={32}
-            height={32}
-            className="w-full h-full object-cover"
-            onError={() => setImageError(true)}
-            unoptimized
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div className={`${size} rounded-full bg-gradient-to-br from-red via-red/80 to-red/60 flex items-center justify-center flex-shrink-0 border-2 border-gray-200 shadow-md`}>
-        <User className="w-4 h-4 text-white" />
-      </div>
-    );
-  };
 
   const ProfilePicture = ({ size = "w-12 h-12" }: { size?: string }) => {
     const [imageError, setImageError] = useState(false);
@@ -633,7 +1023,7 @@ export default function ReviewPage({ params }: PageProps) {
                 </div>
               </div>
               
-              <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight">
+              <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight break-words">
                 {review.title}
               </h1>
             </div>
@@ -725,14 +1115,16 @@ export default function ReviewPage({ params }: PageProps) {
             {/* Review Content */}
             <div className="p-6 md:p-8 bg-white">
               <div 
-                        className="content-display"
-                        style={{
-                          fontSize: '16px',
-                          lineHeight: '1.7',
-                          color: '#374151'
-                        }}
-                        dangerouslySetInnerHTML={{ __html: review.content }} 
-                      />
+                className="content-display break-words"
+                style={{
+                  fontSize: '16px',
+                  lineHeight: '1.7',
+                  color: '#374151',
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word'
+                }}
+                dangerouslySetInnerHTML={{ __html: review.content }} 
+              />
 
               {/* Documents Section - Only show if there are documents */}
               {documents.length > 0 && (
@@ -817,8 +1209,11 @@ export default function ReviewPage({ params }: PageProps) {
                 <MessageCircle className="w-6 h-6 text-red" />
                 Discussion
                 <span className="text-lg font-normal text-gray-600">
-                  ({comments.length} comments)
+                  ({comments.length} {comments.length === 1 ? 'comment' : 'comments'})
                 </span>
+                {refreshingComments && (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-red border-t-transparent ml-2" />
+                )}
               </h2>
               <Button
                 variant="outline"
@@ -835,15 +1230,19 @@ export default function ReviewPage({ params }: PageProps) {
               <div className="mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex gap-3">
                   <CommentAvatar author={currentUser} />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <textarea
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Share your thoughts about this review..."
                       className="w-full p-4 border border-gray-300 rounded-lg text-sm bg-white resize-none focus:outline-none focus:ring-2 focus:ring-red focus:border-red transition-all"
                       rows={4}
+                      style={{ 
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
                     />
-                    <div className="flex justify-between items-center mt-3">
+                    <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
                       <p className="text-xs text-gray-500">
                         Be respectful and constructive in your comments
                       </p>
@@ -870,38 +1269,22 @@ export default function ReviewPage({ params }: PageProps) {
                 </div>
               ) : (
                 comments.map((comment: Comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <CommentAvatar author={comment.author} />
-                    <div className="flex-1">
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-semibold text-black text-sm">{comment.author.name}</span>
-                          <span className="text-gray-500 text-xs">@{comment.author.username}</span>
-                          <span className="text-gray-500 text-xs">•</span>
-                          <span className="text-gray-500 text-xs">{comment.timestamp}</span>
-                        </div>
-                        <p className="text-black text-sm leading-relaxed">{comment.content}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 mt-3 text-xs">
-                        <button 
-                          onClick={() => handleCommentLike(comment.id)}
-                          className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all ${
-                            likedComments.has(comment.id)
-                              ? 'text-red bg-red/10 border-red/20'
-                              : 'text-gray-500 hover:text-red hover:bg-red/10 border-gray-300 hover:border-red/20'
-                          }`}
-                        >
-                          <Heart className={`w-4 h-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
-                          <span>{comment.likes}</span>
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-1 rounded-full text-gray-500 hover:text-black hover:bg-gray-100 border border-gray-300 transition-all">
-                          <MessageCircle className="w-4 h-4" />
-                          Reply
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <CommentItem 
+                    key={comment.id} 
+                    comment={comment}
+                    currentUser={currentUser}
+                    replyingTo={replyingTo}
+                    replyContent={replyContent}
+                    isSubmittingReply={isSubmittingReply}
+                    likedComments={likedComments}
+                    expandedThreads={expandedThreads}
+                    onToggleLike={handleCommentLike}
+                    onStartReply={handleStartReply}
+                    onCancelReply={handleCancelReply}
+                    onReplyChange={handleReplyChange}
+                    onSubmitReply={handleSubmitReply}
+                    onToggleThread={handleToggleThread}
+                  />
                 ))
               )}
             </div>

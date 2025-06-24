@@ -43,23 +43,133 @@ export interface TransformedReview {
   };
 }
 
+// API response types for comments
+export interface CommentApiResponse {
+  comment_id: number;
+  root_id: number | null;
+  review_id: number;
+  writer_id: number;
+  comment_content: string;
+  created_at: string;
+}
+
+// Transformed comment type for frontend
 export interface Comment {
   id: string;
   author: {
     name: string;
     username: string;
     profile_picture_id: number | null;
+    writer_id: number;
   };
   content: string;
   timestamp: string;
   likes: number;
   replies: Comment[];
+  root_id: number | null;
+  review_id: number;
 }
 
 export interface CommentSubmission {
   reviewId: string;
   content: string;
-  parentCommentId?: string; // For replies
+  parentCommentId?: string; // For replies - this will be the root_id
+}
+
+// Helper function to get user info from user_id
+async function getUserInfo(userId: number, token: string): Promise<{
+  name: string;
+  username: string;
+  profile_picture_id: number | null;
+} | null> {
+  try {
+    // This is a placeholder - you might need to implement a getUserById endpoint
+    // For now, we'll return default data
+    return {
+      name: `User ${userId}`,
+      username: `user${userId}`,
+      profile_picture_id: null
+    };
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+}
+
+// Helper function to format timestamp
+function formatTimestamp(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+  } catch (error) {
+    return 'Unknown time';
+  }
+}
+
+// Helper function to build nested comment tree
+function buildCommentTree(comments: CommentApiResponse[], userInfoMap: Map<number, any>): Comment[] {
+  const commentMap = new Map<number, Comment>();
+  const rootComments: Comment[] = [];
+
+  // First pass: create all comment objects
+  comments.forEach(apiComment => {
+    const userInfo = userInfoMap.get(apiComment.writer_id);
+    const comment: Comment = {
+      id: apiComment.comment_id.toString(),
+      author: {
+        name: userInfo?.name || `User ${apiComment.writer_id}`,
+        username: userInfo?.username || `user${apiComment.writer_id}`,
+        profile_picture_id: userInfo?.profile_picture_id || null,
+        writer_id: apiComment.writer_id
+      },
+      content: apiComment.comment_content,
+      timestamp: formatTimestamp(apiComment.created_at),
+      likes: Math.floor(Math.random() * 20), // Mock likes since API doesn't provide them
+      replies: [],
+      root_id: apiComment.root_id,
+      review_id: apiComment.review_id
+    };
+
+    commentMap.set(apiComment.comment_id, comment);
+  });
+
+  // Second pass: build the tree structure
+  comments.forEach(apiComment => {
+    const comment = commentMap.get(apiComment.comment_id);
+    if (!comment) return;
+
+    if (apiComment.root_id === null) {
+      // This is a root comment
+      rootComments.push(comment);
+    } else {
+      // This is a reply, add it to the parent's replies
+      const parentComment = commentMap.get(apiComment.root_id);
+      if (parentComment) {
+        parentComment.replies.push(comment);
+      }
+    }
+  });
+
+  // Sort comments by timestamp (newest first for root, oldest first for replies)
+  rootComments.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
+  // Sort replies within each comment (oldest first)
+  rootComments.forEach(comment => {
+    comment.replies.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  });
+
+  return rootComments;
 }
 
 export async function getPublicReview(id: string): Promise<{
@@ -91,7 +201,7 @@ export async function getPublicReview(id: string): Promise<{
       title: reviewData.review.title,
       date: new Date(reviewData.review.review_date).toLocaleDateString(),
       content: reviewData.content,
-      media: reviewData.media || [], // Ensure media is always an array
+      media: reviewData.media || [],
       writer: {
         username: reviewData.reviewWriterDetails.username,
         name: reviewData.reviewWriterDetails.name,
@@ -137,17 +247,16 @@ export async function getRecentReviews(limit: number = 2): Promise<{
 
     const reviews = await response.json();
 
-    // Transform the data to match the component's expected format
     const transformedReviews = reviews
-      .slice(0, limit) // Take only the first reviews based on limit
+      .slice(0, limit)
       .map((review: any) => ({
         id: review.review_id.toString(),
         title: review.title,
-        author: 'Anonymous', // API doesn't provide author info directly
+        author: 'Anonymous',
         date: new Date(review.review_date).toLocaleDateString(),
         excerpt: review.title.length > 80 
           ? review.title.substring(0, 80) + '...' 
-          : review.title // Use title as excerpt since no description is provided
+          : review.title
       }));
 
     return { success: true, data: transformedReviews };
@@ -157,51 +266,59 @@ export async function getRecentReviews(limit: number = 2): Promise<{
   }
 }
 
-// Get comments for a specific review
+// Get comments for a specific review - NOW USING REAL API
 export async function getReviewComments(reviewId: string): Promise<{
   success: boolean;
   data?: Comment[];
   error?: string;
 }> {
   try {
-    // For now, return mock data since the API endpoint for comments might not exist yet
-    // You can replace this with actual API call when available
-    
-    const mockComments: Comment[] = [
-      {
-        id: '1',
-        author: {
-          name: 'Sarah Johnson',
-          username: 'sarah_j',
-          profile_picture_id: null
-        },
-        content: 'This is very helpful information. Thank you for sharing your experience to help others avoid this scam.',
-        timestamp: '2 hours ago',
-        likes: 15,
-        replies: []
-      },
-      {
-        id: '2',
-        author: {
-          name: 'Mike Chen',
-          username: 'mike_c',
-          profile_picture_id: null
-        },
-        content: 'I almost fell for a similar scam last month. Thanks for the warning!',
-        timestamp: '4 hours ago',
-        likes: 8,
-        replies: []
-      }
-    ];
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
 
-    return { success: true, data: mockComments };
+    const response = await fetch(`http://localhost:8080/Public/publicManager/ReviewComments?review_id=${reviewId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': '*/*'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error('Comments API call failed:', response.status);
+      return { success: false, error: 'Failed to fetch comments' };
+    }
+
+    const apiComments: CommentApiResponse[] = await response.json();
+
+    if (!Array.isArray(apiComments)) {
+      console.error('Invalid comments response format');
+      return { success: false, error: 'Invalid comments data format' };
+    }
+
+    // Get unique user IDs to fetch user info
+    const uniqueUserIds = [...new Set(apiComments.map(comment => comment.writer_id))];
+    
+    // Create a map of user info (in a real app, you'd batch fetch this data)
+    const userInfoMap = new Map();
+    for (const userId of uniqueUserIds) {
+      const userInfo = await getUserInfo(userId, token || '');
+      if (userInfo) {
+        userInfoMap.set(userId, userInfo);
+      }
+    }
+
+    // Build the nested comment tree
+    const transformedComments = buildCommentTree(apiComments, userInfoMap);
+
+    return { success: true, data: transformedComments };
   } catch (error) {
     console.error('Error in getReviewComments:', error);
     return { success: false, error: 'Failed to fetch comments' };
   }
 }
 
-// Submit a new comment
+// Submit a new comment - NOW USING REAL API
 export async function submitComment(commentData: CommentSubmission): Promise<{
   success: boolean;
   data?: Comment;
@@ -215,20 +332,55 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
       return { success: false, error: 'Authentication required to post comments' };
     }
 
-    // For now, return mock success since comment API might not be implemented yet
-    // You can replace this with actual API call when available
+    // Prepare the request body according to API spec
+    const requestBody = {
+      root_id: commentData.parentCommentId ? parseInt(commentData.parentCommentId) : null,
+      review_id: parseInt(commentData.reviewId),
+      comment_content: commentData.content
+    };
+
+    const response = await fetch('http://localhost:8080/User/userManagement/WriteReviewComment', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': '*/*'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Comment submission failed:', response.status, errorText);
+      return { success: false, error: 'Failed to submit comment' };
+    }
+
+    const responseText = await response.text();
+    console.log('Comment submission response:', responseText);
+
+    // Get current user info for the newly created comment
+    const currentUser = await getCurrentUser();
     
+    if (!currentUser.success || !currentUser.data) {
+      return { success: false, error: 'Failed to get user information' };
+    }
+
+    // Create a mock comment object that represents the newly submitted comment
+    // In a real scenario, the API should return the created comment with its ID
     const newComment: Comment = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Temporary ID until we refresh comments
       author: {
-        name: 'Current User',
-        username: 'current_user',
-        profile_picture_id: null
+        name: currentUser.data.name,
+        username: currentUser.data.username,
+        profile_picture_id: currentUser.data.profile_picture_id,
+        writer_id: 0 // We don't have the writer_id from getCurrentUser
       },
       content: commentData.content,
       timestamp: 'Just now',
       likes: 0,
-      replies: []
+      replies: [],
+      root_id: commentData.parentCommentId ? parseInt(commentData.parentCommentId) : null,
+      review_id: parseInt(commentData.reviewId)
     };
 
     return { success: true, data: newComment };
@@ -238,7 +390,7 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
   }
 }
 
-// Like/unlike a comment
+// Like/unlike a comment - KEEPING MOCK IMPLEMENTATION
 export async function toggleCommentLike(commentId: string, isLiked: boolean): Promise<{
   success: boolean;
   newLikeCount?: number;
@@ -252,7 +404,7 @@ export async function toggleCommentLike(commentId: string, isLiked: boolean): Pr
       return { success: false, error: 'Authentication required to like comments' };
     }
 
-    // Mock implementation - replace with actual API call
+    // Mock implementation - replace with actual API call when available
     const newLikeCount = isLiked ? Math.floor(Math.random() * 20) + 1 : Math.floor(Math.random() * 15);
     
     return { success: true, newLikeCount };
@@ -271,23 +423,12 @@ export async function downloadMedia(mediaId: number): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    // Create download URL - this should match your media API endpoint
-    const downloadUrl = `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
-    
-    // In a real implementation, you might want to:
-    // 1. Verify user has permission to download
-    // 2. Log the download activity
-    // 3. Handle different file types appropriately
-    
     return { success: true };
   } catch (error) {
     console.error('Error in downloadMedia:', error);
     return { success: false, error: 'Failed to download media' };
   }
 }
-
-// Get media file URL for preview - this is a client-side utility function
-// Move this to a separate utils file or define it in the component
 
 // Get user info for current user (for comment submission)
 export async function getCurrentUser(): Promise<{
