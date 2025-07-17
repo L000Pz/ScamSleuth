@@ -4,7 +4,7 @@ using Admin.Domain;
 
 namespace Admin.Application.AdminManagement;
 
-public class WriteUrlComment
+public class WriteUrlComment : IWriteUrlComment
 {
     private readonly ICommentRepository _commentRepository;
     private readonly IAdminRepository _adminRepository;
@@ -19,7 +19,7 @@ public class WriteUrlComment
     {
         var writer = await _adminRepository.GetAdminByEmail(token);
         if (writer is null) return "writer";
-        var url = await _commentRepository.GetUrlById(urlCommentContent.url_id);
+        var url = await _commentRepository.GetUrl(urlCommentContent.url);
         if (url is null) return "url";
         if (urlCommentContent.root_id != null)
         {
@@ -28,7 +28,7 @@ public class WriteUrlComment
         }
 
         var now = DateTime.Now;
-        var uc = UrlComment.Create(urlCommentContent.url_id, writer.admin_id, "admin", urlCommentContent.root_id,
+        var uc = UrlComment.Create(url.url_id, writer.admin_id, "admin", urlCommentContent.root_id,
             urlCommentContent.comment_content, now);
         var newComment = await _commentRepository.WriteUrlComment(uc);
         if (newComment is null) return "comment";

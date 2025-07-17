@@ -162,10 +162,10 @@ public class UserRepository : IUserRepository
         return await _context.review
             .FirstOrDefaultAsync(r => r.review_id == review_id);
     }
-    public async Task<UrlStorage?> GetUrlById(int url_id)
+    public async Task<UrlStorage?> GetUrl(string url_path)
     {
         return await _context.url_storage
-            .FirstOrDefaultAsync(us => us.url_id == url_id);
+            .FirstOrDefaultAsync(us => us.url == url_path);
     }
     public async Task<ReviewComment?> GetReviewCommentById(int? comment_id)
     {

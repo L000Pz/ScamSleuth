@@ -1,7 +1,7 @@
 ﻿namespace User.Contracts;
 
 public record UrlCommentContent(
-    int url_id,
+    string url,
     int? root_id,
     int rating,
     string comment_content);

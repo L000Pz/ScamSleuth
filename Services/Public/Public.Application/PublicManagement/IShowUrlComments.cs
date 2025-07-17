@@ -1,8 +1,9 @@
-﻿using Public.Domain;
+﻿using Public.Contracts;
+using Public.Domain;
 
 namespace Public.Application.PublicManagement;
 
 public interface IShowUrlComments
 {
-    public Task<List<UrlComment>?> Handle(int url_id);
+    public Task<List<UrlCommentDetails>?> Handle(string url);
 }

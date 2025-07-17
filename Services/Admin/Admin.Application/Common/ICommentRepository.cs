@@ -10,6 +10,6 @@ public interface ICommentRepository
     public Task<UrlComment?> GetUrlCommentById(int? comment_id);
     public Task<UrlComment?> WriteUrlComment(UrlComment urlComment);
     public Task<ReviewComment?> WriteReviewComment(ReviewComment reviewComment);
-    Task<UrlStorage?> GetUrlById(int url_id);
+    Task<UrlStorage?> GetUrl(string url_path);
 
 }

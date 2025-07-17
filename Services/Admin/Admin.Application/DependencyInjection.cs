@@ -15,6 +15,8 @@ public static class DependencyInjection
         services.AddScoped<IUpdateReview, UpdateReview>();
         services.AddScoped<IDeleteReviewComment, DeleteReviewComment>();
         services.AddScoped<IDeleteUrlComment, DeleteUrlComment>();
+        services.AddScoped<IWriteReviewComment, WriteReviewComment>();
+        services.AddScoped<IWriteUrlComment, WriteUrlComment>();
         return services;
     }
 }

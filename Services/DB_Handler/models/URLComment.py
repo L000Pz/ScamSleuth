@@ -7,7 +7,7 @@ class URLComment(Base):
 
     comment_id = Column(Integer, primary_key=True, nullable=False)
     url_id = Column(Integer, ForeignKey("url_storage.url_id"), nullable=False)
-    writer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    writer_id = Column(Integer, nullable=False)
     writer_role = Column(String, nullable=False)
     root_id = Column(Integer, ForeignKey("url_comment.comment_id", ondelete="CASCADE"))
     rating = Column(Integer)

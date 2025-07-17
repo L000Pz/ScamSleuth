@@ -79,9 +79,9 @@ public class CommentRepository : ICommentRepository
             return false;
         }
     }
-    public async Task<UrlStorage?> GetUrlById(int url_id)
+    public async Task<UrlStorage?> GetUrl(string url_path)
     {
         return await _context.url_storage
-            .FirstOrDefaultAsync(us => us.url_id == url_id);
+            .FirstOrDefaultAsync(us => us.url == url_path);
     }
 }

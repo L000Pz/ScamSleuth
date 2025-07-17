@@ -22,6 +22,6 @@ public interface IUserRepository
     Task<Review?> GetReviewById(int review_id);
     Task<ReviewComment?> GetReviewCommentById(int? comment_id);
     Task<UrlComment?> WriteUrlComment(UrlComment urlComment);
-    Task<UrlStorage?> GetUrlById(int url_id);
+    Task<UrlStorage?> GetUrl(string url_path);
     Task<UrlComment?> GetUrlCommentById(int? comment_id);
 }

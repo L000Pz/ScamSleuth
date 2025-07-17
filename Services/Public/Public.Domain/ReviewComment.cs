@@ -11,7 +11,7 @@ public class ReviewComment
     [Required] public int review_id { get; set; }
 
     [Required] public int writer_id { get; set; }
-
+    [Required] public string writer_role { get; set; }
     [Required] public string comment_content { get; set; }
 
     [Required] public DateTime created_at { get; set; }

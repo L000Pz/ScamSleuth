@@ -1,8 +1,9 @@
-﻿using Public.Domain;
+﻿using Public.Contracts;
+using Public.Domain;
 
 namespace Public.Application.PublicManagement;
 
 public interface IShowReviewComments
 {
-    public Task<List<ReviewComment>?> Handle(int review_id);
+    public Task<List<ReviewCommentDetails>?> Handle(int review_id);
 }

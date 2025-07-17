@@ -16,6 +16,7 @@ public class PostgreSqlContext : DbContext
     public DbSet<UrlComment> url_comment { get; set; }
     public DbSet<Scam_Type> scam_type { get; set; }
     public DbSet<Admins> admins { get; set; }
+    public DbSet<Users> users { get; set; }
     public DbSet<Review_Content_Media> review_content_media { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -44,6 +45,11 @@ public class PostgreSqlContext : DbContext
             .HasKey(rcm => new { rcm.review_id, rcm.media_id });
         modelBuilder.Entity<UrlComment>()
             .Property(uc => uc.root_id)
+            .IsRequired(false);
+        modelBuilder.Entity<Users>()
+            .HasKey(u => new { u.user_id });
+        modelBuilder.Entity<Users>()
+            .Property(u => u.profile_picture_id)
             .IsRequired(false);
 
         base.OnModelCreating(modelBuilder);

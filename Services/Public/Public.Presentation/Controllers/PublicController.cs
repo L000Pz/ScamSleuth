@@ -84,9 +84,9 @@ public class PublicController : ControllerBase
         return Ok(comments);
     }
     [HttpGet("UrlComments")]
-    public async Task<ActionResult> GetUrlComments(int url_id)
+    public async Task<ActionResult> GetUrlComments(string url)
     {
-        var comments = await _showUrlComments.Handle(url_id);
+        var comments = await _showUrlComments.Handle(url);
         if (comments == null)
         {
             return BadRequest("No comments could be found for this url!");

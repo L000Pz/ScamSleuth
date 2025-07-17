@@ -75,10 +75,10 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(r => r.review_id == review_id);
         return review;
     }
-    public async Task<UrlStorage?> GetUrlById(int url_id)
+    public async Task<UrlStorage?> GetUrl(string url)
     {
         var review = await _context.url_storage
-            .FirstOrDefaultAsync(us => us.url_id == url_id);
+            .FirstOrDefaultAsync(us => us.url == url);
         return review;
     }
     public async Task<Review_Content?> GetReviewContent(int review_content_id)
@@ -107,6 +107,10 @@ public class PublicRepository : IPublicRepository
         return _context.admins.SingleOrDefault(user => user.admin_id == admin_id);
     }
 
+    public async Task<Users?> GetUserById(int user_id)
+    {
+        return _context.users.SingleOrDefault(user => user.user_id == user_id);
+    }
     public async Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_id)
     {
         var media = await _context.review_content_media
