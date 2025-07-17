@@ -18,6 +18,7 @@ public class PostgreSqlContext : DbContext
     public DbSet<Review_Banner> review_banner { get; set; }
     public DbSet<ReviewComment> review_comment { get; set; }
     public DbSet<UrlComment> url_comment { get; set; }
+    public DbSet<UrlStorage> url_storage { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,8 @@ public class PostgreSqlContext : DbContext
             .HasKey(rc => new { rc.comment_id });
         modelBuilder.Entity<Admins>()
             .HasKey(a => new { a.admin_id });
+        modelBuilder.Entity<UrlStorage>()
+            .HasKey(us => new { us.url_id });
         modelBuilder.Entity<Admins>()
             .Property(a => a.profile_picture_id)
             .IsRequired(false);

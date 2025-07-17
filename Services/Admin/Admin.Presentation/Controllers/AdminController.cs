@@ -23,6 +23,8 @@ public class AdminController : ControllerBase
     private readonly IUpdateReview _updateReview;
     private readonly IDeleteReviewComment _deleteReviewComment;
     private readonly IDeleteUrlComment _deleteUrlComment;
+    private readonly IWriteUrlComment _writeUrlComment;
+    private readonly IWriteReviewComment _writeReviewComment;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
@@ -32,7 +34,7 @@ public class AdminController : ControllerBase
     public AdminController(HttpClient httpClient, IShowAllReports showAllReports, IGetAdminReviews getAdminReviews,
         ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,
         IGetReportById getReportById, IUpdateReview updateReview, IDeleteReviewComment deleteReviewComment,
-        IDeleteUrlComment deleteUrlComment)
+        IDeleteUrlComment deleteUrlComment, IWriteUrlComment writeUrlComment, IWriteReviewComment writeReviewComment)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
@@ -44,6 +46,8 @@ public class AdminController : ControllerBase
         _updateReview = updateReview;
         _deleteReviewComment = deleteReviewComment;
         _deleteUrlComment = deleteUrlComment;
+        _writeUrlComment = writeUrlComment;
+        _writeReviewComment = writeReviewComment;
     }
 
     [HttpGet("ViewReports")]
@@ -345,6 +349,64 @@ public class AdminController : ControllerBase
         }
 
         return Ok("Review title has been updated successfully");
+    }
+
+    [HttpPost("WriteUrlComment")]
+    [Authorize]
+    public async Task<ActionResult> WriteUrlComment([FromBody] UrlCommentContent urlCommentContent)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful") return BadRequest("Authentication failed!");
+        var result = await _writeUrlComment.Handle(urlCommentContent, token);
+        if (result == "writer") return BadRequest("You are not a registered admin!");
+        if (result == "url")
+        {
+            return BadRequest("Could not find the url!");
+        }
+
+        if (result == "root")
+        {
+            return BadRequest("Root comment could not be found!");
+        }
+
+        if (result == "comment")
+        {
+            return BadRequest("Failed to submit the comment!");
+        }
+
+        return Ok("Comment submitted successfully.");
+    }
+
+    [HttpPost("WriteReviewComment")]
+    [Authorize]
+    public async Task<ActionResult> WriteReviewComment([FromBody] ReviewCommentContent reviewCommentContent)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful") return BadRequest("Authentication failed!");
+        var result = await _writeReviewComment.Handle(reviewCommentContent, token);
+        if (result == "writer") return BadRequest("You are not a registered admin!");
+        if (result == "review")
+        {
+            return BadRequest("Could not find the review!");
+        }
+
+        if (result == "root")
+        {
+            return BadRequest("Root comment could not be found!");
+        }
+
+        if (result == "comment")
+        {
+            return BadRequest("Failed to submit the comment!");
+        }
+
+        return Ok("Comment submitted successfully.");
     }
 
     private async Task<String> CheckToken(String token)

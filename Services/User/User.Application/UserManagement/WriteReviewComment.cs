@@ -27,6 +27,7 @@ public class WriteReviewComment : IWriteReviewComment
 
         var now = DateTime.Now;
         var rc = ReviewComment.Create(reviewCommentContent.root_id, reviewCommentContent.review_id, writer.user_id,
+            "user",
             reviewCommentContent.comment_content, now);
         var newComment = await _userRepository.WriteReviewComment(rc);
         if (newComment is null) return "comment";

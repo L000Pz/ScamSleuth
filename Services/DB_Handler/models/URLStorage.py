@@ -10,4 +10,3 @@ class URLStorage(Base):
     url = Column(String, nullable=False)
     description = Column(Text)
     search_date = Column(DateTime)
-

@@ -199,6 +199,7 @@ public class AdminRepository : IAdminRepository
             return false;
         }
     }
+
     public async Task<bool> DeleteUrlComment(int comment_id)
     {
         try
@@ -220,6 +221,7 @@ public class AdminRepository : IAdminRepository
             return false;
         }
     }
+
     private async Task<List<ReviewComment>> GetAllDescendantComments(int rootId)
     {
         var result = new List<ReviewComment>();
@@ -259,13 +261,5 @@ public class AdminRepository : IAdminRepository
         await _context.SaveChangesAsync();
         return true;
     }
-
-    public async Task<ReviewComment?> GetReviewCommentById(int comment_id)
-    {
-        return _context.review_comment.SingleOrDefault(c => c.comment_id == comment_id);
-    }
-    public async Task<UrlComment?> GetUrlCommentById(int comment_id)
-    {
-        return _context.url_comment.SingleOrDefault(c => c.comment_id == comment_id);
-    }
+    
 }

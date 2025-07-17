@@ -24,6 +24,4 @@ public interface IUserRepository
     Task<UrlComment?> WriteUrlComment(UrlComment urlComment);
     Task<UrlStorage?> GetUrlById(int url_id);
     Task<UrlComment?> GetUrlCommentById(int? comment_id);
-
-
 }

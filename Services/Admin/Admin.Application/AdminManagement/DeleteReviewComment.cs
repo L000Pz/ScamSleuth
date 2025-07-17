@@ -6,10 +6,12 @@ namespace Admin.Application.AdminManagement;
 public class DeleteReviewComment : IDeleteReviewComment
 {
     private readonly IAdminRepository _adminRepository;
+    private readonly ICommentRepository _commentRepository;
 
-    public DeleteReviewComment(IAdminRepository adminRepository)
+    public DeleteReviewComment(IAdminRepository adminRepository, ICommentRepository commentRepository)
     {
         _adminRepository = adminRepository;
+        _commentRepository = commentRepository;
     }
 
     public async Task<string> Handle(int comment_id, string token)
@@ -20,12 +22,12 @@ public class DeleteReviewComment : IDeleteReviewComment
             return "writer";
         }
 
-        ReviewComment? reviewComment = await _adminRepository.GetReviewCommentById(comment_id);
+        ReviewComment? reviewComment = await _commentRepository.GetReviewCommentById(comment_id);
         if (reviewComment is null)
         {
             return "commentExist";
         }
-        bool comment = await _adminRepository.DeleteReviewComment(comment_id);
+        bool comment = await _commentRepository.DeleteReviewComment(comment_id);
         if (!comment)
         {
             return "comment";

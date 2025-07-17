@@ -19,6 +19,7 @@ public class WriteUrlComment : IWriteUrlComment
         {
             return "rating";
         }
+
         var writer = await _userRepository.GetUserByEmail(token);
         if (writer is null) return "writer";
         var url = await _userRepository.GetUrlById(urlCommentContent.url_id);
@@ -30,7 +31,8 @@ public class WriteUrlComment : IWriteUrlComment
         }
 
         var now = DateTime.Now;
-        var uc = UrlComment.Create(urlCommentContent.url_id,writer.user_id,urlCommentContent.root_id,urlCommentContent.rating,urlCommentContent.comment_content,now);
+        var uc = UrlComment.Create(urlCommentContent.url_id, writer.user_id, "user", urlCommentContent.root_id,
+            urlCommentContent.rating, urlCommentContent.comment_content, now);
         var newComment = await _userRepository.WriteUrlComment(uc);
         if (newComment is null) return "comment";
         return "ok";
