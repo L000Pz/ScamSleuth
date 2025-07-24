@@ -20,11 +20,12 @@ import {
   Mail,
   Shield,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Trash2 // Import Trash2 icon for delete
 } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
-import { getAdminReport } from './actions';
+import { getAdminReport, deleteReport } from './actions'; // Import deleteReport
 
 interface ScamReport {
   id: string;
@@ -64,6 +65,7 @@ export default function ScamReviewPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null);
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
   const [previewingIds, setPreviewingIds] = useState<Set<number>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
 
   const resolvedParams = React.use(params);
 
@@ -90,7 +92,8 @@ export default function ScamReviewPage({ params }: PageProps) {
   }, [resolvedParams.id]);
 
   const handleWriteReview = () => {
-    router.push('/admin-dashboard/write-review');
+    // Assuming 'write-review' page needs the report ID
+    router.push(`/admin-dashboard/reports/${report?.id}/write-review`); 
   };
 
   const handleMediaDownload = (mediaId: number) => {
@@ -135,6 +138,30 @@ export default function ScamReviewPage({ params }: PageProps) {
     return { level: 'No Financial Loss', color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' };
   };
 
+  const handleDeleteReport = async () => {
+    if (!report) return;
+
+    if (window.confirm(`Are you sure you want to delete report #${report.id}? This action cannot be undone.`)) {
+      setIsDeleting(true);
+      setError(null); // Clear previous errors
+
+      try {
+        const result = await deleteReport(report.id);
+        if (result.success) {
+          alert(result.message || `Report #${report.id} deleted successfully.`);
+          router.push('/admin-dashboard/reports'); // Redirect to reports list after deletion
+        } else {
+          setError(result.error || 'Failed to delete report.');
+        }
+      } catch (err) {
+        console.error('Error deleting report:', err);
+        setError('An unexpected error occurred while deleting the report.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-cardWhite p-4 md:p-6">
@@ -161,7 +188,7 @@ export default function ScamReviewPage({ params }: PageProps) {
               <p className="text-gray-600 mb-6">{error || 'The requested report could not be found.'}</p>
               <Button 
                 variant="outline" 
-                onClick={() => router.push('/reports')}
+                onClick={() => router.push('/admin-dashboard/reports')}
                 className="w-full"
               >
                 Back to Reports
@@ -463,8 +490,22 @@ export default function ScamReviewPage({ params }: PageProps) {
                 </Button>
                 
                 <Button
+                  variant="outline" // Use a destructive variant for delete
+                  onClick={handleDeleteReport}
+                  disabled={isDeleting}
+                  className="w-full justify-start bg-black text-white"
+                >
+                  {isDeleting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  {isDeleting ? 'Deleting...' : 'Delete Report'}
+                </Button>
+                
+                <Button
                   variant="outline"
-                  onClick={() => router.push('/reports')}
+                  onClick={() => router.push('/admin-dashboard/reports')}
                   className="w-full justify-start"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -493,7 +534,7 @@ export default function ScamReviewPage({ params }: PageProps) {
             </div>
           </div>
         </div>
-              </div>
       </div>
+    </div>
   );
 }

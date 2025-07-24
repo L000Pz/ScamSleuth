@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File, Reply, LogIn, UserPlus } from 'lucide-react';
+import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File, Reply, LogIn, UserPlus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -15,6 +15,7 @@ import {
   toggleCommentLike, 
   downloadMedia, 
   checkUserAuthentication,
+  deleteReviewComment, // Import the new delete function
   type TransformedReview,
   type Comment,
   type CommentSubmission
@@ -116,10 +117,12 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// Updated AuthenticatedUser to include role
 interface AuthenticatedUser {
   name: string;
   username: string;
   profile_picture_id: number | null;
+  role: string; // Added role
 }
 
 // CommentAvatar component
@@ -200,12 +203,14 @@ const CommentItem = ({
   isSubmittingReply,
   likedComments,
   expandedThreads,
+  isAdmin, // Pass isAdmin prop down
   onToggleLike,
   onStartReply,
   onCancelReply,
   onReplyChange,
   onSubmitReply,
-  onToggleThread
+  onToggleThread,
+  onDeleteComment // New prop for delete functionality
 }: { 
   comment: Comment; 
   depth?: number;
@@ -215,12 +220,14 @@ const CommentItem = ({
   isSubmittingReply: boolean;
   likedComments: Set<string>;
   expandedThreads: Set<string>;
+  isAdmin: boolean; // Receive isAdmin
   onToggleLike: (commentId: string) => void;
   onStartReply: (commentId: string) => void;
   onCancelReply: () => void;
   onReplyChange: (content: string) => void;
   onSubmitReply: (commentId: string) => void;
   onToggleThread: (commentId: string) => void;
+  onDeleteComment: (commentId: string) => void; // New prop for delete
 }) => {
   const isReplying = replyingTo === comment.id;
   const maxDepth = 3; // Limit nesting depth
@@ -273,6 +280,11 @@ const CommentItem = ({
                   </span>
                 </>
               )}
+              {comment.isAdminComment && ( // Admin tag
+                <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                  Admin
+                </span>
+              )}
             </div>
             {/* Comment content with proper text wrapping */}
             <div className="text-black text-sm leading-relaxed break-words whitespace-pre-wrap">
@@ -302,6 +314,19 @@ const CommentItem = ({
                 <MessageCircle className="w-3 h-3" />
                 {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
               </span>
+            )}
+
+            {isAdmin && ( // Delete button for admin
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDeleteComment(comment.id)}
+                className="text-red hover:text-red-700 hover:bg-red-50 font-medium p-1 ml-auto" // ml-auto to push it right
+                title="Delete comment (Admin only)"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </Button>
             )}
           </div>
 
@@ -362,12 +387,14 @@ const CommentItem = ({
                   isSubmittingReply={isSubmittingReply}
                   likedComments={likedComments}
                   expandedThreads={expandedThreads}
+                  isAdmin={isAdmin} // Pass isAdmin down
                   onToggleLike={onToggleLike}
                   onStartReply={onStartReply}
                   onCancelReply={onCancelReply}
                   onReplyChange={onReplyChange}
                   onSubmitReply={onSubmitReply}
                   onToggleThread={onToggleThread}
+                  onDeleteComment={onDeleteComment} // Pass delete handler
                 />
               ))}
             </div>
@@ -428,6 +455,11 @@ const CommentItem = ({
                           Depth {reply.threadDepth + 1}
                         </span>
                       )}
+                      {reply.isAdminComment && ( // Admin tag for nested replies
+                        <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                          Admin
+                        </span>
+                      )}
                     </div>
                     <div className="text-black text-sm leading-relaxed break-words whitespace-pre-wrap mb-3">
                       {reply.content}
@@ -448,6 +480,18 @@ const CommentItem = ({
                           <Reply className="w-4 h-4" />
                           {replyingTo === reply.id ? 'Cancel' : 'Reply'}
                         </button>
+                      )}
+                      {isAdmin && ( // Delete button for nested replies
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeleteComment(reply.id)}
+                          className="text-red hover:text-red-700 hover:bg-red-50 font-medium p-1 ml-auto"
+                          title="Delete comment (Admin only)"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
                       )}
                     </div>
 
@@ -513,11 +557,12 @@ export default function ReviewPage({ params }: PageProps) {
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [likedComments] = useState<Set<string>>(new Set()); // Keep for compatibility but unused
+  const [likedComments] = useState<Set<string>>(new Set());
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false); // New state for isAdmin
   const [separatedMedia, setSeparatedMedia] = useState<{
     visualMedia: MediaItem[];
     documents: MediaItem[];
@@ -623,25 +668,28 @@ export default function ReviewPage({ params }: PageProps) {
     resolveParams();
   }, [params]);
 
-  // Check authentication status
+  // Check authentication status and user role
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndRole = async () => {
       try {
         setIsCheckingAuth(true);
         const authResult = await checkUserAuthentication();
         
         setIsAuthenticated(authResult.isAuthenticated);
         setCurrentUser(authResult.user || null);
+        // Set isAdmin based on the role returned by checkUserAuthentication
+        setIsAdmin(authResult.user?.role === 'admin'); 
       } catch (error) {
         console.error('Error checking authentication:', error);
         setIsAuthenticated(false);
         setCurrentUser(null);
+        setIsAdmin(false);
       } finally {
         setIsCheckingAuth(false);
       }
     };
 
-    checkAuth();
+    checkAuthAndRole();
   }, []);
 
   // Fetch review data
@@ -700,7 +748,7 @@ export default function ReviewPage({ params }: PageProps) {
     fetchReviewData();
   }, [resolvedParams]);
 
-  // Function to refresh comments after submission
+  // Function to refresh comments after submission or deletion
   const refreshComments = async () => {
     if (!resolvedParams) return;
     
@@ -719,14 +767,12 @@ export default function ReviewPage({ params }: PageProps) {
 
   // Authentication handlers
   const handleLoginClick = () => {
-    // Store current URL to redirect back after login
     const currentUrl = window.location.pathname + window.location.search;
     sessionStorage.setItem('redirectAfterLogin', currentUrl);
     router.push('/login');
   };
 
   const handleSignupClick = () => {
-    // Store current URL to redirect back after signup
     const currentUrl = window.location.pathname + window.location.search;
     sessionStorage.setItem('redirectAfterLogin', currentUrl);
     router.push('/signup');
@@ -743,9 +789,11 @@ export default function ReviewPage({ params }: PageProps) {
         window.open(downloadUrl, '_blank');
       } else {
         console.error('Download failed:', result.error);
+        alert(result.error || 'Failed to download media. Please ensure you are logged in.');
       }
     } catch (error) {
       console.error('Download error:', error);
+      alert('An unexpected error occurred during download.');
     } finally {
       setTimeout(() => {
         setDownloadingIds(prev => {
@@ -784,13 +832,14 @@ export default function ReviewPage({ params }: PageProps) {
 
       if (result.success) {
         setNewComment('');
-        // Refresh comments to get the latest data from server
         await refreshComments();
       } else {
         console.error('Comment submission failed:', result.error);
+        alert(result.error || 'Failed to post comment. Please try again or log in.');
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
+      alert('An unexpected error occurred while posting your comment.');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -813,23 +862,52 @@ export default function ReviewPage({ params }: PageProps) {
       if (result.success) {
         setReplyContent('');
         setReplyingTo(null);
-        // Refresh comments to get the latest data from server
         await refreshComments();
       } else {
         console.error('Reply submission failed:', result.error);
+        alert(result.error || 'Failed to post reply. Please try again or log in.');
       }
     } catch (error) {
       console.error('Error submitting reply:', error);
+      alert('An unexpected error occurred while posting your reply.');
     } finally {
       setIsSubmittingReply(false);
     }
   };
 
-  // Simplified comment like handler (no longer used but kept for compatibility)
+  // Simplified comment like handler (no longer used as per previous request)
   const handleCommentLike = async (commentId: string) => {
-    // Removed like functionality
     return;
   };
+
+  // NEW: Delete comment handler for admins
+  const handleDeleteReviewComment = async (commentId: string) => {
+    if (!isAdmin) {
+      alert('You do not have permission to delete comments.');
+      return;
+    }
+    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+      return;
+    }
+
+    setRefreshingComments(true); // Indicate comments are being refreshed (deleted)
+    try {
+      const result = await deleteReviewComment(commentId);
+      if (result.success) {
+        alert(result.message || 'Comment deleted successfully.');
+        await refreshComments(); // Refresh comments list after deletion
+      } else {
+        console.error('Failed to delete comment:', result.error);
+        alert(result.error || 'Failed to delete comment.');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('An unexpected error occurred while deleting the comment.');
+    } finally {
+      setRefreshingComments(false);
+    }
+  };
+
 
   // Reply handlers
   const handleStartReply = (commentId: string) => {
@@ -1422,19 +1500,21 @@ export default function ReviewPage({ params }: PageProps) {
                 comments.map((comment: Comment) => (
                   <CommentItem 
                     key={comment.id} 
-                    comment={comment}
+                    comment={comment} 
                     currentUser={currentUser}
                     replyingTo={replyingTo}
                     replyContent={replyContent}
                     isSubmittingReply={isSubmittingReply}
-                    likedComments={likedComments}
+                    likedComments={new Set()} // Pass an empty set, as likes are mocked and not interactive
                     expandedThreads={expandedThreads}
-                    onToggleLike={handleCommentLike}
+                    isAdmin={isAdmin} // Pass isAdmin to CommentItem
+                    onToggleLike={handleCommentLike} // Still passed, but functionality is no-op
                     onStartReply={handleStartReply}
                     onCancelReply={handleCancelReply}
                     onReplyChange={handleReplyChange}
                     onSubmitReply={handleSubmitReply}
                     onToggleThread={handleToggleThread}
+                    onDeleteComment={handleDeleteReviewComment} // Pass the delete handler
                   />
                 ))
               )}
