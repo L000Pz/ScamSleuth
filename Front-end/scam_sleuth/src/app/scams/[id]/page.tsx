@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File, Reply } from 'lucide-react';
+import { Calendar, ArrowLeft, User, Eye, EyeOff, Download, FileText, Heart, MessageCircle, Share2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, ImageIcon, Video, File, Reply, LogIn, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -14,7 +14,7 @@ import {
   submitComment, 
   toggleCommentLike, 
   downloadMedia, 
-  getCurrentUser,
+  checkUserAuthentication,
   type TransformedReview,
   type Comment,
   type CommentSubmission
@@ -23,6 +23,87 @@ import {
 // Utility function to get media URLs
 const getMediaUrl = (mediaId: number): string => {
   return `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
+};
+
+// Utility function to format timestamps in user's local timezone
+const formatTimestamp = (utcString: string, options?: {
+  includeTime?: boolean;
+  relative?: boolean;
+  format?: 'short' | 'long' | 'full';
+}): string => {
+  try {
+    // Backend sends: "2025-07-24T15:25:40.568267" (UTC without Z)
+    // We need to add Z to tell JavaScript it's UTC
+    const utcIsoString = utcString.endsWith('Z') ? utcString : utcString + 'Z';
+    const date = new Date(utcIsoString);
+    
+    // Validate the date
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', utcString);
+      return utcString;
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // Show relative time for recent comments
+    if (options?.relative && diffMs < 7 * 24 * 60 * 60 * 1000) { // Within 7 days
+      if (diffMs < 60000) return 'Just now'; // Less than 1 minute
+      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+    }
+
+    // Format based on options - JavaScript will automatically convert UTC to local time
+    const formatOptions: Intl.DateTimeFormatOptions = {};
+    
+    switch (options?.format) {
+      case 'short':
+        formatOptions.month = 'short';
+        formatOptions.day = 'numeric';
+        if (options.includeTime) {
+          formatOptions.hour = 'numeric';
+          formatOptions.minute = '2-digit';
+          formatOptions.hour12 = true;
+        }
+        break;
+      case 'long':
+        formatOptions.year = 'numeric';
+        formatOptions.month = 'long';
+        formatOptions.day = 'numeric';
+        if (options.includeTime) {
+          formatOptions.hour = 'numeric';
+          formatOptions.minute = '2-digit';
+          formatOptions.hour12 = true;
+        }
+        break;
+      case 'full':
+      default:
+        formatOptions.year = 'numeric';
+        formatOptions.month = 'long';
+        formatOptions.day = 'numeric';
+        if (options.includeTime) {
+          formatOptions.hour = 'numeric';
+          formatOptions.minute = '2-digit';
+          formatOptions.second = '2-digit';
+          formatOptions.hour12 = true;
+        }
+        break;
+    }
+
+    // Use toLocaleString for proper timezone conversion to user's local time
+    if (options?.includeTime) {
+      return date.toLocaleString(undefined, formatOptions);
+    } else {
+      return date.toLocaleDateString(undefined, formatOptions);
+    }
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return utcString; // Fallback to original string
+  }
 };
 
 interface MediaItem {
@@ -35,9 +116,15 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+interface AuthenticatedUser {
+  name: string;
+  username: string;
+  profile_picture_id: number | null;
+}
+
 // CommentAvatar component
 const CommentAvatar = ({ author, size = "w-8 h-8" }: { 
-  author: Comment['author']; 
+  author: Comment['author'] | AuthenticatedUser; 
   size?: string;
 }) => {
   const [imageError, setImageError] = useState(false);
@@ -65,6 +152,44 @@ const CommentAvatar = ({ author, size = "w-8 h-8" }: {
   );
 };
 
+// Login Prompt Component
+const LoginPrompt = ({ onLoginClick, onSignupClick }: { 
+  onLoginClick: () => void; 
+  onSignupClick: () => void; 
+}) => {
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-gray-800 mb-1">Join the Discussion</h3>
+          <p className="text-gray-600 text-sm">
+            Sign in to share your thoughts and engage with the community.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            onClick={onLoginClick}
+            size="sm"
+            className="bg-red hover:bg-red/90 text-white border-0 flex items-center gap-2"
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </Button>
+          <Button
+            onClick={onSignupClick}
+            variant="outline"
+            size="sm"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <UserPlus className="w-4 h-4" />
+            Create Account
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Reddit-style CommentItem component with expandable threads
 const CommentItem = ({ 
   comment, 
@@ -84,7 +209,7 @@ const CommentItem = ({
 }: { 
   comment: Comment; 
   depth?: number;
-  currentUser: any;
+  currentUser: AuthenticatedUser | null;
   replyingTo: string | null;
   replyContent: string;
   isSubmittingReply: boolean;
@@ -114,7 +239,7 @@ const CommentItem = ({
   const flattenComments = (comments: Comment[], startDepth: number = 0): Array<Comment & { threadDepth: number }> => {
     const flattened: Array<Comment & { threadDepth: number }> = [];
     
-    comments.forEach((comment, index) => {
+    comments.forEach((comment) => {
       flattened.push({ ...comment, threadDepth: startDepth });
       if (comment.replies && comment.replies.length > 0) {
         flattened.push(...flattenComments(comment.replies, startDepth + 1));
@@ -134,7 +259,12 @@ const CommentItem = ({
               <span className="font-semibold text-black text-sm">{comment.author.name}</span>
               <span className="text-gray-500 text-xs">@{comment.author.username}</span>
               <span className="text-gray-500 text-xs">•</span>
-              <span className="text-gray-500 text-xs">{comment.timestamp}</span>
+              <span 
+                className="text-gray-500 text-xs" 
+                title={formatTimestamp(comment.timestamp, { format: 'full', includeTime: true })}
+              >
+                {formatTimestamp(comment.timestamp, { relative: true })}
+              </span>
               {depth > 0 && (
                 <>
                   <span className="text-gray-500 text-xs">•</span>
@@ -151,18 +281,6 @@ const CommentItem = ({
           </div>
           
           <div className="flex flex-wrap items-center gap-4 mt-3 text-xs">
-            <button 
-              onClick={() => onToggleLike(comment.id)}
-              className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all ${
-                likedComments.has(comment.id)
-                  ? 'text-red bg-red/10 border-red/20'
-                  : 'text-gray-500 hover:text-red hover:bg-red/10 border-gray-300 hover:border-red/20'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
-              <span>{comment.likes}</span>
-            </button>
-            
             {currentUser && (depth < maxDepth || isThreadExpanded) && (
               <button 
                 onClick={() => {
@@ -296,7 +414,12 @@ const CommentItem = ({
                       <span className="font-semibold text-black text-sm">{reply.author.name}</span>
                       <span className="text-gray-500 text-xs">@{reply.author.username}</span>
                       <span className="text-gray-500 text-xs">•</span>
-                      <span className="text-gray-500 text-xs">{reply.timestamp}</span>
+                      <span 
+                        className="text-gray-500 text-xs"
+                        title={formatTimestamp(reply.timestamp, { format: 'full', includeTime: true })}
+                      >
+                        {formatTimestamp(reply.timestamp, { relative: true })}
+                      </span>
                       <span className="text-blue-600 text-xs bg-blue-100 px-2 py-0.5 rounded">
                         #{index + 1}
                       </span>
@@ -311,18 +434,6 @@ const CommentItem = ({
                     </div>
                     
                     <div className="flex items-center gap-4 text-xs">
-                      <button 
-                        onClick={() => onToggleLike(reply.id)}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all ${
-                          likedComments.has(reply.id)
-                            ? 'text-red bg-red/10 border-red/20'
-                            : 'text-gray-500 hover:text-red hover:bg-red/10 border-gray-300 hover:border-red/20'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${likedComments.has(reply.id) ? 'fill-current' : ''}`} />
-                        <span>{reply.likes}</span>
-                      </button>
-                      
                       {currentUser && (
                         <button 
                           onClick={() => {
@@ -402,9 +513,11 @@ export default function ReviewPage({ params }: PageProps) {
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const [likedComments] = useState<Set<string>>(new Set()); // Keep for compatibility but unused
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [separatedMedia, setSeparatedMedia] = useState<{
     visualMedia: MediaItem[];
     documents: MediaItem[];
@@ -510,6 +623,27 @@ export default function ReviewPage({ params }: PageProps) {
     resolveParams();
   }, [params]);
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setIsCheckingAuth(true);
+        const authResult = await checkUserAuthentication();
+        
+        setIsAuthenticated(authResult.isAuthenticated);
+        setCurrentUser(authResult.user || null);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   // Fetch review data
   useEffect(() => {
     const fetchReviewData = async () => {
@@ -519,10 +653,9 @@ export default function ReviewPage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
-        const [reviewResult, commentsResult, userResult] = await Promise.all([
+        const [reviewResult, commentsResult] = await Promise.all([
           getPublicReview(resolvedParams.id),
-          getReviewComments(resolvedParams.id),
-          getCurrentUser()
+          getReviewComments(resolvedParams.id)
         ]);
 
         if (reviewResult.success && reviewResult.data) {
@@ -534,10 +667,6 @@ export default function ReviewPage({ params }: PageProps) {
 
         if (commentsResult.success && commentsResult.data) {
           setComments(commentsResult.data);
-        }
-
-        if (userResult.success && userResult.data) {
-          setCurrentUser(userResult.data);
         }
 
         if (reviewResult.success && reviewResult.data && reviewResult.data.media.length > 0) {
@@ -588,6 +717,21 @@ export default function ReviewPage({ params }: PageProps) {
     }
   };
 
+  // Authentication handlers
+  const handleLoginClick = () => {
+    // Store current URL to redirect back after login
+    const currentUrl = window.location.pathname + window.location.search;
+    sessionStorage.setItem('redirectAfterLogin', currentUrl);
+    router.push('/login');
+  };
+
+  const handleSignupClick = () => {
+    // Store current URL to redirect back after signup
+    const currentUrl = window.location.pathname + window.location.search;
+    sessionStorage.setItem('redirectAfterLogin', currentUrl);
+    router.push('/signup');
+  };
+
   const handleMediaDownload = async (mediaId: number) => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
     
@@ -626,7 +770,7 @@ export default function ReviewPage({ params }: PageProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !review || isSubmittingComment) return;
+    if (!newComment.trim() || !review || isSubmittingComment || !currentUser) return;
 
     setIsSubmittingComment(true);
 
@@ -653,7 +797,7 @@ export default function ReviewPage({ params }: PageProps) {
   };
 
   const handleSubmitReply = async (parentCommentId: string) => {
-    if (!replyContent.trim() || !review || isSubmittingReply) return;
+    if (!replyContent.trim() || !review || isSubmittingReply || !currentUser) return;
 
     setIsSubmittingReply(true);
 
@@ -681,38 +825,18 @@ export default function ReviewPage({ params }: PageProps) {
     }
   };
 
+  // Simplified comment like handler (no longer used but kept for compatibility)
   const handleCommentLike = async (commentId: string) => {
-    const isCurrentlyLiked = likedComments.has(commentId);
-    
-    try {
-      const result = await toggleCommentLike(commentId, !isCurrentlyLiked);
-      
-      if (result.success) {
-        setLikedComments(prev => {
-          const newSet = new Set(prev);
-          if (isCurrentlyLiked) {
-            newSet.delete(commentId);
-          } else {
-            newSet.add(commentId);
-          }
-          return newSet;
-        });
-
-        if (result.newLikeCount !== undefined) {
-          setComments(prev => prev.map(comment => 
-            comment.id === commentId 
-              ? { ...comment, likes: result.newLikeCount! }
-              : comment
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling comment like:', error);
-    }
+    // Removed like functionality
+    return;
   };
 
   // Reply handlers
   const handleStartReply = (commentId: string) => {
+    if (!currentUser) {
+      handleLoginClick();
+      return;
+    }
     setReplyingTo(commentId);
     setReplyContent('');
   };
@@ -958,12 +1082,14 @@ export default function ReviewPage({ params }: PageProps) {
     );
   };
 
-  if (isLoading) {
+  if (isLoading || isCheckingAuth) {
     return (
       <div className="min-h-screen bg-background flex justify-center items-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-red border-t-transparent"></div>
-          <p className="text-black font-medium">Loading review...</p>
+          <p className="text-black font-medium">
+            {isCheckingAuth ? 'Checking authentication...' : 'Loading review...'}
+          </p>
         </div>
       </div>
     );
@@ -1019,7 +1145,12 @@ export default function ReviewPage({ params }: PageProps) {
                 </div>
                 <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
                   <Calendar size={16} />
-                  <span className="text-sm font-medium">{review.date}</span>
+                  <span 
+                    className="text-sm font-medium"
+                    title={formatTimestamp(review.date, { format: 'full', includeTime: true })}
+                  >
+                    {formatTimestamp(review.date, { format: 'long' })}
+                  </span>
                 </div>
               </div>
               
@@ -1225,8 +1356,8 @@ export default function ReviewPage({ params }: PageProps) {
               </Button>
             </div>
 
-            {/* Add Comment */}
-            {currentUser && (
+            {/* Comment Input - Show different content based on authentication */}
+            {isAuthenticated && currentUser ? (
               <div className="mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex gap-3">
                   <CommentAvatar author={currentUser} />
@@ -1257,6 +1388,14 @@ export default function ReviewPage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
+            ) : (
+              // Show login prompt for unauthenticated users
+              <div className="mb-8">
+                <LoginPrompt 
+                  onLoginClick={handleLoginClick}
+                  onSignupClick={handleSignupClick}
+                />
+              </div>
             )}
 
             {/* Comments List */}
@@ -1265,7 +1404,19 @@ export default function ReviewPage({ params }: PageProps) {
                 <div className="text-center py-12">
                   <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-black mb-2">No comments yet</h3>
-                  <p className="text-gray-600">Be the first to share your thoughts about this review.</p>
+                  <p className="text-gray-600 mb-4">Be the first to share your thoughts about this review.</p>
+                  {!isAuthenticated && (
+                    <div className="flex justify-center gap-2 mt-3">
+                      <Button
+                        onClick={handleLoginClick}
+                        size="sm"
+                        variant="outline"
+                        className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                      >
+                        Sign In to Comment
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 comments.map((comment: Comment) => (
@@ -1288,6 +1439,36 @@ export default function ReviewPage({ params }: PageProps) {
                 ))
               )}
             </div>
+
+            {/* Authentication prompt at bottom if not logged in and there are comments */}
+            {!isAuthenticated && comments.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-3">
+                    Want to join the discussion?
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      onClick={handleLoginClick}
+                      size="sm"
+                      className="bg-red hover:bg-red/90 text-white border-0 flex items-center gap-2"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </Button>
+                    <Button
+                      onClick={handleSignupClick}
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Create Account
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

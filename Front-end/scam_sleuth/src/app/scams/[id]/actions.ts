@@ -29,7 +29,7 @@ export interface PublicReviewResponse {
 export interface TransformedReview {
   id: string;
   title: string;
-  date: string;
+  date: string; // Keep as original UTC string from backend
   content: string;
   media: Array<{
     review_id: number;
@@ -43,17 +43,25 @@ export interface TransformedReview {
   };
 }
 
-// API response types for comments
-export interface CommentApiResponse {
-  comment_id: number;
-  root_id: number | null;
-  review_id: number;
-  writer_id: number;
-  comment_content: string;
-  created_at: string;
+// Updated API response types for comments based on new structure
+export interface CommentApiResponseItem {
+  comments: {
+    comment_id: number;
+    root_id: number | null;
+    review_id: number;
+    writer_id: number;
+    writer_role: string;
+    comment_content: string;
+    created_at: string; // UTC timestamp from backend
+  };
+  writerDetails: {
+    username: string;
+    name: string;
+    profile_picture_id: number | null;
+  };
 }
 
-// Transformed comment type for frontend
+// Transformed comment type for frontend - keep timestamp as original UTC string
 export interface Comment {
   id: string;
   author: {
@@ -63,7 +71,7 @@ export interface Comment {
     writer_id: number;
   };
   content: string;
-  timestamp: string;
+  timestamp: string; // Keep as original UTC string from backend
   likes: number;
   replies: Comment[];
   root_id: number | null;
@@ -76,65 +84,25 @@ export interface CommentSubmission {
   parentCommentId?: string; // For replies - this will be the root_id
 }
 
-// Helper function to get user info from user_id
-async function getUserInfo(userId: number, token: string): Promise<{
-  name: string;
-  username: string;
-  profile_picture_id: number | null;
-} | null> {
-  try {
-    // This is a placeholder - you might need to implement a getUserById endpoint
-    // For now, we'll return default data
-    return {
-      name: `User ${userId}`,
-      username: `user${userId}`,
-      profile_picture_id: null
-    };
-  } catch (error) {
-    console.error('Error fetching user info:', error);
-    return null;
-  }
-}
-
-// Helper function to format timestamp
-function formatTimestamp(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString();
-  } catch (error) {
-    return 'Unknown time';
-  }
-}
-
-// Helper function to build nested comment tree
-function buildCommentTree(comments: CommentApiResponse[], userInfoMap: Map<number, any>): Comment[] {
+// Updated helper function to build nested comment tree WITHOUT timestamp conversion
+function buildCommentTree(apiResponseItems: CommentApiResponseItem[]): Comment[] {
   const commentMap = new Map<number, Comment>();
   const rootComments: Comment[] = [];
 
-  // First pass: create all comment objects
-  comments.forEach(apiComment => {
-    const userInfo = userInfoMap.get(apiComment.writer_id);
+  // First pass: create all comment objects using the new structure
+  apiResponseItems.forEach(item => {
+    const { comments: apiComment, writerDetails } = item;
+    
     const comment: Comment = {
       id: apiComment.comment_id.toString(),
       author: {
-        name: userInfo?.name || `User ${apiComment.writer_id}`,
-        username: userInfo?.username || `user${apiComment.writer_id}`,
-        profile_picture_id: userInfo?.profile_picture_id || null,
+        name: writerDetails.name,
+        username: writerDetails.username,
+        profile_picture_id: writerDetails.profile_picture_id,
         writer_id: apiComment.writer_id
       },
       content: apiComment.comment_content,
-      timestamp: formatTimestamp(apiComment.created_at),
+      timestamp: apiComment.created_at, // Keep original UTC string from backend
       likes: Math.floor(Math.random() * 20), // Mock likes since API doesn't provide them
       replies: [],
       root_id: apiComment.root_id,
@@ -145,7 +113,8 @@ function buildCommentTree(comments: CommentApiResponse[], userInfoMap: Map<numbe
   });
 
   // Second pass: build the tree structure
-  comments.forEach(apiComment => {
+  apiResponseItems.forEach(item => {
+    const { comments: apiComment } = item;
     const comment = commentMap.get(apiComment.comment_id);
     if (!comment) return;
 
@@ -162,11 +131,11 @@ function buildCommentTree(comments: CommentApiResponse[], userInfoMap: Map<numbe
   });
 
   // Sort comments by timestamp (newest first for root, oldest first for replies)
-  rootComments.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  rootComments.sort((a, b) => new Date(b.timestamp + 'Z').getTime() - new Date(a.timestamp + 'Z').getTime());
   
   // Sort replies within each comment (oldest first)
   rootComments.forEach(comment => {
-    comment.replies.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    comment.replies.sort((a, b) => new Date(a.timestamp + 'Z').getTime() - new Date(b.timestamp + 'Z').getTime());
   });
 
   return rootComments;
@@ -199,7 +168,7 @@ export async function getPublicReview(id: string): Promise<{
     const transformedReview: TransformedReview = {
       id: reviewData.review.review_id.toString(),
       title: reviewData.review.title,
-      date: new Date(reviewData.review.review_date).toLocaleDateString(),
+      date: reviewData.review.review_date, // Keep original UTC string from backend
       content: reviewData.content,
       media: reviewData.media || [],
       writer: {
@@ -253,7 +222,7 @@ export async function getRecentReviews(limit: number = 2): Promise<{
         id: review.review_id.toString(),
         title: review.title,
         author: 'Anonymous',
-        date: new Date(review.review_date).toLocaleDateString(),
+        date: review.review_date, // Keep original UTC string from backend
         excerpt: review.title.length > 80 
           ? review.title.substring(0, 80) + '...' 
           : review.title
@@ -266,7 +235,7 @@ export async function getRecentReviews(limit: number = 2): Promise<{
   }
 }
 
-// Get comments for a specific review - NOW USING REAL API
+// Updated function to get comments with new API response structure
 export async function getReviewComments(reviewId: string): Promise<{
   success: boolean;
   data?: Comment[];
@@ -289,27 +258,15 @@ export async function getReviewComments(reviewId: string): Promise<{
       return { success: false, error: 'Failed to fetch comments' };
     }
 
-    const apiComments: CommentApiResponse[] = await response.json();
+    const apiResponseItems: CommentApiResponseItem[] = await response.json();
 
-    if (!Array.isArray(apiComments)) {
+    if (!Array.isArray(apiResponseItems)) {
       console.error('Invalid comments response format');
       return { success: false, error: 'Invalid comments data format' };
     }
 
-    // Get unique user IDs to fetch user info
-    const uniqueUserIds = [...new Set(apiComments.map(comment => comment.writer_id))];
-    
-    // Create a map of user info (in a real app, you'd batch fetch this data)
-    const userInfoMap = new Map();
-    for (const userId of uniqueUserIds) {
-      const userInfo = await getUserInfo(userId, token || '');
-      if (userInfo) {
-        userInfoMap.set(userId, userInfo);
-      }
-    }
-
-    // Build the nested comment tree
-    const transformedComments = buildCommentTree(apiComments, userInfoMap);
+    // Build the nested comment tree using the new structure
+    const transformedComments = buildCommentTree(apiResponseItems);
 
     return { success: true, data: transformedComments };
   } catch (error) {
@@ -318,7 +275,7 @@ export async function getReviewComments(reviewId: string): Promise<{
   }
 }
 
-// Submit a new comment - NOW USING REAL API
+// Submit a new comment - using real API
 export async function submitComment(commentData: CommentSubmission): Promise<{
   success: boolean;
   data?: Comment;
@@ -376,7 +333,7 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
         writer_id: 0 // We don't have the writer_id from getCurrentUser
       },
       content: commentData.content,
-      timestamp: 'Just now',
+      timestamp: new Date().toISOString().replace('Z', ''), // Current time as UTC string without Z
       likes: 0,
       replies: [],
       root_id: commentData.parentCommentId ? parseInt(commentData.parentCommentId) : null,
@@ -390,7 +347,7 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
   }
 }
 
-// Like/unlike a comment - KEEPING MOCK IMPLEMENTATION
+// Like/unlike a comment - keeping mock implementation
 export async function toggleCommentLike(commentId: string, isLiked: boolean): Promise<{
   success: boolean;
   newLikeCount?: number;
@@ -475,5 +432,52 @@ export async function getCurrentUser(): Promise<{
   } catch (error) {
     console.error('Error in getCurrentUser:', error);
     return { success: false, error: 'Failed to get user info' };
+  }
+}
+
+// Check if user is authenticated
+export async function checkUserAuthentication(): Promise<{
+  isAuthenticated: boolean;
+  user?: {
+    name: string;
+    username: string;
+    profile_picture_id: number | null;
+  };
+}> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return { isAuthenticated: false };
+    }
+
+    const response = await fetch(
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      {
+        method: 'GET',
+        headers: { 
+          'Accept': '*/*' 
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return { isAuthenticated: false };
+    }
+
+    const userInfo = await response.json();
+
+    return {
+      isAuthenticated: true,
+      user: {
+        name: userInfo.name,
+        username: userInfo.username,
+        profile_picture_id: userInfo.profile_picture_id
+      }
+    };
+  } catch (error) {
+    console.error('Error checking authentication:', error);
+    return { isAuthenticated: false };
   }
 }
