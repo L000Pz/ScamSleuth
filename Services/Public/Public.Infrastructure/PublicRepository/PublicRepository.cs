@@ -70,6 +70,15 @@ public class PublicRepository : IPublicRepository
 
         return recentReviews;
     }
+    public async Task<List<UrlComment?>> GetRecentUrlComments(int numberOfComments)
+    {
+        var recentComments = await _context.url_comment
+            .Where(r => r.rating != 0)
+            .OrderByDescending(r => r.created_at)
+            .Take(numberOfComments)
+            .ToListAsync();
+        return recentComments;
+    }
 
     public async Task<Review?> GetReviewById(int review_id)
     {
@@ -166,5 +175,10 @@ public class PublicRepository : IPublicRepository
             .Where(c => c.url_id == url_id && c.rating != 0);
         double average = ratings.Any() ? ratings.Average(c => c.rating) : 0;
         return average;
+    }
+
+    public async Task<UrlStorage?> GetUrlById(int url_id)
+    {
+        return _context.url_storage.SingleOrDefault(u => u.url_id == url_id);
     }
 }

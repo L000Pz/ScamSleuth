@@ -18,10 +18,12 @@ public class PublicController : ControllerBase
     private readonly IShowReviewComments _showReviewComments;
     private readonly IShowUrlComments _showUrlComments;
     private readonly IGetUrlRating _getUrlRating;
+    private readonly IShowRecentComments _showRecentComments;
     private const int RecentReviewsCount = 10;
+    private const int RecentCommentsCount = 3;
 
     public PublicController(IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews,
-        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments, IGetUrlRating getUrlRating)
+        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments, IGetUrlRating getUrlRating, IShowRecentComments showRecentComments)
     {
         _showAllReviews = showAllReviews;
         _showRecentReviews = showRecentReviews;
@@ -30,6 +32,7 @@ public class PublicController : ControllerBase
         _showReviewComments = showReviewComments;
         _showUrlComments = showUrlComments;
         _getUrlRating = getUrlRating;
+        _showRecentComments = showRecentComments;
     }
 
     [HttpGet("recentReviews")]
@@ -42,6 +45,16 @@ public class PublicController : ControllerBase
         return Ok(recentReviews);
     }
 
+    [HttpGet("RecentUrlComments")]
+    public async Task<ActionResult> GetRecentComments()
+    {
+        var recentComments = await _showRecentComments.Handle(RecentCommentsCount);
+        if (recentComments is null)
+            return BadRequest("No comments could be found!");
+
+        return Ok(recentComments);
+    }
+    
     [HttpGet("allReviews")]
     public async Task<ActionResult> GetAllReviews()
     {

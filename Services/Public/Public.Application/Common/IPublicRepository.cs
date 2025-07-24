@@ -9,6 +9,7 @@ public interface IPublicRepository
     public Task<List<ReviewComment?>> GetAllReviewComments(int review_id);
     public Task<List<UrlComment?>> GetAllUrlComments(int url_id);
     public Task<List<Review>?> GetRecentReviews(int numberOfReviews);
+    public Task<List<UrlComment?>> GetRecentUrlComments(int numberOfComments);
     public Task<Review_Content?> GetReviewContent(int review_content_id);
     public Task<Review?> GetReviewById(int review_id);
     public Task<UrlStorage?> GetUrl(string url);
@@ -24,6 +25,6 @@ public interface IPublicRepository
     public Task<int> GetNumberOf2Url(int url_id);
     public Task<int> GetNumberOf1Url(int url_id);
     public Task<double> GetAverageRatingUrl(int url_id);
-
+    public Task<UrlStorage?> GetUrlById(int url_id);
 
 }

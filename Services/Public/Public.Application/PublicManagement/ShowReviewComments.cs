@@ -22,6 +22,10 @@ public class ShowReviewComments : IShowReviewComments
         }
 
         var comments = await _publicRepository.GetAllReviewComments(review_id);
+        if (comments is null)
+        {
+            return null;
+        }
         var comments_with_writer = new List<ReviewCommentDetails>();
         foreach (var comment in comments)
         {
