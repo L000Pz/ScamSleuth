@@ -19,11 +19,12 @@ public class PublicController : ControllerBase
     private readonly IShowUrlComments _showUrlComments;
     private readonly IGetUrlRating _getUrlRating;
     private readonly IShowRecentComments _showRecentComments;
+    private readonly ISearchReviews _searchReviews;
     private const int RecentReviewsCount = 10;
     private const int RecentCommentsCount = 3;
 
     public PublicController(IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews,
-        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments, IGetUrlRating getUrlRating, IShowRecentComments showRecentComments)
+        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments, IGetUrlRating getUrlRating, IShowRecentComments showRecentComments, ISearchReviews searchReviews)
     {
         _showAllReviews = showAllReviews;
         _showRecentReviews = showRecentReviews;
@@ -33,6 +34,7 @@ public class PublicController : ControllerBase
         _showUrlComments = showUrlComments;
         _getUrlRating = getUrlRating;
         _showRecentComments = showRecentComments;
+        _searchReviews = searchReviews;
     }
 
     [HttpGet("recentReviews")]
@@ -119,5 +121,16 @@ public class PublicController : ControllerBase
         }
 
         return Ok(ratings);
+    }
+    [HttpGet("Search")]
+    public async Task<ActionResult> Search(string input)
+    {
+        var result = await _searchReviews.Handle(input);
+        if (result == null)
+        {
+            return BadRequest("Couldn't find any matched results!");
+        }
+
+        return Ok(result);
     }
 }

@@ -27,5 +27,6 @@ public interface IPublicRepository
     public Task<double> GetAverageRatingUrl(int url_id);
     public Task<UrlStorage?> GetUrlById(int url_id);
     public Task<bool> IncreaseView(int review_id);
+    public Task<List<Review?>> SearchReviewTitle(string input);
 
 }

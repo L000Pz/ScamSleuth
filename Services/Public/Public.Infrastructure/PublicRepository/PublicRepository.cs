@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FuzzySharp;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson.Serialization;
 using Public.Application.Common;
 using Public.Domain;
@@ -197,5 +198,50 @@ public class PublicRepository : IPublicRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<List<Review?>> SearchReviewTitle(string input)
+    {
+        var reviews = await _context.review
+            .ToListAsync();
+        var filtered = reviews
+            .Where(r =>
+                Fuzz.Ratio(r.title, input) > 70)
+            .ToList();
+        return filtered;
+    }
+
+    public async Task<List<Review?>> SearchReviewContent(Review_Content input)
+    {
+        var allDocs = await _mongoContext.GetAllDocs();
+
+        var contentItems = allDocs
+            .Where(doc => doc.Contains("review_content") && doc.Contains("review_content_id"))
+            .Select(doc => new Review_Content
+            {
+                review_content_id = int.Parse(doc["review_content_id"].ToString()),
+                review_content = doc["review_content"].AsString
+            })
+            .ToList();
+
+        var matches = Process.ExtractAll<Review_Content>(
+                input,
+                contentItems,
+                rc => rc.review_content
+            )
+            .Where(m => m.Score >= 60)
+            .ToList();
+
+        var matchedContentIds = matches
+            .Select(m => m.Value.review_content_id)
+            .ToList();
+
+        var matchedReviews = await _context.review
+            .Where(r => matchedContentIds.Contains(r.review_content_id))
+            .ToListAsync();
+
+        return matchedReviews;
+    }
+
+
 
 }
