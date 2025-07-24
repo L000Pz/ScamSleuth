@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/website-analysis/actions.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
 import { cookies } from 'next/headers';
@@ -26,6 +26,7 @@ export interface AnalysisResult {
   screenshotUrl?: string;
   whoisData?: WhoisData;
   enamadData?: EnamadData;
+  reviewStats?: ReviewStats; // Add reviewStats to AnalysisResult
 }
 
 export interface ScreenshotCaptureResponse {
@@ -146,6 +147,24 @@ export interface DeleteCommentResponse {
   message?: string;
   error?: string;
 }
+
+// New interfaces for UrlRatings
+export interface ReviewStats {
+  average: number;
+  count: number;
+  five_count: number;
+  four_count: number;
+  three_count: number;
+  two_count: number;
+  one_count: number;
+}
+
+export interface UrlRatingsResponse {
+  success: boolean;
+  data?: ReviewStats;
+  error?: string;
+}
+
 
 // UserInfo interface to match the exact API response for ReturnByToken
 interface UserInfo {
@@ -696,6 +715,36 @@ export async function deleteUrlComment(commentId: string): Promise<DeleteComment
   }
 }
 
+export async function getOverallUrlRatings(url: string): Promise<UrlRatingsResponse> {
+  try {
+    const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const response = await fetch(`http://localhost:8080/Public/publicManager/UrlRatings?url=${encodeURIComponent(cleanUrl)}`, {
+      method: 'GET',
+      headers: {
+        'Accept': '*/*'
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: true, data: { average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 } };
+      }
+      throw new Error(`Failed to fetch URL ratings: ${response.status} ${response.statusText}`);
+    }
+
+    const data: ReviewStats = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching URL ratings:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch URL ratings'
+    };
+  }
+}
+
+
 export async function analyzeWebsite(websiteUrl: string): Promise<{
   success: boolean;
   data?: AnalysisResult;
@@ -718,10 +767,11 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
 
     const apiData: WebsiteAnalysisResponse = await response.json();
 
-    const [screenshotData, whoisData, enamadData] = await Promise.all([
+    const [screenshotData, whoisData, enamadData, reviewStatsData] = await Promise.all([
       getLatestScreenshotByDomain(cleanUrl),
       getWhoisData(cleanUrl),
-      getEnamadData(cleanUrl)
+      getEnamadData(cleanUrl),
+      getOverallUrlRatings(cleanUrl) // Fetch review stats
     ]);
 
     if (!screenshotData.screenshotUrl) {
@@ -742,7 +792,8 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       screenshotId: screenshotData.screenshotId,
       screenshotUrl: screenshotData.screenshotUrl,
       whoisData: whoisData.success ? whoisData.data : undefined,
-      enamadData: enamadData.success ? enamadData.data : undefined
+      enamadData: enamadData.success ? enamadData.data : undefined,
+      reviewStats: reviewStatsData.success ? reviewStatsData.data : undefined, // Assign fetched review stats
     };
 
     return { success: true, data: result };

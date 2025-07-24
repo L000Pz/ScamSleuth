@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/website-analysis/page.tsx
 // This is your main page.tsx, now a Client Component
 "use client";
@@ -43,7 +45,7 @@ import {
   type AnalysisResult,
   type WhoisData,
   type EnamadData,
-  type UrlComment
+  type ReviewStats // Import ReviewStats
 } from './actions';
 
 interface UserReview {
@@ -55,17 +57,18 @@ interface UserReview {
   isAdminComment?: boolean;
 }
 
-interface ReviewStats {
-  averageRating: number;
-  totalReviews: number;
-  ratingBreakdown: {
-    5: number;
-    4: number;
-    3: number;
-    2: number;
-    1: number;
-  };
-}
+// ReviewStats interface is now imported from actions.ts
+// interface ReviewStats {
+//   averageRating: number;
+//   totalReviews: number;
+//   ratingBreakdown: {
+//     5: number;
+//     4: number;
+//     3: number;
+//     2: number;
+//     1: number;
+//   };
+// }
 
 const WebsiteAnalysisPage: React.FC = () => {
   const searchParams = useSearchParams();
@@ -108,11 +111,16 @@ const WebsiteAnalysisPage: React.FC = () => {
   
   const [isAdmin, setIsAdmin] = useState<boolean>(false); // Initialize isAdmin to false
 
-  const reviewStats: ReviewStats = {
-    averageRating: 3.8,
-    totalReviews: 260,
-    ratingBreakdown: { 5: 100, 4: 75, 3: 50, 2: 25, 1: 10 }
-  };
+  // ReviewStats state, initialized with default values or from analysisResult
+  const [overallReviewStats, setOverallReviewStats] = useState<ReviewStats>({
+    average: 0,
+    count: 0,
+    five_count: 0,
+    four_count: 0,
+    three_count: 0,
+    two_count: 0,
+    one_count: 0
+  });
 
   // Function to check admin status by calling the server action
   const checkAdminStatus = async () => {
@@ -217,6 +225,22 @@ const WebsiteAnalysisPage: React.FC = () => {
           setEnamadData(null);
           setEnamadError('Enamad certification not found');
         }
+
+        // Set the overall review stats if available
+        if (result.data.reviewStats) {
+          setOverallReviewStats({
+            average: result.data.reviewStats.average,
+            count: result.data.reviewStats.count,
+            five_count: result.data.reviewStats.five_count,
+            four_count: result.data.reviewStats.four_count,
+            three_count: result.data.reviewStats.three_count,
+            two_count: result.data.reviewStats.two_count,
+            one_count: result.data.reviewStats.one_count,
+          });
+        } else {
+          setOverallReviewStats({ average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 });
+        }
+
         await fetchComments(website);
       } else {
         setError(result.error || 'Failed to analyze website');
@@ -292,7 +316,7 @@ const WebsiteAnalysisPage: React.FC = () => {
         setWhoisData(result.data);
       } else {
         setWhoisData(null);
-        setWhoisError(result.error || 'WHOIS data not available');
+        setWhoisError('WHOIS data not available');
       }
     } catch (err) {
       setWhoisError('An error occurred while loading WHOIS data');
@@ -450,7 +474,8 @@ const WebsiteAnalysisPage: React.FC = () => {
         setReviewSubmissionMessage(result.message || 'Review submitted successfully!');
         setNewReview({ rating: 0, comment: '' });
         setHoveredRating(0);
-        await fetchComments(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit review.');
       }
@@ -480,7 +505,8 @@ const WebsiteAnalysisPage: React.FC = () => {
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Admin comment submitted successfully!');
         setNewAdminComment('');
-        await fetchComments(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit admin comment.');
       }
@@ -502,7 +528,8 @@ const WebsiteAnalysisPage: React.FC = () => {
       const result = await deleteUrlComment(commentId);
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Comment deleted successfully!');
-        await fetchComments(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to delete comment.');
       }
@@ -601,6 +628,15 @@ const WebsiteAnalysisPage: React.FC = () => {
       </div>
     );
   }
+
+  // Calculate rating breakdown for display
+  const ratingBreakdown = {
+    5: overallReviewStats.five_count,
+    4: overallReviewStats.four_count,
+    3: overallReviewStats.three_count,
+    2: overallReviewStats.two_count,
+    1: overallReviewStats.one_count,
+  };
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -739,17 +775,17 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* User Reviews Summary */}
+                {/* User Reviews Summary - Updated to use overallReviewStats */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                   <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-4xl font-bold text-gray-800">{reviewStats.averageRating}</span>
+                    <span className="text-4xl font-bold text-gray-800">{overallReviewStats.average.toFixed(1)}</span>
                     <div className="flex">
-                      {renderStars(Math.round(reviewStats.averageRating))}
+                      {renderStars(Math.round(overallReviewStats.average))}
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-6">
-                    From {reviewStats.totalReviews} total reviews.
+                    From {overallReviewStats.count} total reviews.
                   </p>
 
                   {/* Rating Breakdown */}
@@ -757,15 +793,15 @@ const WebsiteAnalysisPage: React.FC = () => {
                     {[5, 4, 3, 2, 1].map((rating) => (
                       <div key={rating} className="flex items-center gap-3 text-sm">
                         <span className="w-3 font-medium">{rating}</span>
-                        <Star className="w-4 h-4 text-green-500 fill-current flex-shrink-0" />
+                        <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
                         <div className="flex-1 bg-gray-200 rounded-full h-2.5">
                           <div
-                            className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-                            style={{ width: `${(reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown] / reviewStats.totalReviews) * 100}%` }}
+                            className="bg-black h-2.5 rounded-full transition-all duration-500"
+                            style={{ width: `${(ratingBreakdown[rating as keyof typeof ratingBreakdown] / (overallReviewStats.count || 1)) * 100}%` }}
                           />
                         </div>
                         <span className="w-8 text-xs text-gray-500 text-right">
-                          {reviewStats.ratingBreakdown[rating as keyof typeof reviewStats.ratingBreakdown]}
+                          {ratingBreakdown[rating as keyof typeof ratingBreakdown]}
                         </span>
                       </div>
                     ))}
