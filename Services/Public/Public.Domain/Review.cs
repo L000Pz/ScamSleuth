@@ -15,5 +15,6 @@ public class Review
     public DateTime review_date { get; set; }
     [Required]
     public int review_content_id { get; set; }
+    public int? views { get; set; }
     
 }

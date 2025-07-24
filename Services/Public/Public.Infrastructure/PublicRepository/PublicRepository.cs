@@ -181,4 +181,21 @@ public class PublicRepository : IPublicRepository
     {
         return _context.url_storage.SingleOrDefault(u => u.url_id == url_id);
     }
+
+    public async Task<bool> IncreaseView(int review_id)
+    {
+        var review = await _context.review.FirstOrDefaultAsync(r => r.review_id == review_id);
+        var current_views = review.views;
+        if (current_views is null)
+        {
+            review.views = 1;
+        }
+        else
+        {
+            review.views = current_views + 1;
+        }
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
 }

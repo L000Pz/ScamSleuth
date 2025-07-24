@@ -51,6 +51,9 @@ public class PostgreSqlContext : DbContext
         modelBuilder.Entity<Users>()
             .Property(u => u.profile_picture_id)
             .IsRequired(false);
+        modelBuilder.Entity<Review>()
+            .Property(r => r.views)
+            .IsRequired(false);
 
         base.OnModelCreating(modelBuilder);
     }

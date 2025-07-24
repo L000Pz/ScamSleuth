@@ -12,4 +12,5 @@ class Review(Base):
     scam_type_id = Column(Integer, ForeignKey("scam_type.scam_type_id"))
     review_date = Column(Date, nullable=False)
     review_content_id = Column(Integer, nullable=False)
+    views = Column(Integer, default=0)
 
