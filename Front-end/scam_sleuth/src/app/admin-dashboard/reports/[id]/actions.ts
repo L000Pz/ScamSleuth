@@ -191,13 +191,13 @@ export async function getAdminReport(id: string): Promise<{
       date: formatDate(reportData.report.scam_date),
       reportDate: formatDate(reportData.report.report_date),
       financialLoss: reportData.report.financial_loss || 0,
-      status: 'under_review',
+      status: 'under_review', // This status is hardcoded, adjust if API provides it
       reporterName: reportData.reportWriterDetails.name,
       contactInfo: reportData.reportWriterDetails.email,
       evidence: reportData.media?.length > 0 
         ? reportData.media.map((mediaId) => `Media ID: ${mediaId}`)
         : undefined,
-      timeline: `Scam occurred on ${formatDate(reportData.report.scam_date)}`,
+      timeline: `Scam occurred on ${formatDate(reportData.report.scam_date)}`, // Hardcoded timeline, adjust if API provides it
       writer: {
         id: reportData.reportWriterDetails.user_id,
         username: reportData.reportWriterDetails.username,
@@ -262,10 +262,13 @@ export async function updateReportStatus(reportId: string, status: string): Prom
 }
 
 /**
- * Delete report (placeholder for future implementation)
+ * Delete report
+ * @param reportId - The ID of the report to delete
+ * @returns Promise with success status or error
  */
 export async function deleteReport(reportId: string): Promise<{
   success: boolean;
+  message?: string;
   error?: string;
 }> {
   try {
@@ -282,13 +285,38 @@ export async function deleteReport(reportId: string): Promise<{
       return { success: false, error: 'Admin access required.' };
     }
 
-    // TODO: Implement actual API call when endpoint is available
-    console.log(`Would delete report ${reportId}`);
-    
-    return { success: true };
+    // Perform actual API call to delete the report
+    const response = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': '*/*',
+        'Authorization': `Bearer ${token}`,
+      },
+      cache: 'no-store' // Ensure this request is always fresh
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response for deleteReport:', {
+        status: response.status,
+        text: errorText
+      });
+      return {
+        success: false,
+        error: `Failed to delete report: ${errorText || response.statusText}`
+      };
+    }
+
+    const responseData = await response.text(); // Response is "Report deleted successfully."
+    const message = responseData.startsWith('"') && responseData.endsWith('"')
+      ? responseData.slice(1, -1)
+      : responseData;
+
+    return { success: true, message: message || 'Report deleted successfully.' };
+
   } catch (error) {
     console.error('Error deleting report:', error);
-    return { success: false, error: 'Failed to delete report.' };
+    return { success: false, error: 'An unexpected error occurred while deleting the report.' };
   }
 }
 
