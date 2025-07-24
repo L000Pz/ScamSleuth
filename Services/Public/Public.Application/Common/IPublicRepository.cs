@@ -17,6 +17,13 @@ public interface IPublicRepository
     public Task<Admins?> GetAdminById(int admin_id);
     public Task<Users?> GetUserById(int user_id);
     public Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_content_id);
+    public Task<int> GetNumberOfCommentsUrl(int url_id);
+    public Task<int> GetNumberOf5Url(int url_id);
+    public Task<int> GetNumberOf4Url(int url_id);
+    public Task<int> GetNumberOf3Url(int url_id);
+    public Task<int> GetNumberOf2Url(int url_id);
+    public Task<int> GetNumberOf1Url(int url_id);
+    public Task<double> GetAverageRatingUrl(int url_id);
 
 
 }

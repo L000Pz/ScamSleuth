@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<IReturnReviewById, ReturnReviewById>();
         services.AddScoped<IShowReviewComments, ShowReviewComments>();
         services.AddScoped<IShowUrlComments, ShowUrlComments>();
+        services.AddScoped<IGetUrlRating, GetUrlRating>();
         return services;
     }
 }
