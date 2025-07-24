@@ -17,10 +17,11 @@ public class PublicController : ControllerBase
     private readonly IGetScamTypes _getScamTypes;
     private readonly IShowReviewComments _showReviewComments;
     private readonly IShowUrlComments _showUrlComments;
+    private readonly IGetUrlRating _getUrlRating;
     private const int RecentReviewsCount = 10;
 
     public PublicController(IShowAllReviews showAllReviews, IShowRecentReviews showRecentReviews,
-        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments)
+        IReturnReviewById returnReviewById, IGetScamTypes getScamTypes, IShowReviewComments showReviewComments, IShowUrlComments showUrlComments, IGetUrlRating getUrlRating)
     {
         _showAllReviews = showAllReviews;
         _showRecentReviews = showRecentReviews;
@@ -28,6 +29,7 @@ public class PublicController : ControllerBase
         _getScamTypes = getScamTypes;
         _showReviewComments = showReviewComments;
         _showUrlComments = showUrlComments;
+        _getUrlRating = getUrlRating;
     }
 
     [HttpGet("recentReviews")]
@@ -93,5 +95,16 @@ public class PublicController : ControllerBase
         }
 
         return Ok(comments);
+    }
+    [HttpGet("UrlRatings")]
+    public async Task<ActionResult> GetUrlRatings(string url)
+    {
+        var ratings = await _getUrlRating.Handle(url);
+        if (ratings == null)
+        {
+            return BadRequest("Couldn't retrieve url's ratings!");
+        }
+
+        return Ok(ratings);
     }
 }

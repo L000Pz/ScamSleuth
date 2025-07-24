@@ -36,6 +36,7 @@ public class PublicRepository : IPublicRepository
             .ToListAsync();
         return comments;
     }
+
     public async Task<List<UrlComment?>> GetAllUrlComments(int url_id)
     {
         var comments = await _context.url_comment
@@ -43,6 +44,7 @@ public class PublicRepository : IPublicRepository
             .ToListAsync();
         return comments;
     }
+
     public async Task<List<Scam_Type>?> GetAllScamTypes()
     {
         var scamTypes = await _context.scam_type
@@ -75,12 +77,14 @@ public class PublicRepository : IPublicRepository
             .FirstOrDefaultAsync(r => r.review_id == review_id);
         return review;
     }
+
     public async Task<UrlStorage?> GetUrl(string url)
     {
         var review = await _context.url_storage
             .FirstOrDefaultAsync(us => us.url == url);
         return review;
     }
+
     public async Task<Review_Content?> GetReviewContent(int review_content_id)
     {
         var bsonContent = await _mongoContext.GetDoc(review_content_id);
@@ -111,11 +115,56 @@ public class PublicRepository : IPublicRepository
     {
         return _context.users.SingleOrDefault(user => user.user_id == user_id);
     }
+
     public async Task<List<Review_Content_Media?>> GetReviewContentMedia(int review_id)
     {
         var media = await _context.review_content_media
             .Where(m => m.review_id == review_id)
             .ToListAsync();
         return media;
+    }
+
+    public async Task<int> GetNumberOfCommentsUrl(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating != 0);
+        return count;
+    }
+
+    public async Task<int> GetNumberOf5Url(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating == 5);
+        return count;
+    }
+
+    public async Task<int> GetNumberOf4Url(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating == 4);
+        return count;
+    }
+
+    public async Task<int> GetNumberOf3Url(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating == 3);
+        return count;
+    }
+
+    public async Task<int> GetNumberOf2Url(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating == 2);
+        return count;
+    }
+
+    public async Task<int> GetNumberOf1Url(int url_id)
+    {
+        int count = _context.url_comment.Count(c => c.url_id == url_id && c.rating == 1);
+        return count;
+    }
+
+    public async Task<double> GetAverageRatingUrl(int url_id)
+    {
+        var ratings = _context.url_comment
+            .Where(c => c.url_id == url_id && c.rating != 0);
+        double average = ratings.Any() ? ratings.Average(c => c.rating) : 0;
+        return average;
     }
 }
