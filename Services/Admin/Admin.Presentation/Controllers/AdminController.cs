@@ -4,6 +4,7 @@ using Admin.Contracts;
 using Admin.Domain;
 using Admin.Presentation.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
@@ -25,6 +26,7 @@ public class AdminController : ControllerBase
     private readonly IDeleteUrlComment _deleteUrlComment;
     private readonly IWriteUrlComment _writeUrlComment;
     private readonly IWriteReviewComment _writeReviewComment;
+    private readonly IDeleteReport _deleteReport;
     private readonly HttpClient _httpClient;
     private readonly IMessagePublisher _messagePublisher;
     private const string checkUrl = "http://gateway-api:80/IAM/authentication/Check Token";
@@ -34,7 +36,8 @@ public class AdminController : ControllerBase
     public AdminController(HttpClient httpClient, IShowAllReports showAllReports, IGetAdminReviews getAdminReviews,
         ICreateReview createReview, IDeleteReview deleteReview, IMessagePublisher messagePublisher,
         IGetReportById getReportById, IUpdateReview updateReview, IDeleteReviewComment deleteReviewComment,
-        IDeleteUrlComment deleteUrlComment, IWriteUrlComment writeUrlComment, IWriteReviewComment writeReviewComment)
+        IDeleteUrlComment deleteUrlComment, IWriteUrlComment writeUrlComment, IWriteReviewComment writeReviewComment,
+        IDeleteReport deleteReport)
     {
         _httpClient = httpClient;
         _showAllReports = showAllReports;
@@ -48,6 +51,7 @@ public class AdminController : ControllerBase
         _deleteUrlComment = deleteUrlComment;
         _writeUrlComment = writeUrlComment;
         _writeReviewComment = writeReviewComment;
+        _deleteReport = deleteReport;
     }
 
     [HttpGet("ViewReports")]
@@ -126,6 +130,52 @@ public class AdminController : ControllerBase
         return Ok("Review deleted successfully.");
     }
 
+    [HttpDelete("DeleteReport")]
+    [Authorize]
+    public async Task<ActionResult> DeleteReport(int report_id)
+    {
+        string? token = HttpContext.Request.Headers.Authorization;
+        token = token.Split(" ")[1];
+
+        token = await CheckToken(token);
+        if (token == "unsuccessful")
+        {
+            return BadRequest("Authentication failed!");
+        }
+
+        // Delete the review and get media IDs
+        var (status, mediaIds) = await _deleteReport.Handle(report_id, token);
+        if (status == "access")
+        {
+            return BadRequest("You do not have access to report deletion!");
+        }
+
+        if (status == "report")
+        {
+            return BadRequest("Report does not exist!");
+        }
+
+        if (status == "media")
+        {
+            return BadRequest("Could not find report media!");
+        }
+
+        if (status == "delete")
+        {
+            return BadRequest($"Failed to delete review!");
+        }
+
+        // Publish messages to delete associated media
+        if (mediaIds != null && mediaIds.Any())
+        {
+            foreach (var mediaId in mediaIds)
+            {
+                _messagePublisher.PublishMediaDeletion(mediaId);
+            }
+        }
+
+        return Ok("Report deleted successfully.");
+    }
 
     [HttpDelete("DeleteReviewComment")]
     [Authorize]
