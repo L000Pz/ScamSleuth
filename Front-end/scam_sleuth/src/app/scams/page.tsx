@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prefer-const */
 // List
 "use client";
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { Search, Filter, Grid, List, Calendar, TrendingUp, Shield, Clock, ArrowUpDown } from 'lucide-react';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
-import { fetchScamReports, type ScamReport } from './actions';
+import { fetchScamReports, searchScamReportsByTitle, type ScamReport } from './actions'; // Imported searchScamReportsByTitle
 
 // Enhanced ScamCard component with better design (risk tags removed)
 interface ScamCardProps {
@@ -119,6 +120,8 @@ export default function ScamsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reports, setReports] = useState<ScamReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<ScamReport[]>([]);
+  const [backendSearchResults, setBackendSearchResults] = useState<ScamReport[]>([]); // New state for backend results
+  const [isSearchingBackend, setIsSearchingBackend] = useState(false); // New state for backend search loading
   const [error, setError] = useState<string | null>(null);
 
   // Get unique scam types for filter
@@ -133,7 +136,8 @@ export default function ScamsPage() {
         setError(fetchError);
       } else if (data) {
         setReports(data);
-        setFilteredReports(data);
+        // Initially, filtered reports are all reports
+        setFilteredReports(data); 
       }
       
       setIsLoading(false);
@@ -142,9 +146,48 @@ export default function ScamsPage() {
     loadReports();
   }, []);
 
-  // Filter and sort reports
+  // Effect for backend search and combining results
   useEffect(() => {
-    let filtered = reports.filter(report => {
+    const performSearch = async () => {
+      if (searchQuery.trim() === '') {
+        setBackendSearchResults([]); // Clear backend results if search query is empty
+        setIsSearchingBackend(false);
+        return;
+      }
+
+      setIsSearchingBackend(true);
+      const { data, error: searchError } = await searchScamReportsByTitle(searchQuery);
+      if (searchError) {
+        console.error("Backend search error:", searchError);
+        // Optionally, show an error to the user
+      } else if (data) {
+        setBackendSearchResults(data);
+      }
+      setIsSearchingBackend(false);
+    };
+
+    const handler = setTimeout(() => {
+      performSearch();
+    }, 500); // Debounce search to avoid too many API calls
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]); // Rerun when search query changes
+
+  // Filter and sort reports (now considers backendSearchResults)
+  useEffect(() => {
+    // Combine initial reports and backend search results
+    let combinedReports = [...reports];
+    if (backendSearchResults.length > 0 && searchQuery.trim() !== '') {
+      // Filter out duplicates from backendSearchResults that are already in reports
+      const uniqueBackendResults = backendSearchResults.filter(
+        (backendScam) => !reports.some((report) => report.id === backendScam.id)
+      );
+      combinedReports = [...reports, ...uniqueBackendResults];
+    }
+
+    let filtered = combinedReports.filter(report => {
       const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            report.type.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = selectedType === 'all' || report.type === selectedType;
@@ -171,7 +214,7 @@ export default function ScamsPage() {
     });
 
     setFilteredReports(filtered);
-  }, [reports, searchQuery, selectedType, sortBy, sortOrder]);
+  }, [reports, searchQuery, selectedType, sortBy, sortOrder, backendSearchResults]); // Added backendSearchResults as dependency
 
   const handleSort = (criteria: 'date' | 'name' | 'type') => {
     if (sortBy === criteria) {
@@ -255,6 +298,14 @@ export default function ScamsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gradWhite/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red/20 focus:border-red transition-all bg-white"
                 />
+                 {isSearchingBackend && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black/50">
+                    <svg className="animate-spin h-5 w-5 text-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -372,7 +423,7 @@ export default function ScamsPage() {
         </div>
 
         {/* Results */}
-        {filteredReports.length === 0 ? (
+        {filteredReports.length === 0 && !isSearchingBackend ? ( // Added !isSearchingBackend
           <div className="text-center py-16 bg-cardWhite rounded-2xl shadow-lg border border-gradWhite/30">
             <div className="text-black/40 text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-black mb-2">No scams found</h3>
@@ -393,6 +444,17 @@ export default function ScamsPage() {
                 Clear Filters
               </Button>
             )}
+          </div>
+        ) : isSearchingBackend ? ( // Show loading indicator during backend search
+          <div className="text-center py-16 bg-cardWhite rounded-2xl shadow-lg border border-gradWhite/30">
+            <div className="text-black/40 text-6xl mb-4">
+              <svg className="animate-spin mx-auto h-12 w-12 text-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-black mb-2">Searching...</h3>
+            <p className="text-black/70">Fetching results from the backend.</p>
           </div>
         ) : (
           <div className={viewMode === 'grid' 

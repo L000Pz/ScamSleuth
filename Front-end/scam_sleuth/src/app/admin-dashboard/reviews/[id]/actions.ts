@@ -136,7 +136,7 @@ export async function getPublicReview(id: string): Promise<ApiResponse<Transform
     }
 
     const response = await makeAuthenticatedRequest(
-      `http://localhost:8080/Public/publicManager/reviewId?review_id=${reviewId}`
+      `${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/reviewId?review_id=${reviewId}`
     );
 
     const reviewData: PublicReviewResponse = await response.json();
@@ -219,7 +219,7 @@ export async function deleteReview(id: string): Promise<ApiResponse<void>> {
     }
 
     await makeAuthenticatedRequest(
-      `http://localhost:8080/Admin/adminManagement/DeleteReview?reviewId=${reviewId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteReview?reviewId=${reviewId}`,
       { method: 'DELETE' }
     );
 
@@ -300,7 +300,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
 
     // First, get the current review to retrieve the content_id
     const currentReviewResponse = await makeAuthenticatedRequest(
-      `http://localhost:8080/Public/publicManager/reviewId?review_id=${reviewId}`
+      `${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/reviewId?review_id=${reviewId}`
     );
 
     const currentReviewData: PublicReviewResponse = await currentReviewResponse.json();
@@ -318,7 +318,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
     // Update content and title in parallel for better performance
     const [contentUpdate, titleUpdate] = await Promise.all([
       makeAuthenticatedRequest(
-        'http://localhost:8080/Admin/adminManagement/UpdateReviewContent',
+        `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewContent`,
         {
           method: 'PUT',
           body: JSON.stringify({
@@ -328,7 +328,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
         }
       ),
       makeAuthenticatedRequest(
-        'http://localhost:8080/Admin/adminManagement/UpdateReviewTitle',
+        `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewTitle`,
         {
           method: 'PUT',
           body: JSON.stringify({
@@ -376,7 +376,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
 export async function validateReviewPermissions(reviewId: string): Promise<ApiResponse<boolean>> {
   try {
     const response = await makeAuthenticatedRequest(
-      `http://localhost:8080/Public/publicManager/reviewId?review_id=${reviewId}`
+      `${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/reviewId?review_id=${reviewId}`
     );
 
     // If we can fetch the review, user has at least read permissions

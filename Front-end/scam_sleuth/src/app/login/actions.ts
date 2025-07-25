@@ -50,7 +50,7 @@ type LoginResult =
 export async function login(formData: { email: string; password: string }): Promise<LoginResult> {
   try {
     // First, perform the login to get the token
-    const loginResponse = await fetch('http://localhost:8080/IAM/authentication/Login', {
+    const loginResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -80,7 +80,7 @@ export async function login(formData: { email: string; password: string }): Prom
 
     // Now use the token to get complete user information
     const userInfoResponse = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 

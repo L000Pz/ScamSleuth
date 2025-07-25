@@ -481,7 +481,7 @@ export default function ReviewPage({ params }: ReviewParams): JSX.Element {
                             <ImagePlaceholder index={index} />
                           ) : (
                             <Image
-                              src={`http://localhost:8080/Media/mediaManager/Get?id=${media.media_id}`}
+                              src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${media.media_id}`}
                               alt={`Evidence ${index + 1}`}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-200"

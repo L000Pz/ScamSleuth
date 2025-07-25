@@ -39,7 +39,7 @@ interface ApiResponse {
 async function getUserInfoFromToken(token: string): Promise<any> {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -80,7 +80,7 @@ export async function getReports(): Promise<ApiResponse> {
     }
 
     // First API call - Get scam types
-    const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const scamTypesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -88,7 +88,7 @@ export async function getReports(): Promise<ApiResponse> {
     });
 
     // Second API call - Get reports
-    const reportsRes = await fetch('http://localhost:8080/Admin/adminManagement/ViewReports', {
+    const reportsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/ViewReports`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

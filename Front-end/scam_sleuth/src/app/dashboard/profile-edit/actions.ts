@@ -19,7 +19,7 @@ interface EditUserInfoResponse {
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -71,7 +71,7 @@ export async function uploadProfilePicture(formData: FormData): Promise<{
       };
     }
 
-    const response = await fetch('http://localhost:8080/Media/mediaManager/Save', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Save`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -124,7 +124,7 @@ export async function deleteProfilePicture(id: number): Promise<{
       };
     }
 
-    const response = await fetch(`http://localhost:8080/Media/mediaManager/Delete?id=${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Delete?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -208,7 +208,7 @@ export async function updateUserProfile(data: {
       requestBody.new_password = data.newPassword;
     }
 
-    const response = await fetch('http://localhost:8080/User/userManagement/EditUserInfo', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/EditUserInfo`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

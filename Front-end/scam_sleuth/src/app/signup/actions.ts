@@ -54,7 +54,7 @@ export async function signup(formData: {
 }): Promise<SignupResult> {
   try {
     // First, perform the registration to get the token
-    const signupResponse = await fetch('http://localhost:8080/IAM/authentication/Register', {
+    const signupResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -86,7 +86,7 @@ export async function signup(formData: {
 
     // Now use the token to get complete user information
     const userInfoResponse = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 

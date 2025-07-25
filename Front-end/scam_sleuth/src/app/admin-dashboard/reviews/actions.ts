@@ -20,7 +20,7 @@ export async function getReviews() {
     }
 
     // First API call - Get scam types
-    const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const scamTypesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -28,7 +28,7 @@ export async function getReviews() {
     });
 
     // Second API call - Get reviews
-    const reviewsRes = await fetch('http://localhost:8080/Admin/adminManagement/GetAdminReviews', {
+    const reviewsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetAdminReviews`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -66,7 +66,7 @@ export async function logout() {
 
     if (token) {
       try {
-        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

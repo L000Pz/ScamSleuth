@@ -18,7 +18,7 @@ export async function authorize(code: string): Promise<{
   }
 
   try {
-    const response = await fetch('http://localhost:8080/IAM/authentication/Verify', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ export async function resendCode(): Promise<{
 
   try {
     // Changed to use query parameter instead of request body
-    const response = await fetch(`http://localhost:8080/IAM/authentication/New Code?token=${token}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/New Code?token=${token}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -12,7 +12,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:8080",
+      "applicationUrl": "${process.env.NEXT_PUBLIC_API_URL}",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -21,7 +21,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:8080;http://localhost:8080",
+      "applicationUrl": "https://localhost:8080;${process.env.NEXT_PUBLIC_API_URL}",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
