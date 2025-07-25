@@ -210,7 +210,7 @@ public class PublicRepository : IPublicRepository
         return filtered;
     }
 
-    public async Task<List<Review?>> SearchReviewContent(Review_Content input)
+    public async Task<List<Review?>> SearchReviewContent(string input)
     {
         var allDocs = await _mongoContext.GetAllDocs();
 
@@ -223,17 +223,27 @@ public class PublicRepository : IPublicRepository
             })
             .ToList();
 
-        var matches = Process.ExtractAll<Review_Content>(
-                input,
-                contentItems,
-                rc => rc.review_content
-            )
-            .Where(m => m.Score >= 60)
+        var exactMatches = contentItems
+            .Where(rc => rc.review_content.Contains(input, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        var matchedContentIds = matches
-            .Select(m => m.Value.review_content_id)
+        var matches = Process.ExtractAll(
+                input,
+                contentItems.Select(rc => rc.review_content)
+            )
+            .Where(m => m.Score >= 80)
             .ToList();
+
+        var matchedContentIds = new HashSet<int>(exactMatches.Select(m => m.review_content_id));
+
+        foreach (var match in matches)
+        {
+            var contentId = contentItems.FirstOrDefault(rc => rc.review_content == match.Value)?.review_content_id;
+            if (contentId != null)
+            {
+                matchedContentIds.Add(contentId.Value);
+            }
+        }
 
         var matchedReviews = await _context.review
             .Where(r => matchedContentIds.Contains(r.review_content_id))
@@ -241,6 +251,9 @@ public class PublicRepository : IPublicRepository
 
         return matchedReviews;
     }
+
+
+
 
 
 

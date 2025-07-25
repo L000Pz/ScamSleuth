@@ -14,13 +14,25 @@ public class SearchReviews : ISearchReviews
 
     public async Task<List<Review>?> Handle(string input)
     {
-        var result = await _publicRepository.SearchReviewTitle(input);
-        if (result is null)
+        var titleResult = await _publicRepository.SearchReviewTitle(input);
+        var contentResult = await _publicRepository.SearchReviewContent(input);
+        if (titleResult is null && contentResult is null)
         {
             return null;
         }
 
-        return result;
+        if (titleResult is not null && contentResult is null)
+        {
+            return titleResult;
+        }
+
+        if (titleResult is null && contentResult is not null)
+        {
+            return contentResult;
+        }
+
+        var combinedResults = titleResult.Concat(contentResult).ToList();
+        return combinedResults;
     }
 
 }
