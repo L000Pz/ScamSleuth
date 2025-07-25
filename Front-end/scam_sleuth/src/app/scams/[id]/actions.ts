@@ -100,7 +100,7 @@ interface UserInfo {
 async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: {
@@ -183,7 +183,7 @@ export async function getPublicReview(id: string): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    const reviewRes = await fetch(`http://localhost:8080/Public/publicManager/reviewId?review_id=${id}`, {
+    const reviewRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/reviewId?review_id=${id}`, {
       headers: { 
         'Authorization': `Bearer ${token}`,
         'Accept': '*/*'
@@ -234,7 +234,7 @@ export async function getRecentReviews(limit: number = 2): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    const response = await fetch('http://localhost:8080/Public/publicManager/recentReviews', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/recentReviews`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': '*/*'
@@ -277,7 +277,7 @@ export async function getReviewComments(reviewId: string): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    const response = await fetch(`http://localhost:8080/Public/publicManager/ReviewComments?review_id=${reviewId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/ReviewComments?review_id=${reviewId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': '*/*'
@@ -328,9 +328,9 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
     // Determine which endpoint to call based on user role
     let apiUrl = '';
     if (currentUser.data.role === 'admin') {
-      apiUrl = 'http://localhost:8080/Admin/adminManagement/WriteReviewComment';
+      apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/WriteReviewComment`;
     } else {
-      apiUrl = 'http://localhost:8080/User/userManagement/WriteReviewComment';
+      apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/WriteReviewComment`;
     }
 
     const requestBody = {
@@ -450,7 +450,7 @@ export async function getCurrentUser(): Promise<{
     }
 
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -525,7 +525,7 @@ export async function deleteReviewComment(commentId: string): Promise<{
 
     // Assuming endpoint for deleting review comments
     // Adjust this URL based on your actual API if different
-    const response = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteReviewComment?comment_id=${commentId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteReviewComment?comment_id=${commentId}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',

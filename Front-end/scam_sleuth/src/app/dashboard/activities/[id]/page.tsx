@@ -53,7 +53,7 @@ export default function ScamReportPage({ params }: PageParams): JSX.Element {
 
   const handleMediaDownload = (mediaId: number): void => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
-    const downloadUrl = `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
+    const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${mediaId}`;
     window.open(downloadUrl, '_blank');
     
     setTimeout(() => {
@@ -324,7 +324,7 @@ export default function ScamReportPage({ params }: PageParams): JSX.Element {
                           <div className="mt-3 rounded-lg overflow-hidden bg-gray-50 p-3 border border-gray-200">
                             <div className="relative w-full max-h-96">
                               <Image
-                                src={`http://localhost:8080/Media/mediaManager/Get?id=${media.media_id}`}
+                                src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${media.media_id}`}
                                 alt={`Preview ${index + 1}`}
                                 width={800}
                                 height={600}

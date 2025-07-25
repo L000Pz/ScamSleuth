@@ -63,7 +63,7 @@ interface TransformedReport {
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -129,14 +129,14 @@ export async function getAdminReport(id: string): Promise<{
 
     // Fetch scam types and report data in parallel
     const [scamTypesRes, reportRes] = await Promise.all([
-      fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         },
         cache: 'no-store'
       }),
-      fetch(`http://localhost:8080/Admin/adminManagement/GetReportById?report_id=${id}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetReportById?report_id=${id}`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -286,7 +286,7 @@ export async function deleteReport(reportId: string): Promise<{
     }
 
     // Perform actual API call to delete the report
-    const response = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',

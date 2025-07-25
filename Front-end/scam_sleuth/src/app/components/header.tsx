@@ -334,7 +334,7 @@ export default function Navbar(): JSX.Element {
         >
           {hasProfilePicture ? (
             <Image
-              src={`http://localhost:8080/Media/mediaManager/Get?id=${userData.profile_picture_id}`}
+              src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${userData.profile_picture_id}`}
               alt={userData?.name || 'Profile'}
               width={pixelWidth}
               height={pixelHeight}

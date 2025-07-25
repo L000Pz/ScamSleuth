@@ -20,7 +20,7 @@ interface UserData {
 async function getUserInfoFromToken(token: string): Promise<UserData | null> {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -88,7 +88,7 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
     // Call backend logout endpoint first
     if (token) {
       try {
-        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -123,7 +123,7 @@ export async function getRecentReviews() {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    const response = await fetch('http://localhost:8080/Public/publicManager/recentReviews', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/recentReviews`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'

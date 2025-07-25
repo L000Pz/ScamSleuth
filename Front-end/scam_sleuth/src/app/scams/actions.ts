@@ -17,7 +17,7 @@ export async function fetchScamReports() {
     const token = cookieStore.get('token')?.value;
 
     // Fetch scam types for mapping
-    const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const scamTypesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -25,7 +25,7 @@ export async function fetchScamReports() {
     });
 
     // Fetch all reviews
-    const reviewsRes = await fetch('http://localhost:8080/Public/publicManager/allReviews', {
+    const reviewsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/allReviews`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -66,7 +66,7 @@ export async function searchScamReportsByTitle(input: string) {
 
     // Encode the input for the URL
     const encodedInput = encodeURIComponent(input);
-    const searchRes = await fetch(`http://localhost:8080/Public/publicManager/Search?input=${encodedInput}`, {
+    const searchRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/Search?input=${encodedInput}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'
@@ -80,7 +80,7 @@ export async function searchScamReportsByTitle(input: string) {
     const searchResults = await searchRes.json();
 
     // Fetch scam types for mapping, similar to fetchScamReports
-    const scamTypesRes = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const scamTypesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'accept': '*/*'

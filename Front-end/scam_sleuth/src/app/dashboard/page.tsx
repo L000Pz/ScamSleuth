@@ -99,7 +99,7 @@ export default function UserDashboard() {
       return (
         <div className={`${size} rounded-full overflow-hidden shadow-lg border-2 border-gray-200`}>
           <Image
-            src={`http://localhost:8080/Media/mediaManager/Get?id=${userData.profile_picture_id}`}
+            src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${userData.profile_picture_id}`}
             alt="Profile Picture"
             width={80}
             height={80}

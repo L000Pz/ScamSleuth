@@ -23,7 +23,7 @@ import {
 
 // Utility function to get media URLs
 const getMediaUrl = (mediaId: number): string => {
-  return `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${mediaId}`;
 };
 
 // Utility function to format timestamps in user's local timezone

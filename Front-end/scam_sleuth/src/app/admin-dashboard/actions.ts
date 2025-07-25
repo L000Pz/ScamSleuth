@@ -38,7 +38,7 @@ interface Review {
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -84,14 +84,14 @@ export async function getDashboardStats(): Promise<{
 
     // Fetch data from multiple endpoints
     const [reportsRes, reviewsRes] = await Promise.all([
-      fetch('http://localhost:8080/Admin/adminManagement/ViewReports', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/ViewReports`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'accept': '*/*'
         }
       }),
-      fetch('http://localhost:8080/Admin/adminManagement/GetAdminReviews', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetAdminReviews`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'accept': '*/*'
@@ -156,14 +156,14 @@ export async function getRecentActivity(): Promise<{
 
     // Fetch recent reports and reviews
     const [reportsRes, reviewsRes] = await Promise.all([
-      fetch('http://localhost:8080/Admin/adminManagement/ViewReports', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/ViewReports`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'accept': '*/*'
         }
       }),
-      fetch('http://localhost:8080/Admin/adminManagement/GetAdminReviews', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetAdminReviews`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'accept': '*/*'
@@ -285,7 +285,7 @@ export async function logout() {
 
     if (token) {
       try {
-        await fetch('http://localhost:8080/IAM/authentication/Logout', {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/Logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

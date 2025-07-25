@@ -184,7 +184,7 @@ interface UserInfo {
 async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: {
@@ -236,7 +236,7 @@ export async function captureScreenshot(domain: string): Promise<{
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch('http://localhost:8080/AI/scraper/screenshot', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ export async function captureScreenshot(domain: string): Promise<{
 
 export async function getScreenshotById(screenshotId: string): Promise<ScreenshotResponse> {
   try {
-    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/get?id=${screenshotId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot/get?id=${screenshotId}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -300,7 +300,7 @@ export async function getLatestScreenshotByDomain(domain: string): Promise<Scree
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/domain?domain=${cleanDomain}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot/domain?domain=${cleanDomain}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -364,7 +364,7 @@ export async function getWhoisData(domain: string): Promise<WhoisResponse> {
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`http://localhost:8080/AI/ai/whois/${cleanDomain}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/ai/whois/${cleanDomain}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -391,7 +391,7 @@ export async function getEnamadData(domain: string): Promise<EnamadResponse> {
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch('http://localhost:8080/AI/scraper/enamad', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/enamad`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -444,7 +444,7 @@ export async function getUrlComments(url: string): Promise<UrlCommentsResponse> 
   try {
     const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`http://localhost:8080/Public/publicManager/UrlComments?url=${encodeURIComponent(cleanUrl)}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/UrlComments?url=${encodeURIComponent(cleanUrl)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -522,7 +522,7 @@ export async function submitUrlComment(commentData: UrlCommentSubmission): Promi
 
     const cleanUrl = commentData.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch('http://localhost:8080/User/userManagement/WriteUrlComment', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/WriteUrlComment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -600,7 +600,7 @@ export async function submitAdminUrlComment(commentData: UrlCommentSubmission): 
 
     const cleanUrl = commentData.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch('http://localhost:8080/Admin/adminManagement/WriteUrlComment', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/WriteUrlComment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -675,7 +675,7 @@ export async function deleteUrlComment(commentId: string): Promise<DeleteComment
       };
     }
 
-    const response = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteUrlComment?comment_id=${encodeURIComponent(commentId)}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteUrlComment?comment_id=${encodeURIComponent(commentId)}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',
@@ -718,7 +718,7 @@ export async function deleteUrlComment(commentId: string): Promise<DeleteComment
 export async function getOverallUrlRatings(url: string): Promise<UrlRatingsResponse> {
   try {
     const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const response = await fetch(`http://localhost:8080/Public/publicManager/UrlRatings?url=${encodeURIComponent(cleanUrl)}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/UrlRatings?url=${encodeURIComponent(cleanUrl)}`, {
       method: 'GET',
       headers: {
         'Accept': '*/*'
@@ -753,7 +753,7 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
   try {
     const cleanUrl = websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`http://localhost:8080/AI/ai/scan/${cleanUrl}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/ai/scan/${cleanUrl}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

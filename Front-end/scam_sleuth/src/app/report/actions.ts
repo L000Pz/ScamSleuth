@@ -29,7 +29,7 @@ interface UserInfo {
 async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -82,7 +82,7 @@ export async function uploadFile(formData: FormData): Promise<{
       };
     }
 
-    const response = await fetch('http://localhost:8080/Media/mediaManager/Save', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Save`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token.value}`,
@@ -154,7 +154,7 @@ export async function deleteFile(id: number): Promise<{
       };
     }
 
-    const response = await fetch(`http://localhost:8080/Media/mediaManager/Delete?id=${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Delete?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token.value}`,
@@ -185,7 +185,7 @@ export async function fetchScamTypes(): Promise<{
 }> {
   try {
     // Fixed the URL - should match the pattern from other working endpoints
-    const response = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -245,7 +245,7 @@ export async function submitScamReport(report: ScamReportPayload): Promise<{
     }
 
     // Fixed the URL to match the working curl request
-    const response = await fetch('http://localhost:8080/User/userManagement/SubmitReport', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/SubmitReport`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

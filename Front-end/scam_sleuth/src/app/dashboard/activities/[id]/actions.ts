@@ -72,14 +72,14 @@ export async function getSpecificReport(id: string): Promise<{
 
     // Get report and scam types in parallel
     const [scamTypesRes, reportRes] = await Promise.all([
-      fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         },
         cache: 'no-store'
       }),
-      fetch(`http://localhost:8080/User/userManagement/reportId?report_id=${id}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/reportId?report_id=${id}`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'

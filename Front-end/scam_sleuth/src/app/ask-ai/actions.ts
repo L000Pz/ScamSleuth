@@ -67,7 +67,7 @@ export async function getRecentWebsites(limit: number = 5): Promise<{
   error?: string;
 }> {
   try {
-    const response = await fetch(`http://localhost:8080/AI/ai/urls/recent?limit=${limit}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/ai/urls/recent?limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export async function getRecentComments(): Promise<{
   error?: string;
 }> {
   try {
-    const response = await fetch(`http://localhost:8080/Public/publicManager/RecentUrlComments`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/RecentUrlComments`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

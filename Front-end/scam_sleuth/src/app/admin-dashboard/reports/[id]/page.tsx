@@ -98,7 +98,7 @@ export default function ScamReviewPage({ params }: PageProps) {
 
   const handleMediaDownload = (mediaId: number) => {
     setDownloadingIds(prev => new Set(prev).add(mediaId));
-    const downloadUrl = `http://localhost:8080/Media/mediaManager/Get?id=${mediaId}`;
+    const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${mediaId}`;
     window.open(downloadUrl, '_blank');
     
     setTimeout(() => {
@@ -374,7 +374,7 @@ export default function ScamReviewPage({ params }: PageProps) {
                         {previewingIds.has(media.media_id) && (
                           <div className="p-4 bg-white">
                             <Image
-                              src={`http://localhost:8080/Media/mediaManager/Get?id=${media.media_id}`}
+                              src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${media.media_id}`}
                               alt={`Evidence ${index + 1}`}
                               width={800}
                               height={600}
@@ -408,7 +408,7 @@ export default function ScamReviewPage({ params }: PageProps) {
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                     {report.writer.profilePicture ? (
                       <Image
-                        src={`http://localhost:8080/Media/mediaManager/Get?id=${report.writer.profilePicture}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${report.writer.profilePicture}`}
                         alt={report.writer.name}
                         width={64}
                         height={64}

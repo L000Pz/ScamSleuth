@@ -199,7 +199,7 @@ export default function EditProfilePage() {
       return (
         <div className={`${size} rounded-full overflow-hidden border-4 border-white shadow-lg`}>
           <Image
-            src={`http://localhost:8080/Media/mediaManager/Get?id=${pictureId}`}
+            src={`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Get?id=${pictureId}`}
             alt="Profile Picture"
             width={96}
             height={96}

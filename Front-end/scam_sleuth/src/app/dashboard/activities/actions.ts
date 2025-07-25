@@ -46,13 +46,13 @@ export async function getActivities(): Promise<ApiResponse> {
 
     // Fetch scam types and user reports in parallel
     const [scamTypesRes, reportsRes] = await Promise.all([
-      fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': '*/*'
         }
       }),
-      fetch('http://localhost:8080/User/userManagement/GetUserReports', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/GetUserReports`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': '*/*'

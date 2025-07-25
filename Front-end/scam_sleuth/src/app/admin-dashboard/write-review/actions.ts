@@ -18,7 +18,7 @@ interface ScamType {
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
-      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -63,7 +63,7 @@ export async function getScamTypes(): Promise<{
       return { success: false, error: 'Admin access required' };
     }
 
-    const response = await fetch('http://localhost:8080/Public/publicManager/scamTypes', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
@@ -118,7 +118,7 @@ export async function uploadFile(formData: FormData): Promise<{
       };
     }
 
-    const response = await fetch('http://localhost:8080/Media/mediaManager/Save', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Save`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -189,7 +189,7 @@ export async function deleteFile(id: number): Promise<{
       };
     }
 
-    const response = await fetch(`http://localhost:8080/Media/mediaManager/Delete?id=${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Media/mediaManager/Delete?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -241,7 +241,7 @@ export async function submitReview(reviewData: ReviewData): Promise<{
     // Log the request body for debugging
     console.log('Submitting review with data:', JSON.stringify(reviewData, null, 2));
 
-    const response = await fetch('http://localhost:8080/Admin/adminManagement/WriteReview', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/WriteReview`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
