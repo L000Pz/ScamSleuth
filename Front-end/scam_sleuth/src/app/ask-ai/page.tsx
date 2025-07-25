@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// page.tsx
+
 "use client"
 import React, { useState, useEffect, JSX } from 'react';
 import { Search, Star, Globe, Shield, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -5,7 +8,7 @@ import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import heroImage from '@/assets/images/hero.png';
 import { quickAnalyzeWebsite } from '../website-analysis/actions';
-import { getRecentWebsites, getRecentWebsiteStats, type TransformedWebsite } from './actions';
+import { getRecentWebsites, getRecentWebsiteStats, getRecentComments, type TransformedWebsite } from './actions';
 
 interface Website {
   id: string;
@@ -17,9 +20,9 @@ interface Website {
 
 interface Review {
   id: string;
-  title: string;
-  description: string;
-  url: string;
+  username: string;
+  comment_content: string;
+  url_path: string;
   rating: number;
   date: string;
 }
@@ -39,59 +42,34 @@ const WebsiteAnalysisPage: React.FC = () => {
   const [searchResult, setSearchResult] = useState<Website | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   
-  // Real data states
   const [recentWebsites, setRecentWebsites] = useState<Website[]>([]);
   const [isLoadingWebsites, setIsLoadingWebsites] = useState<boolean>(true);
   const [websitesError, setWebsitesError] = useState<string | null>(null);
   const [websiteStats, setWebsiteStats] = useState<WebsiteStats | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Mock data for recent reviews (keeping this as mock since we don't have an endpoint for reviews)
-  const [recentReviews] = useState<Review[]>([
-    {
-      id: '1',
-      title: 'Phishing Email Campaign Targeting Bank Customers',
-      description: 'Recent analysis reveals sophisticated phishing attempts targeting major bank customers with fake login pages.',
-      url: 'suspicious-bank-site.com',
-      rating: 4,
-      date: '2 days ago'
-    },
-    {
-      id: '2',
-      title: 'Fake Shopping Website Steals Credit Card Info',
-      description: 'Investigation shows this e-commerce site collects payment information without delivering products.',
-      url: 'fake-shop-deals.net',
-      rating: 4,
-      date: '3 days ago'
-    },
-    {
-      id: '3',
-      title: 'Romance Scam on Dating Platform',
-      description: 'Profile analysis indicates fraudulent accounts using stolen photos to manipulate victims financially.',
-      url: 'dating-scammer.com',
-      rating: 4,
-      date: '1 week ago'
-    }
-  ]);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
 
-  // Fetch recent websites on component mount
   useEffect(() => {
-    fetchRecentWebsites();
+    fetchRecentWebsitesAndReviews();
   }, []);
 
-  const fetchRecentWebsites = async (): Promise<void> => {
+  const fetchRecentWebsitesAndReviews = async (): Promise<void> => {
     try {
       setIsLoadingWebsites(true);
       setWebsitesError(null);
-      
-      // Fetch both recent websites and stats
-      const [websitesResult, statsResult] = await Promise.all([
+      setIsLoadingReviews(true);
+      setReviewsError(null);
+
+      const [websitesResult, statsResult, commentsResult] = await Promise.all([
         getRecentWebsites(),
-        getRecentWebsiteStats()
+        getRecentWebsiteStats(),
+        getRecentComments()
       ]);
       
       if (websitesResult.success && websitesResult.data) {
-        // Transform the data to match our interface
         const transformedWebsites: Website[] = websitesResult.data.map((website: TransformedWebsite) => ({
           id: website.id,
           name: website.name,
@@ -109,17 +87,33 @@ const WebsiteAnalysisPage: React.FC = () => {
         setWebsiteStats(statsResult.data);
       }
 
+      if (commentsResult.success && commentsResult.data) {
+        const transformedReviews: Review[] = commentsResult.data.map((comment, index) => ({
+          id: `review-${index}-${comment.url_path}`,
+          username: comment.username,
+          comment_content: comment.comment_content,
+          url_path: comment.url_path,
+          rating: comment.rating,
+          date: 'Just now'
+        }));
+        setRecentReviews(transformedReviews);
+      } else {
+        setReviewsError(commentsResult.error || 'Failed to load recent reviews');
+      }
+
       setLastRefresh(new Date());
     } catch (error) {
-      console.error('Error fetching recent websites:', error);
+      console.error('Error fetching data:', error);
       setWebsitesError('An unexpected error occurred while loading websites');
+      setReviewsError('An unexpected error occurred while loading reviews');
     } finally {
       setIsLoadingWebsites(false);
+      setIsLoadingReviews(false);
     }
   };
 
   const handleRefresh = (): void => {
-    fetchRecentWebsites();
+    fetchRecentWebsitesAndReviews();
   };
 
   const handleSearch = async (e: React.FormEvent | React.MouseEvent): Promise<void> => {
@@ -144,7 +138,6 @@ const WebsiteAnalysisPage: React.FC = () => {
         
         setSearchResult(website);
         
-        // Navigate to detailed results after showing preview
         setTimeout(() => {
           router.push(`/website-analysis?site=${encodeURIComponent(result.data!.name)}`);
         }, 3000);
@@ -216,7 +209,6 @@ const WebsiteAnalysisPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Hero Image - Left Side */}
       <div className="absolute inset-0 w-full">
         <div className="absolute -left-[100px] w-2/3 bg-gradient-to-r from-black/10 via-black/5 to-transparent overflow-hidden flex items-center justify-start pl-0">
           <NextImage 
@@ -230,7 +222,6 @@ const WebsiteAnalysisPage: React.FC = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-black mb-4 leading-tight">
             Think Before You Click!
@@ -239,7 +230,6 @@ const WebsiteAnalysisPage: React.FC = () => {
             Check Any Websites for Scams.
           </h2>
 
-          {/* Search Bar */}
           <div className="max-w-2xl mx-auto mb-8">
             <div className="relative">
               <input
@@ -251,7 +241,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                 disabled={isSearching}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     handleSearch(e as any);
                   }
                 }}
@@ -270,7 +259,6 @@ const WebsiteAnalysisPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Search Result */}
           {searchResult && (
             <div className="max-w-2xl mx-auto mb-8">
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
@@ -290,7 +278,6 @@ const WebsiteAnalysisPage: React.FC = () => {
             </div>
           )}
 
-          {/* Search Error */}
           {searchError && (
             <div className="max-w-2xl mx-auto mb-8">
               <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
@@ -306,7 +293,6 @@ const WebsiteAnalysisPage: React.FC = () => {
             </div>
           )}
 
-          {/* Stats Summary */}
           {websiteStats && (
             <div className="max-w-4xl mx-auto mb-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -330,7 +316,6 @@ const WebsiteAnalysisPage: React.FC = () => {
             </div>
           )}
 
-          {/* Description */}
           <p className="text-lg md:text-xl text-black max-w-4xl mx-auto leading-relaxed">
             Don&apos;t let scams catch you off guard—be one step ahead with ScamSleuth. Our AI-powered 
             detective meticulously analyzes websites in real-time, uncovering hidden dangers, phishing 
@@ -340,9 +325,7 @@ const WebsiteAnalysisPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Content Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Websites Card */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -364,7 +347,6 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Loading State */}
             {isLoadingWebsites && (
               <div className="space-y-4">
                 {[...Array(5)].map((_, index) => (
@@ -384,7 +366,6 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             )}
 
-            {/* Error State */}
             {websitesError && !isLoadingWebsites && (
               <div className="text-center py-8">
                 <div className="text-red text-sm mb-4">{websitesError}</div>
@@ -397,7 +378,6 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             )}
 
-            {/* Websites List */}
             {!isLoadingWebsites && !websitesError && (
               <div className="space-y-4">
                 {recentWebsites.length === 0 ? (
@@ -435,35 +415,78 @@ const WebsiteAnalysisPage: React.FC = () => {
             )}
           </div>
 
-          {/* Recent Reviews Card - Still using mock data */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
             <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
               <Star className="w-6 h-6" />
               Recent Reviews
             </h3>
-            <div className="space-y-6">
-              {recentReviews.map((review) => (
-                <div key={review.id} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-gray-800 text-sm leading-tight">{review.title}</h4>
-                    <div className="flex items-center gap-1 ml-4 flex-shrink-0">
-                      {renderStars(review.rating)}
-                      <span className="text-sm font-bold text-gray-700 ml-1">{review.rating}</span>
+            {isLoadingReviews && (
+              <div className="space-y-6">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/4 ml-4"></div>
                     </div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2 leading-relaxed">{review.description}</p>
-                  <div className="flex items-center justify-between">
-                    <button 
-                      onClick={() => router.push(`/website-analysis?site=${encodeURIComponent(review.url)}`)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                ))}
+              </div>
+            )}
+
+            {reviewsError && !isLoadingReviews && (
+              <div className="text-center py-8">
+                <div className="text-red text-sm mb-4">{reviewsError}</div>
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {!isLoadingReviews && !reviewsError && (
+              <div className="space-y-6">
+                {recentReviews.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Star className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent reviews found</p>
+                    <button
+                      onClick={handleRefresh}
+                      className="mt-2 text-blue-600 hover:text-blue-800 underline"
                     >
-                      {review.url}
+                      Refresh
                     </button>
-                    <span className="text-xs text-gray-500">{review.date}</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  recentReviews.map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-gray-800 text-sm leading-tight">
+                          {review.username}
+                        </h4>
+                        <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+                          {renderStars(review.rating)}
+                          <span className="text-sm font-bold text-gray-700 ml-1">{review.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2 leading-relaxed">{review.comment_content}</p>
+                      <div className="flex items-center justify-between">
+                        <button 
+                          onClick={() => router.push(`/website-analysis?site=${encodeURIComponent(review.url_path)}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                        >
+                          {review.url_path}
+                        </button>
+                        <span className="text-xs text-gray-500">{review.date}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

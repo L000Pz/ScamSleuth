@@ -1,3 +1,5 @@
+// actions.ts
+
 'use server';
 
 export interface TechnicalFlags {
@@ -33,7 +35,7 @@ export interface WebsiteAnalysisData {
 export interface RecentWebsiteRecord {
   url_id: number;
   url: string;
-  description: string; // JSON string that needs to be parsed
+  description: string;
   search_date: string;
 }
 
@@ -52,9 +54,13 @@ export interface TransformedWebsite {
   analysisData?: WebsiteAnalysisData;
 }
 
-/**
- * Fetches the 5 most recently analyzed websites
- */
+export interface RecentComment {
+  username: string;
+  comment_content: string;
+  url_path: string;
+  rating: number;
+}
+
 export async function getRecentWebsites(limit: number = 5): Promise<{
   success: boolean;
   data?: TransformedWebsite[];
@@ -79,16 +85,13 @@ export async function getRecentWebsites(limit: number = 5): Promise<{
       throw new Error('API returned error status');
     }
 
-    // Transform the data to match our frontend interface
     const transformedWebsites: TransformedWebsite[] = data.records.map((record) => {
       let analysisData: WebsiteAnalysisData;
       
       try {
-        // Parse the JSON description
         analysisData = JSON.parse(record.description);
       } catch (parseError) {
         console.error('Failed to parse analysis data for', record.url, parseError);
-        // Fallback data if parsing fails
         analysisData = {
           trustScore: 0,
           riskLevel: 'high',
@@ -99,7 +102,6 @@ export async function getRecentWebsites(limit: number = 5): Promise<{
         };
       }
 
-      // Calculate time ago from search_date
       const searchDate = new Date(record.search_date);
       const now = new Date();
       const timeDiff = now.getTime() - searchDate.getTime();
@@ -142,9 +144,6 @@ export async function getRecentWebsites(limit: number = 5): Promise<{
   }
 }
 
-/**
- * Get a summary of recent analysis statistics
- */
 export async function getRecentWebsiteStats(): Promise<{
   success: boolean;
   data?: {
@@ -197,6 +196,40 @@ export async function getRecentWebsiteStats(): Promise<{
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to calculate statistics'
+    };
+  }
+}
+
+export async function getRecentComments(): Promise<{
+  success: boolean;
+  data?: RecentComment[];
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`http://localhost:8080/Public/publicManager/RecentUrlComments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch recent comments: ${response.status} ${response.statusText}`);
+    }
+
+    const data: RecentComment[] = await response.json();
+
+    return {
+      success: true,
+      data: data
+    };
+
+  } catch (error) {
+    console.error('Error fetching recent comments:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch recent comments'
     };
   }
 }

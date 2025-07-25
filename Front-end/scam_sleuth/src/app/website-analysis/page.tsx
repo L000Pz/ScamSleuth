@@ -1,7 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/website-analysis/page.tsx
-// This is your main page.tsx, now a Client Component
 "use client";
 
 import React, { useState, useEffect } from 'react';
