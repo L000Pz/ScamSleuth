@@ -33,7 +33,6 @@ public class ReturnReviewById : IReturnReviewById
         }
         var media = await _publicRepository.GetReviewContentMedia(review.review_id);
         var writerDetails = new ReviewWriterDetails(writer.username, writer.name, writer.profile_picture_id,writer.contact_info);
-        await _publicRepository.IncreaseView(review_id);
         return new ReviewDetails
         {
             Review = review,
@@ -41,5 +40,11 @@ public class ReturnReviewById : IReturnReviewById
             Media=media,
             ReviewWriterDetails = writerDetails
         };
+    }
+    public async Task<bool> HandleView(int review_id)
+    {
+        await _publicRepository.IncreaseView(review_id);
+        return true;
+
     }
 }

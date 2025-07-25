@@ -133,4 +133,15 @@ public class PublicController : ControllerBase
 
         return Ok(result);
     }
+    [HttpPut("View")]
+    public async Task<ActionResult> View(int review_id)
+    {
+        var result = await _returnReviewById.HandleView(review_id);
+        if (result == false)
+        {
+            return BadRequest("Couldn't increase view!");
+        }
+
+        return Ok();
+    }
 }
