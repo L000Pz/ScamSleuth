@@ -25,7 +25,7 @@ public class ShowRecentComments : IShowRecentComments
             var url = await _publicRepository.GetUrlById(comment.url_id);
             var writer = await _publicRepository.GetUserById(comment.writer_id);
             var commentWithDetail =
-                new RecentCommentDetails(writer.username, comment.comment_content, url.url, comment.rating);
+                new RecentCommentDetails(writer.username, comment.comment_content, url.url, comment.rating, comment.created_at);
             comments_with_details.Add(commentWithDetail);
         }
 
