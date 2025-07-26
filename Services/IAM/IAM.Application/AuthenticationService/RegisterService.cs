@@ -12,14 +12,16 @@ public class RegisterService : IRegisterService
     private readonly IHasher _hasher;
     private readonly ICodeGenerator _codeGenerator;
     private readonly IInMemoryRepository _inMemoryRepository;
+    private readonly INewCodeService _newCodeService;
 
-    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtGenerator, IHasher hasher,ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository)
+    public RegisterService(IUserRepository userRepository, IJwtTokenGenerator jwtGenerator, IHasher hasher,ICodeGenerator codeGenerator, IInMemoryRepository inMemoryRepository, INewCodeService newCodeService)
     {
         _userRepository = userRepository;
         _jwtGenerator = jwtGenerator;
         _hasher = hasher;
         _codeGenerator = codeGenerator;
         _inMemoryRepository = inMemoryRepository;
+        _newCodeService = newCodeService;
     }
 
     public async Task<AuthenticationResult?> Handle(RegisterDetails registerDetails)
@@ -45,13 +47,13 @@ public class RegisterService : IRegisterService
         { 
             return new AuthenticationResult(null,null,null,null,null,false, "email",null);
         }
-        String code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(registerDetails.email,code);
+
         Random random = new Random();
         int default_pfp = random.Next(1, 4);
         var user = Users.Create(registerDetails.username, registerDetails.name, registerDetails.email, _hasher.Hash(registerDetails.password),default_pfp);
         _userRepository.Add(user);
-        String token = _jwtGenerator.GenerateToken(user);
+        String token = _jwtGenerator.GenerateToken(user);     
+        var codeRes = _newCodeService.Generate(token);
         return new AuthenticationResult(user.user_id,user.username,user.email,user.name,user.profile_picture_id,user.is_verified, token,"user");
     }
 

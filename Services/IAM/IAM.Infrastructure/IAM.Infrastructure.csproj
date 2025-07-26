@@ -19,6 +19,7 @@
       <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
       <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+      <PackageReference Include="MojoAuth.NET" Version="1.0.8" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18" />
       <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
     </ItemGroup>

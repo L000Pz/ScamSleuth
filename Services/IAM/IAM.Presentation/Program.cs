@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MojoAuth.NET;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +37,11 @@ builder.Services.AddAuthentication(options =>
                 Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!))
         };
     });
+var mojoAuthConfig = builder.Configuration.GetSection("MojoAuth");
+var apiKey = mojoAuthConfig["ApiKey"];
+var apiSecret = mojoAuthConfig["ApiSecret"];
 
+builder.Services.AddSingleton(new MojoAuthHttpClient(apiKey, apiSecret));
 
 
 builder.Services.AddApplication().AddInfrastructure();
