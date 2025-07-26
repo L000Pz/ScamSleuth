@@ -113,6 +113,10 @@ public class UserController : ControllerBase
 
         var result = await _submitReport.Handle(reportSubmission, token);
         if (result == "report") return BadRequest("Failed to submit report!");
+        if (result == "description")
+        {
+            return BadRequest("Report already exists!");
+        }
 
         if (result == "writer") return BadRequest("Failed to authenticate user!");
         return Ok("Report submitted successfully.");
@@ -191,6 +195,7 @@ public class UserController : ControllerBase
         {
             return BadRequest("Rating must be between 1 to 5!");
         }
+
         if (result == "url")
         {
             return BadRequest("Could not find the url!");
