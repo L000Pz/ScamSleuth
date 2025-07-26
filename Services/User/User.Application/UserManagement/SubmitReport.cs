@@ -17,7 +17,7 @@ public class SubmitReport : ISubmitReport
     {
         var writer = await _userRepository.GetUserByEmail(token);
         if (writer is null) return "writer";
-        var checkDesc = _userRepository.GetReportByDescription(reportSubmission.description);
+        var checkDesc = await _userRepository.GetReportByDescription(reportSubmission.description);
         if (checkDesc is not null)
         {
             return "description";

@@ -1,19 +1,20 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:7.0
-
+﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
-# Copy just the .csproj first to leverage Docker cache
-COPY Gateway.API.csproj ./
-
-# Restore dependencies early (avoids full re-copy on small changes)
-RUN dotnet restore Gateway.API.csproj
-
-# Copy the full source code (same structure as yours)
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+COPY ["Gateway.API.csproj", "./"]
+RUN dotnet restore
 COPY . .
+WORKDIR "/src"
+RUN dotnet build "Gateway.API.csproj" -c Release -o /app/build
 
-# Install dotnet-watch globally for hot reload
-RUN dotnet tool install --global dotnet-watch
-ENV PATH="${PATH}:/root/.dotnet/tools"
+FROM build AS publish
+RUN dotnet publish "Gateway.API.csproj" -c Release -o /app/publish
 
-# Run the Gateway using dotnet watch on port 80
-CMD ["dotnet", "watch", "--project", "Gateway.API.csproj", "run", "--urls=http://0.0.0.0:80"]
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Gateway.API.dll"]

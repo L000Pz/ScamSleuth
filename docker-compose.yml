@@ -6,9 +6,6 @@ services:
     build:
       context: ./Gateway/Gateway.API/Gateway.API
       dockerfile: Dockerfile
-    volumes:
-      - ./Gateway/Gateway.API/Gateway.API:/app
-    command: dotnet watch --project Gateway.API.csproj run --urls=http://0.0.0.0:80
     ports:
       - "8080:80"
       - "8081:443"
@@ -22,16 +19,8 @@ services:
     build:
       context: ./Services/IAM
       dockerfile: Dockerfile
-    volumes:
-      - ./Services/IAM:/app
-    command: dotnet watch --project IAM.Presentation/IAM.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5001:80"
-    depends_on:
-      - postgres_container
-      - redis_container
     networks:
       - scamsleuth-network
 
@@ -40,16 +29,8 @@ services:
     build:
       context: ./Services/Media
       dockerfile: Dockerfile
-    volumes:
-      - ./Services/Media:/app
-    command: dotnet watch --project Media.Presentation/Media.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5002:80"
-    depends_on:
-      - rabbitmq_container
-      - mongodb_container
     networks:
       - scamsleuth-network
 
@@ -58,16 +39,8 @@ services:
     build:
       context: ./Services/User
       dockerfile: Dockerfile
-    volumes:
-      - ./Services/User:/app
-    command: dotnet watch --project User.Presentation/User.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5003:80"
-    depends_on:
-      - postgres_container
-      - scamsleuth-iam
     networks:
       - scamsleuth-network
 
@@ -76,17 +49,8 @@ services:
     build:
       context: ./Services/Admin
       dockerfile: Dockerfile
-    volumes:
-      - ./Services/Admin:/app
-    command: dotnet watch --project Admin.Presentation/Admin.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5004:80"
-    depends_on:
-      - postgres_container
-      - scamsleuth-iam
-      - rabbitmq_container
     networks:
       - scamsleuth-network
 
@@ -95,15 +59,8 @@ services:
     build:
       context: ./Services/Public
       dockerfile: Dockerfile
-    volumes:
-      - ./Services/Public:/app
-    command: dotnet watch --project Public.Presentation/Public.Presentation.csproj run --urls=http://0.0.0.0:80
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5005:80"
-    depends_on:
-      - postgres_container
     networks:
       - scamsleuth-network
 
@@ -146,6 +103,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ScamSleuth_db
     ports:
       - "5432:5432"
     volumes:

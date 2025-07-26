@@ -1,23 +1,25 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0
-
-# Set working directory
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
-# Copy only .csproj files first to layer caching
-COPY Public.Presentation/*.csproj ./Public.Presentation/
-COPY Public.Application/*.csproj ./Public.Application/
-COPY Public.Infrastructure/*.csproj ./Public.Infrastructure/
-COPY Public.Domain/*.csproj ./Public.Domain/
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
 
-# Restore NuGet packages (separate layer to avoid re-downloading every time)
-RUN dotnet restore Public.Presentation/Public.Presentation.csproj
+COPY ["Public.Application/Public.Application.csproj", "Public.Application/"]
+COPY ["Public.Domain/Public.Domain.csproj", "Public.Domain/"]
+COPY ["Public.Infrastructure/Public.Infrastructure.csproj", "Public.Infrastructure/"]
+COPY ["Public.Presentation/Public.Presentation.csproj", "Public.Presentation/"]
 
-# Now copy the rest of the source code
+RUN dotnet restore "Public.Presentation/Public.Presentation.csproj"
 COPY . .
+WORKDIR "/src/Public.Presentation"
+RUN dotnet build "Public.Presentation.csproj" -c Release -o /app/build
 
-# Install dotnet-watch (dev hot reload tool)
-RUN dotnet tool install --global dotnet-watch
-ENV PATH="${PATH}:/root/.dotnet/tools"
+FROM build AS publish
+RUN dotnet publish "Public.Presentation.csproj" -c Release -o /app/publish
 
-# Run the app with hot reload
-CMD ["dotnet", "watch", "--project", "Public.Presentation/Public.Presentation.csproj", "run", "--urls=http://0.0.0.0:80"]
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Public.Presentation.dll"]
