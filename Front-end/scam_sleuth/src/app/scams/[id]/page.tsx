@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
   getPublicReview, 
+  incrementReviewView, // Imported new action
   getReviewComments, 
   submitComment, 
   toggleCommentLike, 
@@ -553,7 +554,7 @@ export default function ReviewPage({ params }: PageProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewingIds, setPreviewingIds] = useState<Set<number>>(new Set());
+  const [previewingIds, setPreviewingIds] = new useState<Set<number>>(new Set());
   const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -701,8 +702,13 @@ export default function ReviewPage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
+        // Increment view count
+        if (resolvedParams.id) {
+          await incrementReviewView(resolvedParams.id);
+        }
+
         const [reviewResult, commentsResult] = await Promise.all([
-          getPublicReview(resolvedParams.id),
+          getPublicReview(resolvedParams.id), // Re-fetch review to get updated views
           getReviewComments(resolvedParams.id)
         ]);
 
@@ -1229,6 +1235,10 @@ export default function ReviewPage({ params }: PageProps) {
                   >
                     {formatTimestamp(review.date, { format: 'long' })}
                   </span>
+                </div>
+                <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                  <Eye size={16} />
+                  <span className="text-sm font-medium">{review.views} Views</span>
                 </div>
               </div>
               

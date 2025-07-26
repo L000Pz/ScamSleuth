@@ -24,7 +24,7 @@ interface Review {
   comment_content: string;
   url_path: string;
   rating: number;
-  date: string;
+  date: string; // This will now be dynamically set from created_at
 }
 
 interface WebsiteStats {
@@ -88,13 +88,13 @@ const WebsiteAnalysisPage: React.FC = () => {
       }
 
       if (commentsResult.success && commentsResult.data) {
-        const transformedReviews: Review[] = commentsResult.data.map((comment, index) => ({
-          id: `review-${index}-${comment.url_path}`,
+        const transformedReviews: Review[] = commentsResult.data.map((comment) => ({
+          id: `${comment.url_path}-${comment.created_at}`, // Unique ID based on URL and creation time
           username: comment.username,
           comment_content: comment.comment_content,
           url_path: comment.url_path,
           rating: comment.rating,
-          date: 'Just now'
+          date: formatReviewDate(comment.created_at) // Use created_at here
         }));
         setRecentReviews(transformedReviews);
       } else {
@@ -205,6 +205,52 @@ const WebsiteAnalysisPage: React.FC = () => {
     
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays}d ago`;
+  };
+
+  const formatReviewDate = (dateString: string): string => {
+    // Append 'Z' to treat the string as UTC if it doesn't already have a timezone indicator.
+    const utcDateString = dateString.endsWith('Z') ? dateString : `${dateString}Z`; 
+    const date = new Date(utcDateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    // Fallback to a more standard date format for older comments, adjusted to local timezone
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  // Function to truncate text to a maximum of two lines
+  const truncateText = (text: string, maxLines: number): string => {
+    const words = text.split(' ');
+    let currentLine = 0;
+    let truncatedText = '';
+    let lineLength = 0;
+    const avgCharsPerLine = 40; // Approximate average characters per line, adjust as needed
+
+    for (const word of words) {
+      if (lineLength + word.length + (truncatedText.length > 0 ? 1 : 0) > avgCharsPerLine) {
+        currentLine++;
+        if (currentLine >= maxLines) {
+          return truncatedText.trim() + '...';
+        }
+        truncatedText += ' '; // New line
+        lineLength = 0;
+      } else if (truncatedText.length > 0) {
+        truncatedText += ' ';
+      }
+      truncatedText += word;
+      lineLength += word.length + 1;
+    }
+    return truncatedText.trim();
   };
 
   return (
@@ -472,7 +518,9 @@ const WebsiteAnalysisPage: React.FC = () => {
                           <span className="text-sm font-bold text-gray-700 ml-1">{review.rating}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2 leading-relaxed">{review.comment_content}</p>
+                      <p className="text-sm text-gray-600 mb-2 leading-relaxed">
+                        {truncateText(review.comment_content, 2)}
+                      </p>
                       <div className="flex items-center justify-between">
                         <button 
                           onClick={() => router.push(`/website-analysis?site=${encodeURIComponent(review.url_path)}`)}

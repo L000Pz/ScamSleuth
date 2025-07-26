@@ -12,6 +12,7 @@ export interface PublicReviewResponse {
     scam_type_id: number;
     review_date: string;
     review_content_id: number;
+    views: number; // Added views property
   };
   content: string;
   media: Array<{
@@ -41,6 +42,7 @@ export interface TransformedReview {
     profile_picture_id: number | null;
     contact_info: string;
   };
+  views: number; // Added views property
 }
 
 export interface CommentApiResponseItem {
@@ -209,7 +211,8 @@ export async function getPublicReview(id: string): Promise<{
         name: reviewData.reviewWriterDetails.name,
         profile_picture_id: reviewData.reviewWriterDetails.profile_picture_id,
         contact_info: reviewData.reviewWriterDetails.contact_info
-      }
+      },
+      views: reviewData.review.views // Mapped views property
     };
 
     return { success: true, data: transformedReview };
@@ -559,5 +562,35 @@ export async function deleteReviewComment(commentId: string): Promise<{
   } catch (error) {
     console.error('Error deleting review comment:', error);
     return { success: false, error: 'An unexpected error occurred while deleting the comment.' };
+  }
+}
+
+export async function incrementReviewView(reviewId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/View?review_id=${reviewId}`, {
+      method: 'PUT',
+      headers: {
+        'Accept': '*/*',
+        'Authorization': `Bearer ${token || ''}`, // Token might not be required or present for public views
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to increment review view:', response.status, errorText);
+      return { success: false, error: `Failed to increment view: ${errorText || response.statusText}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in incrementReviewView:', error);
+    return { success: false, error: 'An unexpected error occurred while incrementing view.' };
   }
 }
