@@ -12,6 +12,7 @@ public interface IUserRepository
     public Task<Users?> ChangeProfilePicture(Users users, int profile_picture_id);
     public Task<Users?> GetUserByEmail(string email);
     public Task<Report?> SubmitReport(Report report);
+    public Task<Report?> GetReportByDescription(string description);
     public Task<List<Report_Media>> SubmitReportMedia(List<Report_Media> report_media_list);
     public Task<List<Report>> GetUserReports(int user_id);
     public Task<bool> DeleteReport(int review_id);

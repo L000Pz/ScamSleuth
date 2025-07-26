@@ -17,6 +17,11 @@ public class SubmitReport : ISubmitReport
     {
         var writer = await _userRepository.GetUserByEmail(token);
         if (writer is null) return "writer";
+        var checkDesc = _userRepository.GetReportByDescription(reportSubmission.description);
+        if (checkDesc is not null)
+        {
+            return "description";
+        }
         var now = DateTime.Now;
         var report = Report.Create(reportSubmission.title, writer.user_id, reportSubmission.scam_type_id,
             reportSubmission.scam_date, now,

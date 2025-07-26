@@ -1,6 +1,7 @@
 ﻿using IAM.Application.Common;
 using IAM.Contracts;
 using IAM.Domain;
+using MojoAuth.NET; // MojoAuth SDK
 
 namespace IAM.Application.AuthenticationService;
 
@@ -11,32 +12,65 @@ public class NewCodeService : INewCodeService
     private readonly ICodeGenerator _codeGenerator;
     private readonly IUserRepository _userRepository;
 
-    public NewCodeService( IJwtTokenGenerator jwtGenerator, IInMemoryRepository inMemoryRepository, ICodeGenerator codeGenerator, IUserRepository userRepository)
+    private readonly MojoAuthHttpClient _mojoAuthHttpClient;
+
+    public NewCodeService(IJwtTokenGenerator jwtGenerator,
+        IInMemoryRepository inMemoryRepository,
+        ICodeGenerator codeGenerator,
+        IUserRepository userRepository, MojoAuthHttpClient mojoAuthHttpClient)
     {
         _jwtGenerator = jwtGenerator;
         _inMemoryRepository = inMemoryRepository;
         _codeGenerator = codeGenerator;
         _userRepository = userRepository;
+
+        _mojoAuthHttpClient = mojoAuthHttpClient;
     }
 
-    public async Task<String> Generate(string token)
+    public async Task<string> Generate(string token)
     {
-        // extract username from token
-        String? email = _jwtGenerator.GetEmail(token);
-
-        // check if token or phone number is valid
-        if (email is null)
+        string? email = _jwtGenerator.GetEmail(token);
+        if (email == null)
         {
-            return "invalidToken";
+            return "invalidToken"; 
         }
-        
+
         Users? user = await _userRepository.GetUserByEmail(email);
-        if (user is null)
+        if (user == null)
         {
             return "invalidUser";
         }
+
+        var sendOtpResponse = await SendOtpToUser(email);
+
+        if (sendOtpResponse.Result == null)
+        {
+            return "failed";
+        }
+
         string code = _codeGenerator.GenerateCode();
-        await _inMemoryRepository.Add(email,code);
-        return "ok";
+        await _inMemoryRepository.Add(email, code); 
+
+        string stateId = sendOtpResponse.Result.StateId;
+        if (stateId != null)
+        {
+            await _inMemoryRepository.Add(email + "_stateId", stateId);
+        }
+
+        return "ok"; 
+    }
+
+    private async Task<MojoAuth.NET.Response<MojoAuth.NET.Core.EmailOtpResponse>> SendOtpToUser(string email)
+    {
+        try
+        {
+            var resp = await _mojoAuthHttpClient.SendEmailOTP(email);
+            return resp; 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending OTP: {ex.Message}");
+            return null;
+        }
     }
 }

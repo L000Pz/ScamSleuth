@@ -116,6 +116,11 @@ public class AuthController : ControllerBase
             return BadRequest("User doesn't exist!");
         }
 
+        if (result.Equals("failed"))
+        {
+            return BadRequest("Failed to generate OTP!");
+        }
+
         return Ok("New code has been generated!");
     }
     [HttpPost("Verify")]

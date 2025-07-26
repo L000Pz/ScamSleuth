@@ -13,7 +13,7 @@ public class SaveMedia : ISaveMedia
 
     public async Task<int> Handle(MediaFile file,String email)
     {
-        if (file.content_type.Split("/")[0] is not ("image" or "video"))
+        if (file.content_type.Split("/")[0] is not ("image" or "video" or "audio"))
         {
             return -1;
         }

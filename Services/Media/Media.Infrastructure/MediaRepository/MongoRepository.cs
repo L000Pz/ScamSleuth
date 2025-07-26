@@ -1,7 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
 
-
 namespace Media.Infrastructure.MediaRepository;
 
 public class MongoRepository : IMongoRepository

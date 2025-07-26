@@ -144,6 +144,10 @@ public class UserRepository : IUserRepository
     {
         return _context.admins.SingleOrDefault(admin => admin.username == username);
     }
+    public async Task<Report?> GetReportByDescription(string description)
+    {
+        return _context.report.SingleOrDefault(r => r.description == description);
+    }
 
     public async Task<ReviewComment?> WriteReviewComment(ReviewComment reviewComment)
     {
