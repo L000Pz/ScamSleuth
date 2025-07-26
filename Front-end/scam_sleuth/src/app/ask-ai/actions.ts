@@ -59,6 +59,7 @@ export interface RecentComment {
   comment_content: string;
   url_path: string;
   rating: number;
+  created_at: string; // Add this line
 }
 
 export async function getRecentWebsites(limit: number = 5): Promise<{

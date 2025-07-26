@@ -177,44 +177,50 @@ export default function ScamsPage() {
 
   // Filter and sort reports (now considers backendSearchResults)
   useEffect(() => {
-    // Combine initial reports and backend search results
-    let combinedReports = [...reports];
-    if (backendSearchResults.length > 0 && searchQuery.trim() !== '') {
-      // Filter out duplicates from backendSearchResults that are already in reports
-      const uniqueBackendResults = backendSearchResults.filter(
-        (backendScam) => !reports.some((report) => report.id === backendScam.id)
-      );
-      combinedReports = [...reports, ...uniqueBackendResults];
+  let reportsToFilterAndSort: ScamReport[] = [];
+
+  // If there's a search query, prioritize backend search results
+  if (searchQuery.trim() !== '') {
+    reportsToFilterAndSort = backendSearchResults;
+  } else {
+    // Otherwise, use the initially fetched reports
+    reportsToFilterAndSort = reports;
+  }
+
+  let filtered = reportsToFilterAndSort.filter(report => {
+    // Apply type filter regardless of search origin
+    const matchesType = selectedType === 'all' || report.type === selectedType;
+
+    // When a search query is active, the backendSearchResults *should* already be
+    // relevant to the search query, so we only need to apply the type filter.
+    // If there's no search query, we still apply the client-side search against 'reports'
+    // (though in this revised logic, when searchQuery is empty, we only use 'reports').
+    // The key here is that if backendSearchResults are being used, their content
+    // is assumed to be what the user is looking for regarding the search term.
+    return matchesType;
+  });
+
+  // Sort reports
+  filtered.sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortBy) {
+      case 'date':
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        break;
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'type':
+        comparison = a.type.localeCompare(b.type);
+        break;
     }
 
-    let filtered = combinedReports.filter(report => {
-      const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           report.type.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = selectedType === 'all' || report.type === selectedType;
-      return matchesSearch && matchesType;
-    });
+    return sortOrder === 'desc' ? -comparison : comparison;
+  });
 
-    // Sort reports
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'date':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'type':
-          comparison = a.type.localeCompare(b.type);
-          break;
-      }
-      
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
-
-    setFilteredReports(filtered);
-  }, [reports, searchQuery, selectedType, sortBy, sortOrder, backendSearchResults]); // Added backendSearchResults as dependency
+  setFilteredReports(filtered);
+}, [reports, searchQuery, selectedType, sortBy, sortOrder, backendSearchResults]);
 
   const handleSort = (criteria: 'date' | 'name' | 'type') => {
     if (sortBy === criteria) {
