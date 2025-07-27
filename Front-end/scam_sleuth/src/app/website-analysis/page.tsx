@@ -1,8 +1,8 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/website-analysis/page.tsx
+// This is your main page.tsx, now a Client Component
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search,
@@ -39,12 +39,12 @@ import {
   submitUrlComment,
   submitAdminUrlComment,
   deleteUrlComment,
-  getIsAdminStatus,
-  getOverallUrlRatings,
+  getIsAdminStatus, // Import the new server action
   type AnalysisResult,
   type WhoisData,
   type EnamadData,
-  type ReviewStats
+  type UrlComment,
+  type ReviewStats // Import ReviewStats
 } from './actions';
 
 interface UserReview {
@@ -52,16 +52,29 @@ interface UserReview {
   rating: number;
   comment: string;
   date: string;
-  rawDate: Date;
   author?: string;
   isAdminComment?: boolean;
 }
+
+// ReviewStats interface is now imported from actions.ts
+// interface ReviewStats {
+//   averageRating: number;
+//   totalReviews: number;
+//   ratingBreakdown: {
+//     5: number;
+//     4: number;
+//     3: number;
+//     2: number;
+//     1: number;
+//   };
+// }
 
 const WebsiteAnalysisPage: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialWebsite = searchParams.get('site') || 'example.com';
 
+  // State management
   const [searchQuery, setSearchQuery] = useState<string>(initialWebsite);
   const [currentWebsite, setCurrentWebsite] = useState<string>(initialWebsite);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -72,27 +85,32 @@ const WebsiteAnalysisPage: React.FC = () => {
   const [newAdminComment, setNewAdminComment] = useState('');
   const [hoveredRating, setHoveredRating] = useState<number>(0);
 
+  // Screenshot state
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [screenshotLoading, setScreenshotLoading] = useState<boolean>(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState<boolean>(false);
 
+  // WHOIS state
   const [whoisData, setWhoisData] = useState<WhoisData | null>(null);
   const [whoisLoading, setWhoisLoading] = useState<boolean>(false);
   const [whoisError, setWhoisError] = useState<string | null>(null);
 
+  // Enamad state
   const [enamadData, setEnamadData] = useState<EnamadData | null>(null);
   const [enamadLoading, setEnamadLoading] = useState<boolean>(false);
   const [enamadError, setEnamadError] = useState<string | null>(null);
 
+  // User Reviews state
   const [userReviews, setUserReviews] = useState<UserReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [reviewSubmissionMessage, setReviewSubmissionMessage] = useState<string | null>(null);
   const [reviewSubmissionError, setReviewSubmissionError] = useState<string | null>(null);
+  
+  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Initialize isAdmin to false
 
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-
+  // ReviewStats state, initialized with default values or from analysisResult
   const [overallReviewStats, setOverallReviewStats] = useState<ReviewStats>({
     average: 0,
     count: 0,
@@ -103,15 +121,16 @@ const WebsiteAnalysisPage: React.FC = () => {
     one_count: 0
   });
 
-  const checkAdminStatus = useCallback(async () => {
+  // Function to check admin status by calling the server action
+  const checkAdminStatus = async () => {
     try {
-      const adminStatus = await getIsAdminStatus();
+      const adminStatus = await getIsAdminStatus(); // Call the server action directly
       setIsAdmin(adminStatus);
     } catch (err) {
       console.error('Error fetching admin status:', err);
-      setIsAdmin(false);
+      setIsAdmin(false); // Ensure isAdmin is false on error
     }
-  }, []);
+  };
 
   const formatPersianDate = (dateString: string | undefined): string => {
     if (!dateString) return 'Not available';
@@ -171,55 +190,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const fetchOverallReviewStats = useCallback(async (website: string) => {
-    try {
-      const result = await getOverallUrlRatings(website);
-      if (result.success && result.data) {
-        setOverallReviewStats(result.data);
-      } else {
-        setOverallReviewStats({ average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 });
-      }
-    } catch (err) {
-      console.error('Error fetching overall review stats:', err);
-      setOverallReviewStats({ average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 });
-    }
-  }, []);
-
-  const fetchComments = useCallback(async (website: string) => {
-    setReviewsLoading(true);
-    setReviewsError(null);
-    try {
-      const result = await getUrlComments(website);
-      if (result.success && result.data) {
-        const mappedComments: UserReview[] = result.data.map(comment => {
-          const rawDate = comment.date ? new Date(comment.date) : new Date(0);
-          return {
-            id: comment.id,
-            rating: comment.rating,
-            comment: comment.comment,
-            date: formatDate(comment.date),
-            rawDate: rawDate,
-            author: comment.author,
-            isAdminComment: comment.isAdminComment
-          };
-        });
-
-        const sortedComments = mappedComments.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-        setUserReviews(sortedComments);
-      } else {
-        setReviewsError(result.error || 'Failed to load comments');
-        setUserReviews([]);
-      }
-    } catch (err) {
-      setReviewsError('An error occurred while fetching comments');
-      setUserReviews([]);
-      console.error('Fetch comments error:', err);
-    } finally {
-      setReviewsLoading(false);
-    }
-  }, []);
-
-  const performAnalysis = useCallback(async (website: string) => {
+  const performAnalysis = async (website: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -230,17 +201,41 @@ const WebsiteAnalysisPage: React.FC = () => {
         setAnalysisResult(result.data);
         setCurrentWebsite(website);
 
-        setScreenshotUrl(result.data.screenshotUrl || null);
-        setScreenshotError(result.data.screenshotUrl ? null : 'No screenshot available');
+        if (result.data.screenshotUrl) {
+          setScreenshotUrl(result.data.screenshotUrl);
+          setScreenshotError(null);
+        } else {
+          setScreenshotUrl(null);
+          setScreenshotError('No screenshot available');
+        }
 
-        setWhoisData(result.data.whoisData || null);
-        setWhoisError(result.data.whoisData ? null : 'WHOIS data not available');
+        if (result.data.whoisData) {
+          setWhoisData(result.data.whoisData);
+          setWhoisError(null);
+        } else {
+          setWhoisData(null);
+          setWhoisError('WHOIS data not available');
+        }
 
-        setEnamadData(result.data.enamadData || null);
-        setEnamadError(result.data.enamadData ? null : 'Enamad certification not found');
+        if (result.data.enamadData) {
+          setEnamadData(result.data.enamadData);
+          setEnamadError(null);
+        } else {
+          setEnamadData(null);
+          setEnamadError('Enamad certification not found');
+        }
 
+        // Set the overall review stats if available
         if (result.data.reviewStats) {
-          setOverallReviewStats(result.data.reviewStats);
+          setOverallReviewStats({
+            average: result.data.reviewStats.average,
+            count: result.data.reviewStats.count,
+            five_count: result.data.reviewStats.five_count,
+            four_count: result.data.reviewStats.four_count,
+            three_count: result.data.reviewStats.three_count,
+            two_count: result.data.reviewStats.two_count,
+            one_count: result.data.reviewStats.one_count,
+          });
         } else {
           setOverallReviewStats({ average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 });
         }
@@ -255,7 +250,35 @@ const WebsiteAnalysisPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchComments]);
+  };
+
+  const fetchComments = async (website: string) => {
+    setReviewsLoading(true);
+    setReviewsError(null);
+    try {
+      const result = await getUrlComments(website);
+      if (result.success && result.data) {
+        setUserReviews(result.data.map(comment => ({
+          id: comment.id,
+          rating: comment.rating,
+          comment: comment.comment,
+          date: comment.date,
+          helpful: comment.helpful,
+          author: comment.author,
+          isAdminComment: comment.isAdminComment
+        })));
+      } else {
+        setReviewsError(result.error || 'Failed to load comments');
+        setUserReviews([]);
+      }
+    } catch (err) {
+      setReviewsError('An error occurred while fetching comments');
+      setUserReviews([]);
+      console.error('Fetch comments error:', err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   const refreshScreenshot = async () => {
     if (!currentWebsite) return;
@@ -331,7 +354,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     try {
       const response = await fetch(screenshotUrl);
       const blob = await response.blob();
-
+      
       const link = document.createElement('a');
       const blobUrl = URL.createObjectURL(blob);
       link.href = blobUrl;
@@ -339,17 +362,18 @@ const WebsiteAnalysisPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Download error:', err);
     }
   };
 
+  // useEffect to fetch initial analysis and admin status
   useEffect(() => {
     performAnalysis(initialWebsite);
-    checkAdminStatus();
-  }, [initialWebsite, performAnalysis, checkAdminStatus]);
+    checkAdminStatus(); // Call the server action to get admin status
+  }, [initialWebsite]);
 
   const handleSearch = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -358,7 +382,7 @@ const WebsiteAnalysisPage: React.FC = () => {
 
     const cleanQuery = searchQuery.trim();
 
-    if (cleanQuery === currentWebsite && !error) return;
+    if (cleanQuery === currentWebsite) return;
 
     setIsSearching(true);
 
@@ -437,23 +461,6 @@ const WebsiteAnalysisPage: React.FC = () => {
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
 
-    const tempId = Date.now().toString();
-    const now = new Date();
-    const newCommentToAdd: UserReview = {
-        id: tempId,
-        rating: newReview.rating,
-        comment: newReview.comment,
-        date: formatDate(now.toISOString()),
-        rawDate: now,
-        author: 'You (submitting...)',
-        isAdminComment: false
-    };
-
-    setUserReviews(prev => {
-        const updatedReviews = [newCommentToAdd, ...prev.filter(c => c.id !== tempId)];
-        return updatedReviews.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-    });
-
     try {
       const result = await submitUrlComment({
         url: currentWebsite,
@@ -466,16 +473,14 @@ const WebsiteAnalysisPage: React.FC = () => {
         setReviewSubmissionMessage(result.message || 'Review submitted successfully!');
         setNewReview({ rating: 0, comment: '' });
         setHoveredRating(0);
-        await fetchComments(currentWebsite);
-        await fetchOverallReviewStats(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit review.');
-        setUserReviews(prev => prev.filter(c => c.id !== tempId));
       }
     } catch (err) {
       console.error('Error submitting review:', err);
       setReviewSubmissionError('An unexpected error occurred while submitting your review.');
-      setUserReviews(prev => prev.filter(c => c.id !== tempId));
     }
   };
 
@@ -489,23 +494,6 @@ const WebsiteAnalysisPage: React.FC = () => {
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
 
-    const tempId = Date.now().toString();
-    const now = new Date();
-    const newAdminCommentToAdd: UserReview = {
-        id: tempId,
-        rating: 0,
-        comment: newAdminComment,
-        date: formatDate(now.toISOString()),
-        rawDate: now,
-        author: 'Admin',
-        isAdminComment: true
-    };
-
-    setUserReviews(prev => {
-        const updatedReviews = [newAdminCommentToAdd, ...prev.filter(c => c.id !== tempId)];
-        return updatedReviews.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-    });
-
     try {
       const result = await submitAdminUrlComment({
         url: currentWebsite,
@@ -516,16 +504,14 @@ const WebsiteAnalysisPage: React.FC = () => {
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Admin comment submitted successfully!');
         setNewAdminComment('');
-        await fetchComments(currentWebsite);
-        await fetchOverallReviewStats(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit admin comment.');
-        setUserReviews(prev => prev.filter(c => c.id !== tempId));
       }
     } catch (err) {
       console.error('Error submitting admin review:', err);
       setReviewSubmissionError('An unexpected error occurred while submitting admin review.');
-      setUserReviews(prev => prev.filter(c => c.id !== tempId));
     }
   };
 
@@ -537,23 +523,18 @@ const WebsiteAnalysisPage: React.FC = () => {
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
 
-    const originalReviews = [...userReviews];
-    setUserReviews(prev => prev.filter(comment => comment.id !== commentId));
-
     try {
       const result = await deleteUrlComment(commentId);
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Comment deleted successfully!');
-        await fetchOverallReviewStats(currentWebsite);
-        await fetchComments(currentWebsite);
+        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
+        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
       } else {
         setReviewSubmissionError(result.error || 'Failed to delete comment.');
-        setUserReviews(originalReviews);
       }
     } catch (err) {
       console.error('Error deleting comment:', err);
       setReviewSubmissionError('An unexpected error occurred while deleting the comment.');
-      setUserReviews(originalReviews);
     }
   };
 
@@ -647,6 +628,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     );
   }
 
+  // Calculate rating breakdown for display
   const ratingBreakdown = {
     5: overallReviewStats.five_count,
     4: overallReviewStats.four_count,
@@ -657,6 +639,7 @@ const WebsiteAnalysisPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      {/* Background Hero Image */}
       <div className="absolute inset-0 w-full overflow-hidden">
         <div className="absolute -left-[100px] w-2/3 bg-gradient-to-r from-black/8 via-black/4 to-transparent flex items-center justify-start">
           <Image
@@ -671,6 +654,7 @@ const WebsiteAnalysisPage: React.FC = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-6 max-w-7xl">
+        {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => router.push('/ask-ai')}
@@ -680,6 +664,7 @@ const WebsiteAnalysisPage: React.FC = () => {
           Back to Search
         </Button>
 
+        {/* Functional Search Bar */}
         <div className="mb-8">
           <form onSubmit={handleSearch} className="relative max-w-lg mx-auto">
             <input
@@ -704,12 +689,14 @@ const WebsiteAnalysisPage: React.FC = () => {
             </button>
           </form>
 
+          {/* Loading indicator for search */}
           {isSearching && (
             <div className="text-center mt-4">
               <p className="text-blue-600 font-medium">Analyzing new website...</p>
             </div>
           )}
 
+          {/* Score Badge */}
           {analysisResult && (
             <div className="text-center mt-6">
               <div className="inline-flex items-center bg-white rounded-full px-6 py-3 shadow-lg border">
@@ -722,6 +709,7 @@ const WebsiteAnalysisPage: React.FC = () => {
           )}
         </div>
 
+        {/* Error Message */}
         {error && analysisResult && (
           <div className="mb-6 max-w-2xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -732,11 +720,15 @@ const WebsiteAnalysisPage: React.FC = () => {
           </div>
         )}
 
+        {/* Main Content - Only show if we have analysis results */}
         {analysisResult && (
           <>
+            {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
+              {/* Left Column */}
               <div className="space-y-6">
+                {/* Trust Score Card */}
                 <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
                   <h3 className="text-xl font-bold text-center mb-6 text-gray-800">Trust Score</h3>
                   <div className="text-center">
@@ -759,6 +751,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Action Buttons */}
                 <div className="space-y-4">
                   <Button
                     variant="ghost"
@@ -781,6 +774,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </Button>
                 </div>
 
+                {/* User Reviews Summary - Updated to use overallReviewStats */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                   <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
                   <div className="flex items-center gap-3 mb-4">
@@ -793,14 +787,15 @@ const WebsiteAnalysisPage: React.FC = () => {
                     From {overallReviewStats.count} total reviews.
                   </p>
 
+                  {/* Rating Breakdown */}
                   <div className="space-y-3">
                     {[5, 4, 3, 2, 1].map((rating) => (
                       <div key={rating} className="flex items-center gap-3 text-sm">
                         <span className="w-3 font-medium">{rating}</span>
-                        <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                        <Star className="w-4 h-4 text-green-500 fill-current flex-shrink-0" />
                         <div className="flex-1 bg-gray-200 rounded-full h-2.5">
                           <div
-                            className="bg-black h-2.5 rounded-full transition-all duration-500"
+                            className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
                             style={{ width: `${(ratingBreakdown[rating as keyof typeof ratingBreakdown] / (overallReviewStats.count || 1)) * 100}%` }}
                           />
                         </div>
@@ -816,10 +811,13 @@ const WebsiteAnalysisPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Middle Column - Details and Description */}
               <div className="space-y-6">
+                {/* Details Box */}
                 <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
                   <h3 className="text-xl font-bold mb-6 text-gray-800">Details</h3>
 
+                  {/* Positive Points */}
                   <div className="mb-8">
                     <h4 className="text-sm font-bold text-green-600 mb-4 flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -835,6 +833,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                     </ul>
                   </div>
 
+                  {/* Negative Points */}
                   <div>
                     <h4 className="text-sm font-bold text-red mb-4 flex items-center gap-2">
                       <span className="w-2 h-2 bg-red rounded-full"></span>
@@ -852,7 +851,9 @@ const WebsiteAnalysisPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Right Column - Screenshot, WHOIS, and Enamad */}
               <div className="space-y-6">
+                {/* Screenshot Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden max-h-[480px]">
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -949,6 +950,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Enamad Certification Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -980,6 +982,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                       </div>
                     ) : enamadData ? (
                       <div className="space-y-4 text-sm">
+                        {/* Certification Status */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <CheckCircle className="w-4 h-4" />
@@ -1009,6 +1012,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Business Information */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Building className="w-4 h-4" />
@@ -1033,6 +1037,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Certification Dates */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
@@ -1050,6 +1055,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Services */}
                         {enamadData.srvText && (
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -1069,6 +1075,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Verification Code */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Shield className="w-4 h-4" />
@@ -1117,6 +1124,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* WHOIS Information Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -1148,6 +1156,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                       </div>
                     ) : whoisData ? (
                       <div className="space-y-4 text-sm">
+                        {/* Domain Information */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Globe className="w-4 h-4" />
@@ -1185,6 +1194,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Registrar Information */}
                         {whoisData.registrar && (
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -1220,6 +1230,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Name Servers */}
                         {whoisData.domain.name_servers && whoisData.domain.name_servers.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -1238,6 +1249,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Organization Information */}
                         {whoisData.registrant && (
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -1268,6 +1280,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Domain Status */}
                         {whoisData.domain.status && whoisData.domain.status.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -1321,6 +1334,7 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Description Box - Moved here as a full-width section */}
             <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
               <h3 className="text-2xl font-bold mb-6 text-gray-800">Analysis Description</h3>
               <div className="prose max-w-none">
@@ -1330,6 +1344,7 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Write a Review Section */}
             <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
               <h3 className="text-2xl font-bold mb-6 text-gray-800">Write a review!</h3>
               <div className="flex items-center gap-4 mb-6">
@@ -1366,6 +1381,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                 Submit Review
               </Button>
 
+              {/* Admin Comment Box - Conditionally rendered */}
               {isAdmin && (
                 <div className="mt-8 pt-8 border-t border-gray-200">
                   <h4 className="text-xl font-bold mb-4 text-gray-800">Admin Comment</h4>
@@ -1388,6 +1404,7 @@ const WebsiteAnalysisPage: React.FC = () => {
               )}
             </div>
 
+            {/* User Reviews List */}
             {reviewsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="flex flex-col items-center gap-3">
@@ -1407,6 +1424,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                     <div key={review.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
+                          {/* Conditional rendering for stars: only show if not an admin comment */}
                           {!review.isAdminComment && renderStars(review.rating)}
                           <span className="text-sm text-gray-500">{review.date}</span>
                           {review.author && <span className="text-sm text-gray-500 font-medium">- {review.author}</span>}
@@ -1417,6 +1435,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {/* Delete button - Conditionally rendered based on isAdmin state */}
                           {isAdmin && (
                             <Button
                               variant="ghost"
@@ -1440,6 +1459,7 @@ const WebsiteAnalysisPage: React.FC = () => {
         )}
       </div>
 
+      {/* Screenshot Modal */}
       <ScreenshotModal />
     </div>
   );

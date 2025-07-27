@@ -1,17 +1,190 @@
-// actions.ts - MODIFIED
 // src/app/website-analysis/actions.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
 import { cookies } from 'next/headers';
 
-// ... (all existing interfaces) ...
+export interface WebsiteAnalysisResponse {
+  trustScore: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  positivePoints: string[];
+  negativePoints: string[];
+  description: string;
+  technicalFlags: Record<string, number>;
+}
+
+export interface AnalysisResult {
+  website: string;
+  trustScore: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  positivePoints: string[];
+  negativePoints: string[];
+  description: string;
+  lastChecked: string;
+  technicalFlags: Record<string, number>;
+  screenshotId?: string;
+  screenshotUrl?: string;
+  whoisData?: WhoisData;
+  enamadData?: EnamadData;
+  reviewStats?: ReviewStats; // Add reviewStats to AnalysisResult
+}
+
+export interface ScreenshotCaptureResponse {
+  domain: string;
+  id: string;
+  message: string;
+  status: string;
+}
+
+export interface ScreenshotResponse {
+  success: boolean;
+  screenshotId?: string;
+  screenshotUrl?: string;
+  error?: string;
+}
+
+export interface WhoisDomain {
+  id?: string;
+  domain: string;
+  punycode?: string;
+  name?: string;
+  extension?: string;
+  whois_server?: string;
+  status?: string[];
+  name_servers?: string[];
+  created_date?: string;
+  created_date_in_time?: string;
+  updated_date?: string;
+  updated_date_in_time?: string;
+  expiration_date?: string;
+  expiration_date_in_time?: string;
+}
+
+export interface WhoisRegistrar {
+  id?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  referral_url?: string;
+}
+
+export interface WhoisContact {
+  organization?: string;
+  province?: string;
+  country?: string;
+  email?: string;
+  name?: string;
+  city?: string;
+  phone?: string;
+}
+
+export interface WhoisData {
+  domain: WhoisDomain;
+  registrar?: WhoisRegistrar;
+  registrant?: WhoisContact;
+  administrative?: WhoisContact;
+  technical?: WhoisContact;
+}
+
+export interface WhoisResponse {
+  success: boolean;
+  data?: WhoisData;
+  error?: string;
+}
+
+export interface EnamadData {
+  id: number;
+  domain: string;
+  nameper: string;
+  approvedate: string;
+  expdate: string;
+  stateName: string;
+  cityName: string;
+  logolevel: number;
+  srvText: string;
+  Code: string;
+  isNewProfile: boolean;
+}
+
+export interface EnamadResponse {
+  success: boolean;
+  data?: EnamadData;
+  error?: string;
+}
+
+// URL Comment interfaces
+export interface UrlComment {
+  id: string;
+  rating: number;
+  comment: string;
+  date: string;
+  author?: string;
+  helpful?: number;
+  isAdminComment?: boolean;
+}
+
+export interface UrlCommentSubmission {
+  url: string;
+  root_id: number | null;
+  rating?: number;
+  comment_content: string;
+}
+
+export interface UrlCommentsResponse {
+  success: boolean;
+  data?: UrlComment[];
+  error?: string;
+}
+
+export interface SubmitCommentResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface DeleteCommentResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+// New interfaces for UrlRatings
+export interface ReviewStats {
+  average: number;
+  count: number;
+  five_count: number;
+  four_count: number;
+  three_count: number;
+  two_count: number;
+  one_count: number;
+}
+
+export interface UrlRatingsResponse {
+  success: boolean;
+  data?: ReviewStats;
+  error?: string;
+}
+
+
+// UserInfo interface to match the exact API response for ReturnByToken
+interface UserInfo {
+  admin_id?: number; // Optional, present for admins
+  username: string;
+  email: string;
+  name: string;
+  contact_info: string;
+  bio: string | null;
+  profile_picture_id: number;
+  token: string;
+  role: string; // The role is a string (e.g., "admin", "user")
+  is_verified?: boolean; // Based on previous snippets, this might be present too
+}
 
 // Helper function to get user info from token using the specified API
 async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `http://localhost:8080/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: {
@@ -63,7 +236,7 @@ export async function captureScreenshot(domain: string): Promise<{
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot`, {
+    const response = await fetch('http://localhost:8080/AI/scraper/screenshot', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +269,7 @@ export async function captureScreenshot(domain: string): Promise<{
 
 export async function getScreenshotById(screenshotId: string): Promise<ScreenshotResponse> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot/get?id=${screenshotId}`, {
+    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/get?id=${screenshotId}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -127,7 +300,7 @@ export async function getLatestScreenshotByDomain(domain: string): Promise<Scree
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/screenshot/domain?domain=${cleanDomain}`, {
+    const response = await fetch(`http://localhost:8080/AI/scraper/screenshot/domain?domain=${cleanDomain}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -191,7 +364,7 @@ export async function getWhoisData(domain: string): Promise<WhoisResponse> {
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/ai/whois/${cleanDomain}`, {
+    const response = await fetch(`http://localhost:8080/AI/ai/whois/${cleanDomain}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +391,7 @@ export async function getEnamadData(domain: string): Promise<EnamadResponse> {
   try {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/scraper/enamad`, {
+    const response = await fetch('http://localhost:8080/AI/scraper/enamad', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -271,7 +444,7 @@ export async function getUrlComments(url: string): Promise<UrlCommentsResponse> 
   try {
     const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/UrlComments?url=${encodeURIComponent(cleanUrl)}`, {
+    const response = await fetch(`http://localhost:8080/Public/publicManager/UrlComments?url=${encodeURIComponent(cleanUrl)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -349,7 +522,7 @@ export async function submitUrlComment(commentData: UrlCommentSubmission): Promi
 
     const cleanUrl = commentData.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/User/userManagement/WriteUrlComment`, {
+    const response = await fetch('http://localhost:8080/User/userManagement/WriteUrlComment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -427,7 +600,7 @@ export async function submitAdminUrlComment(commentData: UrlCommentSubmission): 
 
     const cleanUrl = commentData.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/WriteUrlComment`, {
+    const response = await fetch('http://localhost:8080/Admin/adminManagement/WriteUrlComment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -502,7 +675,7 @@ export async function deleteUrlComment(commentId: string): Promise<DeleteComment
       };
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteUrlComment?comment_id=${encodeURIComponent(commentId)}`, {
+    const response = await fetch(`http://localhost:8080/Admin/adminManagement/DeleteUrlComment?comment_id=${encodeURIComponent(commentId)}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',
@@ -545,7 +718,7 @@ export async function deleteUrlComment(commentId: string): Promise<DeleteComment
 export async function getOverallUrlRatings(url: string): Promise<UrlRatingsResponse> {
   try {
     const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/UrlRatings?url=${encodeURIComponent(cleanUrl)}`, {
+    const response = await fetch(`http://localhost:8080/Public/publicManager/UrlRatings?url=${encodeURIComponent(cleanUrl)}`, {
       method: 'GET',
       headers: {
         'Accept': '*/*'
@@ -555,7 +728,6 @@ export async function getOverallUrlRatings(url: string): Promise<UrlRatingsRespo
 
     if (!response.ok) {
       if (response.status === 404) {
-        // Return default stats if no ratings are found, not an error
         return { success: true, data: { average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 } };
       }
       throw new Error(`Failed to fetch URL ratings: ${response.status} ${response.statusText}`);
@@ -581,7 +753,7 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
   try {
     const cleanUrl = websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/ai/scan/${cleanUrl}`, {
+    const response = await fetch(`http://localhost:8080/AI/ai/scan/${cleanUrl}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -595,16 +767,14 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
 
     const apiData: WebsiteAnalysisResponse = await response.json();
 
-    // Fetch screenshot, whois, enamad, and review stats in parallel
-    const [screenshotResult, whoisResult, enamadResult, reviewStatsResult] = await Promise.all([
+    const [screenshotData, whoisData, enamadData, reviewStatsData] = await Promise.all([
       getLatestScreenshotByDomain(cleanUrl),
       getWhoisData(cleanUrl),
       getEnamadData(cleanUrl),
-      getOverallUrlRatings(cleanUrl)
+      getOverallUrlRatings(cleanUrl) // Fetch review stats
     ]);
 
-    // If no screenshot is immediately available, trigger a background capture
-    if (!screenshotResult.screenshotUrl) {
+    if (!screenshotData.screenshotUrl) {
       captureScreenshot(cleanUrl).catch(error => {
         console.warn('Background screenshot capture failed:', error);
       });
@@ -617,13 +787,13 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       positivePoints: apiData.positivePoints || [],
       negativePoints: apiData.negativePoints || [],
       description: apiData.description,
-      lastChecked: 'Just now', // This should ideally come from the API or be calculated if real-time
+      lastChecked: 'Just now',
       technicalFlags: apiData.technicalFlags || {},
-      screenshotId: screenshotResult.screenshotId,
-      screenshotUrl: screenshotResult.screenshotUrl,
-      whoisData: whoisResult.success ? whoisResult.data : undefined,
-      enamadData: enamadResult.success ? enamadResult.data : undefined,
-      reviewStats: reviewStatsResult.success ? reviewStatsResult.data : undefined, // Assign fetched review stats
+      screenshotId: screenshotData.screenshotId,
+      screenshotUrl: screenshotData.screenshotUrl,
+      whoisData: whoisData.success ? whoisData.data : undefined,
+      enamadData: enamadData.success ? enamadData.data : undefined,
+      reviewStats: reviewStatsData.success ? reviewStatsData.data : undefined, // Assign fetched review stats
     };
 
     return { success: true, data: result };
