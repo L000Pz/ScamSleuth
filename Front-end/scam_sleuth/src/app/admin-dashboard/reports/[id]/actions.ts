@@ -30,6 +30,16 @@ interface ApiReportResponse {
   };
 }
 
+// Enhanced media interface with type detection
+interface MediaFile {
+  report_id: number;
+  media_id: number;
+  type: 'image' | 'video' | 'audio' | 'document' | 'unknown';
+  name: string;
+  size?: string;
+  mimeType?: string;
+}
+
 interface TransformedReport {
   id: string;
   type: string;
@@ -51,10 +61,7 @@ interface TransformedReport {
     profilePicture: number | null;
     isVerified: boolean;
   };
-  media: Array<{
-    report_id: number;
-    media_id: number;
-  }>;
+  media: MediaFile[];
 }
 
 /**
@@ -63,7 +70,7 @@ interface TransformedReport {
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/IAM/authentication/ReturnByToken?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
         headers: { 
@@ -80,6 +87,155 @@ async function getUserInfoFromToken(token: string) {
   } catch (error) {
     console.error('Error fetching user info:', error);
     return null;
+  }
+}
+
+// Function to detect media type by making a HEAD request to get Content-Type
+async function detectMediaType(mediaId: number, token: string): Promise<{
+  type: 'image' | 'video' | 'audio' | 'document' | 'unknown';
+  mimeType?: string;
+  size?: string;
+  name?: string;
+}> {
+  try {
+    // First try to get metadata with HEAD request
+    const headResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Media/mediaManager/Get?id=${mediaId}`, {
+      method: 'HEAD',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Accept': '*/*'
+      },
+      cache: 'no-store'
+    });
+
+    let contentType = '';
+    let contentLength = '';
+    let fileName = `media_${mediaId}`;
+
+    if (headResponse.ok) {
+      contentType = headResponse.headers.get('content-type')?.toLowerCase() || '';
+      contentLength = headResponse.headers.get('content-length') || '';
+      
+      // Try to extract filename from content-disposition header
+      const contentDisposition = headResponse.headers.get('content-disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch) {
+          fileName = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+    } else {
+      // If HEAD fails, try a small range request to get headers
+      try {
+        const rangeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Media/mediaManager/Get?id=${mediaId}`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': '*/*',
+            'Range': 'bytes=0-1023' // Get first 1KB only
+          },
+          cache: 'no-store'
+        });
+
+        if (rangeResponse.ok) {
+          contentType = rangeResponse.headers.get('content-type')?.toLowerCase() || '';
+          contentLength = rangeResponse.headers.get('content-length') || 
+                         rangeResponse.headers.get('content-range')?.split('/')[1] || '';
+          
+          const contentDisposition = rangeResponse.headers.get('content-disposition');
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch) {
+              fileName = filenameMatch[1].replace(/['"]/g, '');
+            }
+          }
+        }
+      } catch (rangeError) {
+        console.warn(`Range request failed for media ${mediaId}:`, rangeError);
+      }
+    }
+
+    // Format file size
+    let size: string | undefined;
+    if (contentLength) {
+      const bytes = parseInt(contentLength);
+      if (!isNaN(bytes)) {
+        if (bytes < 1024) {
+          size = `${bytes} B`;
+        } else if (bytes < 1024 * 1024) {
+          size = `${(bytes / 1024).toFixed(1)} KB`;
+        } else if (bytes < 1024 * 1024 * 1024) {
+          size = `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        } else {
+          size = `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+        }
+      }
+    }
+
+    // Determine file type based on content-type first
+    let type: 'image' | 'video' | 'audio' | 'document' | 'unknown' = 'unknown';
+
+    if (contentType) {
+      if (contentType.startsWith('image/')) {
+        type = 'image';
+      } else if (contentType.startsWith('video/')) {
+        type = 'video';
+      } else if (contentType.startsWith('audio/')) {
+        type = 'audio';
+      } else if (
+        contentType.includes('pdf') ||
+        contentType.includes('msword') ||
+        contentType.includes('vnd.openxmlformats-officedocument') ||
+        contentType.includes('vnd.ms-') ||
+        contentType.includes('text/plain') ||
+        contentType.includes('application/rtf') ||
+        contentType === 'application/json' ||
+        contentType === 'application/xml'
+      ) {
+        type = 'document';
+      }
+    }
+
+    // Fallback: detect by file extension if content-type detection failed
+    if (type === 'unknown') {
+      const extension = fileName.toLowerCase().split('.').pop() || '';
+      
+      // Image extensions
+      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'].includes(extension)) {
+        type = 'image';
+      } 
+      // Video extensions
+      else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'ogv', 'mpeg', 'mpg', 'm4v'].includes(extension)) {
+        type = 'video';
+      } 
+      // Audio extensions
+      else if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma', 'opus', 'amr'].includes(extension)) {
+        type = 'audio';
+      } 
+      // Document extensions
+      else if ([
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 
+        'txt', 'rtf', 'csv', 'json', 'xml', 'html', 'htm',
+        'odt', 'ods', 'odp', 'pages', 'numbers', 'key'
+      ].includes(extension)) {
+        type = 'document';
+      }
+    }
+
+    return {
+      type,
+      mimeType: contentType || undefined,
+      size,
+      name: fileName
+    };
+  } catch (error) {
+    console.error(`Error detecting media type for ${mediaId}:`, error);
+    
+    // Last resort: return unknown type with basic info
+    return { 
+      type: 'unknown',
+      name: `media_${mediaId}`
+    };
   }
 }
 
@@ -100,7 +256,7 @@ function formatDate(dateString: string): string {
 }
 
 /**
- * Get admin report by ID
+ * Get admin report by ID with enhanced media type detection
  * @param id - The report ID to fetch
  * @returns Promise with success status and report data or error
  */
@@ -129,14 +285,14 @@ export async function getAdminReport(id: string): Promise<{
 
     // Fetch scam types and report data in parallel
     const [scamTypesRes, reportRes] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Public/publicManager/scamTypes`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         },
         cache: 'no-store'
       }),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetReportById?report_id=${id}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Admin/adminManagement/GetReportById?report_id=${id}`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -171,16 +327,49 @@ export async function getAdminReport(id: string): Promise<{
       return { success: false, error: 'Invalid report data received from server.' };
     }
 
+    // Enhanced media processing with type detection
+    const mediaFiles: MediaFile[] = [];
+    if (reportData.media && reportData.media.length > 0) {
+      // Process media files in parallel for better performance
+      const mediaPromises = reportData.media.map(async (mediaId: number) => {
+        const mediaInfo = await detectMediaType(mediaId, token);
+        return {
+          report_id: reportData.report.report_id,
+          media_id: mediaId,
+          type: mediaInfo.type,
+          name: mediaInfo.name || `media_${mediaId}`,
+          size: mediaInfo.size,
+          mimeType: mediaInfo.mimeType
+        };
+      });
+
+      const resolvedMedia = await Promise.all(mediaPromises);
+      mediaFiles.push(...resolvedMedia);
+    }
+
     // Find the matching scam type
     const scamType = scamTypes.find((type) => 
       type.scam_type_id === reportData.report.scam_type_id
     );
 
-    // Transform media array to expected format
-    const transformedMedia = reportData.media?.map((mediaId) => ({
-      report_id: reportData.report.report_id,
-      media_id: mediaId
-    })) || [];
+    // Enhanced evidence description
+    const getEvidenceDescription = (mediaFiles: MediaFile[]): string[] => {
+      if (mediaFiles.length === 0) return [];
+      
+      const counts = mediaFiles.reduce((acc, file) => {
+        acc[file.type] = (acc[file.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const descriptions: string[] = [];
+      if (counts.image) descriptions.push(`${counts.image} image${counts.image > 1 ? 's' : ''}`);
+      if (counts.video) descriptions.push(`${counts.video} video${counts.video > 1 ? 's' : ''}`);
+      if (counts.audio) descriptions.push(`${counts.audio} audio file${counts.audio > 1 ? 's' : ''}`);
+      if (counts.document) descriptions.push(`${counts.document} document${counts.document > 1 ? 's' : ''}`);
+      if (counts.unknown) descriptions.push(`${counts.unknown} other file${counts.unknown > 1 ? 's' : ''}`);
+
+      return descriptions;
+    };
 
     // Transform the report data to match frontend expectations
     const transformedReport: TransformedReport = {
@@ -194,9 +383,7 @@ export async function getAdminReport(id: string): Promise<{
       status: 'under_review', // This status is hardcoded, adjust if API provides it
       reporterName: reportData.reportWriterDetails.name,
       contactInfo: reportData.reportWriterDetails.email,
-      evidence: reportData.media?.length > 0 
-        ? reportData.media.map((mediaId) => `Media ID: ${mediaId}`)
-        : undefined,
+      evidence: getEvidenceDescription(mediaFiles),
       timeline: `Scam occurred on ${formatDate(reportData.report.scam_date)}`, // Hardcoded timeline, adjust if API provides it
       writer: {
         id: reportData.reportWriterDetails.user_id,
@@ -206,7 +393,7 @@ export async function getAdminReport(id: string): Promise<{
         profilePicture: reportData.reportWriterDetails.profile_picture_id,
         isVerified: reportData.reportWriterDetails.is_verified
       },
-      media: transformedMedia
+      media: mediaFiles
     };
 
     return { success: true, data: transformedReport };
@@ -286,7 +473,7 @@ export async function deleteReport(reportId: string): Promise<{
     }
 
     // Perform actual API call to delete the report
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',

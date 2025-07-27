@@ -61,8 +61,6 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -194,9 +192,9 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {recentActivity.map((activity) => (
+              {recentActivity.map((activity, index) => (
                 <div
-                  key={activity.id}
+                  key={`${activity.type}-${activity.id}-${index}`}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                   onClick={() => {
                     if (activity.type === 'report') {
@@ -227,7 +225,6 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-
                 </div>
               ))}
             </div>

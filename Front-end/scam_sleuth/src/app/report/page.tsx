@@ -247,16 +247,25 @@ export default function ReportScamPage() {
       }
       
       const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'video/mp4',      // MP4 video
+      'video/quicktime', // MOV video
+      'video/x-msvideo', // AVI video
+      'video/webm',     // WebM video
+      'audio/mpeg',     // MP3 audio
+      'audio/wav',      // WAV audio
+      'audio/ogg',      // Ogg audio
+      'video/*',        // Any video type
+      'audio/*'         // Any audio type
       ];
       
       if (!allowedTypes.includes(file.type)) {
-        setFileUploadError('Only images (JPEG, PNG, GIF), PDF, and Word documents are allowed');
+        setFileUploadError('Only images (JPEG, PNG, GIF), PDF, Word documents, videos, and audio files are allowed');
         return false;
       }
 
@@ -479,7 +488,7 @@ export default function ReportScamPage() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Evidence (Optional)</h3>
-              <p className="text-gray-600">Upload any supporting documents or images</p>
+              <p className="text-gray-600">Upload any supporting documents, images, videos or voice recordings</p>
             </div>
 
             <div 
@@ -510,7 +519,7 @@ export default function ReportScamPage() {
                 onChange={handleFileChange}
                 className="hidden"
                 id="file-upload"
-                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.mp4,.mov,.avi,.webm,.mp3,.wav,.ogg"
                 multiple
                 disabled={isUploading}
               />
@@ -531,7 +540,7 @@ export default function ReportScamPage() {
                 {!isDragOver && !isUploading && ' or drag and drop'}
                 <br />
                 <span className="text-gray-400 mt-2 block">
-                  Images, PDFs, Word documents (max 5MB each)
+                  Images, PDFs, Word documents, Videos, Voice Recordings (max 5MB each)
                 </span>
               </label>
             </div>
