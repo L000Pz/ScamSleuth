@@ -22,5 +22,10 @@ RUN dotnet publish "Media.Presentation.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
+
 COPY --from=publish /app/publish .
+
+# Copy default_pfp from the project folder to the final image
+COPY Media.Presentation/default_pfp ./default_pfp
+
 ENTRYPOINT ["dotnet", "Media.Presentation.dll"]
