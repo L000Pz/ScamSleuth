@@ -1,8 +1,6 @@
-// src/app/website-analysis/page.tsx
-// This is your main page.tsx, now a Client Component
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search,
@@ -30,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
 
+// Import your actions - you'll need to create these based on your existing actions
 import {
   analyzeWebsite,
   getLatestScreenshotByDomain,
@@ -39,12 +38,12 @@ import {
   submitUrlComment,
   submitAdminUrlComment,
   deleteUrlComment,
-  getIsAdminStatus, // Import the new server action
+  getIsAdminStatus,
+  getOverallUrlRatings,
   type AnalysisResult,
   type WhoisData,
   type EnamadData,
-  type UrlComment,
-  type ReviewStats // Import ReviewStats
+  type ReviewStats
 } from './actions';
 
 interface UserReview {
@@ -52,65 +51,64 @@ interface UserReview {
   rating: number;
   comment: string;
   date: string;
+  rawDate: Date;
   author?: string;
   isAdminComment?: boolean;
 }
 
-// ReviewStats interface is now imported from actions.ts
-// interface ReviewStats {
-//   averageRating: number;
-//   totalReviews: number;
-//   ratingBreakdown: {
-//     5: number;
-//     4: number;
-//     3: number;
-//     2: number;
-//     1: number;
-//   };
-// }
+interface NewReview {
+  rating: number;
+  comment: string;
+}
 
-const WebsiteAnalysisPage: React.FC = () => {
+// Loading component for Suspense fallback
+const LoadingFallback: React.FC = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+      <p className="text-xl font-semibold text-gray-700">Loading page...</p>
+    </div>
+  </div>
+);
+
+// Main component that uses useSearchParams
+const WebsiteAnalysisContent: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialWebsite = searchParams.get('site') || 'example.com';
 
-  // State management
+  // State declarations with proper typing
   const [searchQuery, setSearchQuery] = useState<string>(initialWebsite);
   const [currentWebsite, setCurrentWebsite] = useState<string>(initialWebsite);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
-  const [newAdminComment, setNewAdminComment] = useState('');
+  const [newReview, setNewReview] = useState<NewReview>({ rating: 0, comment: '' });
+  const [newAdminComment, setNewAdminComment] = useState<string>('');
   const [hoveredRating, setHoveredRating] = useState<number>(0);
 
-  // Screenshot state
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [screenshotLoading, setScreenshotLoading] = useState<boolean>(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState<boolean>(false);
 
-  // WHOIS state
   const [whoisData, setWhoisData] = useState<WhoisData | null>(null);
   const [whoisLoading, setWhoisLoading] = useState<boolean>(false);
   const [whoisError, setWhoisError] = useState<string | null>(null);
 
-  // Enamad state
   const [enamadData, setEnamadData] = useState<EnamadData | null>(null);
   const [enamadLoading, setEnamadLoading] = useState<boolean>(false);
   const [enamadError, setEnamadError] = useState<string | null>(null);
 
-  // User Reviews state
   const [userReviews, setUserReviews] = useState<UserReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [reviewSubmissionMessage, setReviewSubmissionMessage] = useState<string | null>(null);
   const [reviewSubmissionError, setReviewSubmissionError] = useState<string | null>(null);
-  
-  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Initialize isAdmin to false
 
-  // ReviewStats state, initialized with default values or from analysisResult
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
   const [overallReviewStats, setOverallReviewStats] = useState<ReviewStats>({
     average: 0,
     count: 0,
@@ -121,16 +119,16 @@ const WebsiteAnalysisPage: React.FC = () => {
     one_count: 0
   });
 
-  // Function to check admin status by calling the server action
-  const checkAdminStatus = async () => {
+  // Helper functions
+  const checkAdminStatus = useCallback(async (): Promise<void> => {
     try {
-      const adminStatus = await getIsAdminStatus(); // Call the server action directly
+      const adminStatus = await getIsAdminStatus();
       setIsAdmin(adminStatus);
     } catch (err) {
       console.error('Error fetching admin status:', err);
-      setIsAdmin(false); // Ensure isAdmin is false on error
+      setIsAdmin(false);
     }
-  };
+  }, []);
 
   const formatPersianDate = (dateString: string | undefined): string => {
     if (!dateString) return 'Not available';
@@ -190,7 +188,71 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const performAnalysis = async (website: string) => {
+  const fetchOverallReviewStats = useCallback(async (website: string): Promise<void> => {
+    try {
+      const result = await getOverallUrlRatings(website);
+      if (result.success && result.data) {
+        setOverallReviewStats(result.data);
+      } else {
+        setOverallReviewStats({ 
+          average: 0, 
+          count: 0, 
+          five_count: 0, 
+          four_count: 0, 
+          three_count: 0, 
+          two_count: 0, 
+          one_count: 0 
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching overall review stats:', err);
+      setOverallReviewStats({ 
+        average: 0, 
+        count: 0, 
+        five_count: 0, 
+        four_count: 0, 
+        three_count: 0, 
+        two_count: 0, 
+        one_count: 0 
+      });
+    }
+  }, []);
+
+  const fetchComments = useCallback(async (website: string): Promise<void> => {
+    setReviewsLoading(true);
+    setReviewsError(null);
+    try {
+      const result = await getUrlComments(website);
+      if (result.success && result.data) {
+        const mappedComments: UserReview[] = result.data.map(comment => {
+          const rawDate = comment.date ? new Date(comment.date) : new Date(0);
+          return {
+            id: comment.id,
+            rating: comment.rating,
+            comment: comment.comment,
+            date: formatDate(comment.date),
+            rawDate: rawDate,
+            author: comment.author,
+            isAdminComment: comment.isAdminComment
+          };
+        });
+
+        const sortedComments = mappedComments.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+        setUserReviews(sortedComments);
+      } else {
+        setReviewsError(result.error || 'Failed to load comments');
+        setUserReviews([]);
+      }
+    } catch (err) {
+      setReviewsError('An error occurred while fetching comments');
+      setUserReviews([]);
+      console.error('Fetch comments error:', err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, []);
+
+  const performAnalysis = useCallback(async (website: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -201,43 +263,27 @@ const WebsiteAnalysisPage: React.FC = () => {
         setAnalysisResult(result.data);
         setCurrentWebsite(website);
 
-        if (result.data.screenshotUrl) {
-          setScreenshotUrl(result.data.screenshotUrl);
-          setScreenshotError(null);
-        } else {
-          setScreenshotUrl(null);
-          setScreenshotError('No screenshot available');
-        }
+        setScreenshotUrl(result.data.screenshotUrl || null);
+        setScreenshotError(result.data.screenshotUrl ? null : 'No screenshot available');
 
-        if (result.data.whoisData) {
-          setWhoisData(result.data.whoisData);
-          setWhoisError(null);
-        } else {
-          setWhoisData(null);
-          setWhoisError('WHOIS data not available');
-        }
+        setWhoisData(result.data.whoisData || null);
+        setWhoisError(result.data.whoisData ? null : 'WHOIS data not available');
 
-        if (result.data.enamadData) {
-          setEnamadData(result.data.enamadData);
-          setEnamadError(null);
-        } else {
-          setEnamadData(null);
-          setEnamadError('Enamad certification not found');
-        }
+        setEnamadData(result.data.enamadData || null);
+        setEnamadError(result.data.enamadData ? null : 'Enamad certification not found');
 
-        // Set the overall review stats if available
         if (result.data.reviewStats) {
-          setOverallReviewStats({
-            average: result.data.reviewStats.average,
-            count: result.data.reviewStats.count,
-            five_count: result.data.reviewStats.five_count,
-            four_count: result.data.reviewStats.four_count,
-            three_count: result.data.reviewStats.three_count,
-            two_count: result.data.reviewStats.two_count,
-            one_count: result.data.reviewStats.one_count,
-          });
+          setOverallReviewStats(result.data.reviewStats);
         } else {
-          setOverallReviewStats({ average: 0, count: 0, five_count: 0, four_count: 0, three_count: 0, two_count: 0, one_count: 0 });
+          setOverallReviewStats({ 
+            average: 0, 
+            count: 0, 
+            five_count: 0, 
+            four_count: 0, 
+            three_count: 0, 
+            two_count: 0, 
+            one_count: 0 
+          });
         }
 
         await fetchComments(website);
@@ -250,37 +296,9 @@ const WebsiteAnalysisPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchComments]);
 
-  const fetchComments = async (website: string) => {
-    setReviewsLoading(true);
-    setReviewsError(null);
-    try {
-      const result = await getUrlComments(website);
-      if (result.success && result.data) {
-        setUserReviews(result.data.map(comment => ({
-          id: comment.id,
-          rating: comment.rating,
-          comment: comment.comment,
-          date: comment.date,
-          helpful: comment.helpful,
-          author: comment.author,
-          isAdminComment: comment.isAdminComment
-        })));
-      } else {
-        setReviewsError(result.error || 'Failed to load comments');
-        setUserReviews([]);
-      }
-    } catch (err) {
-      setReviewsError('An error occurred while fetching comments');
-      setUserReviews([]);
-      console.error('Fetch comments error:', err);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
-
-  const refreshScreenshot = async () => {
+  const refreshScreenshot = async (): Promise<void> => {
     if (!currentWebsite) return;
 
     setScreenshotLoading(true);
@@ -302,7 +320,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const refreshWhoisData = async () => {
+  const refreshWhoisData = async (): Promise<void> => {
     if (!currentWebsite) return;
 
     setWhoisLoading(true);
@@ -325,7 +343,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const refreshEnamadData = async () => {
+  const refreshEnamadData = async (): Promise<void> => {
     if (!currentWebsite) return;
 
     setEnamadLoading(true);
@@ -348,13 +366,13 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const downloadScreenshot = async () => {
+  const downloadScreenshot = async (): Promise<void> => {
     if (!screenshotUrl) return;
 
     try {
       const response = await fetch(screenshotUrl);
       const blob = await response.blob();
-      
+
       const link = document.createElement('a');
       const blobUrl = URL.createObjectURL(blob);
       link.href = blobUrl;
@@ -362,27 +380,28 @@ const WebsiteAnalysisPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Download error:', err);
     }
   };
 
-  // useEffect to fetch initial analysis and admin status
+  // Effects
   useEffect(() => {
     performAnalysis(initialWebsite);
-    checkAdminStatus(); // Call the server action to get admin status
-  }, [initialWebsite]);
+    checkAdminStatus();
+  }, [initialWebsite, performAnalysis, checkAdminStatus]);
 
-  const handleSearch = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
+  // Event handlers with proper typing
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
 
     if (!searchQuery.trim() || isSearching) return;
 
     const cleanQuery = searchQuery.trim();
 
-    if (cleanQuery === currentWebsite) return;
+    if (cleanQuery === currentWebsite && !error) return;
 
     setIsSearching(true);
 
@@ -406,10 +425,10 @@ const WebsiteAnalysisPage: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSearch(e as any);
+      handleSearch(e as unknown as React.FormEvent<HTMLFormElement>);
     }
   };
 
@@ -425,15 +444,15 @@ const WebsiteAnalysisPage: React.FC = () => {
     return 'High Risk';
   };
 
-  const handleContactSpecialist = () => {
+  const handleContactSpecialist = (): void => {
     router.push('/contact');
   };
 
-  const handleReportScam = () => {
+  const handleReportScam = (): void => {
     router.push(`/report?website=${encodeURIComponent(currentWebsite)}`);
   };
 
-  const renderStars = (rating: number, interactive = false, onRate?: (rating: number) => void) => {
+  const renderStars = (rating: number, interactive = false, onRate?: (rating: number) => void): JSX.Element[] => {
     return Array.from({ length: 5 }, (_, index) => (
       <Star
         key={index}
@@ -451,7 +470,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     ));
   };
 
-  const handleSubmitReview = async () => {
+  const handleSubmitReview = async (): Promise<void> => {
     if (newReview.rating === 0 || !newReview.comment.trim()) {
       setReviewSubmissionError('Please provide a rating and a comment.');
       setReviewSubmissionMessage(null);
@@ -460,6 +479,23 @@ const WebsiteAnalysisPage: React.FC = () => {
 
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
+
+    const tempId = Date.now().toString();
+    const now = new Date();
+    const newCommentToAdd: UserReview = {
+        id: tempId,
+        rating: newReview.rating,
+        comment: newReview.comment,
+        date: formatDate(now.toISOString()),
+        rawDate: now,
+        author: 'You (submitting...)',
+        isAdminComment: false
+    };
+
+    setUserReviews(prev => {
+        const updatedReviews = [newCommentToAdd, ...prev.filter(c => c.id !== tempId)];
+        return updatedReviews.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+    });
 
     try {
       const result = await submitUrlComment({
@@ -473,18 +509,20 @@ const WebsiteAnalysisPage: React.FC = () => {
         setReviewSubmissionMessage(result.message || 'Review submitted successfully!');
         setNewReview({ rating: 0, comment: '' });
         setHoveredRating(0);
-        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
-        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
+        await fetchComments(currentWebsite);
+        await fetchOverallReviewStats(currentWebsite);
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit review.');
+        setUserReviews(prev => prev.filter(c => c.id !== tempId));
       }
     } catch (err) {
       console.error('Error submitting review:', err);
       setReviewSubmissionError('An unexpected error occurred while submitting your review.');
+      setUserReviews(prev => prev.filter(c => c.id !== tempId));
     }
   };
 
-  const handleAdminSubmitReview = async () => {
+  const handleAdminSubmitReview = async (): Promise<void> => {
     if (!newAdminComment.trim()) {
       setReviewSubmissionError('Admin comment cannot be empty.');
       setReviewSubmissionMessage(null);
@@ -493,6 +531,23 @@ const WebsiteAnalysisPage: React.FC = () => {
 
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
+
+    const tempId = Date.now().toString();
+    const now = new Date();
+    const newAdminCommentToAdd: UserReview = {
+        id: tempId,
+        rating: 0,
+        comment: newAdminComment,
+        date: formatDate(now.toISOString()),
+        rawDate: now,
+        author: 'Admin',
+        isAdminComment: true
+    };
+
+    setUserReviews(prev => {
+        const updatedReviews = [newAdminCommentToAdd, ...prev.filter(c => c.id !== tempId)];
+        return updatedReviews.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+    });
 
     try {
       const result = await submitAdminUrlComment({
@@ -504,18 +559,20 @@ const WebsiteAnalysisPage: React.FC = () => {
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Admin comment submitted successfully!');
         setNewAdminComment('');
-        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
-        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
+        await fetchComments(currentWebsite);
+        await fetchOverallReviewStats(currentWebsite);
       } else {
         setReviewSubmissionError(result.error || 'Failed to submit admin comment.');
+        setUserReviews(prev => prev.filter(c => c.id !== tempId));
       }
     } catch (err) {
       console.error('Error submitting admin review:', err);
       setReviewSubmissionError('An unexpected error occurred while submitting admin review.');
+      setUserReviews(prev => prev.filter(c => c.id !== tempId));
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
+  const handleDeleteComment = async (commentId: string): Promise<void> => {
     if (!window.confirm('Are you sure you want to delete this comment?')) {
       return;
     }
@@ -523,22 +580,27 @@ const WebsiteAnalysisPage: React.FC = () => {
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
 
+    const originalReviews = [...userReviews];
+    setUserReviews(prev => prev.filter(comment => comment.id !== commentId));
+
     try {
       const result = await deleteUrlComment(commentId);
       if (result.success) {
         setReviewSubmissionMessage(result.message || 'Comment deleted successfully!');
-        await performAnalysis(currentWebsite); // Re-fetch all data including updated review stats
-        // await fetchComments(currentWebsite); // This will only fetch comments, not the overall stats
+        await fetchOverallReviewStats(currentWebsite);
+        await fetchComments(currentWebsite);
       } else {
         setReviewSubmissionError(result.error || 'Failed to delete comment.');
+        setUserReviews(originalReviews);
       }
     } catch (err) {
       console.error('Error deleting comment:', err);
       setReviewSubmissionError('An unexpected error occurred while deleting the comment.');
+      setUserReviews(originalReviews);
     }
   };
 
-  const ScreenshotModal = () => {
+  const ScreenshotModal: React.FC = () => {
     if (!isScreenshotModalOpen || !screenshotUrl) return null;
 
     return (
@@ -588,6 +650,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     );
   };
 
+  // Loading state
   if (isLoading && !isSearching) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -600,6 +663,7 @@ const WebsiteAnalysisPage: React.FC = () => {
     );
   }
 
+  // Error state
   if (error && !analysisResult) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -628,7 +692,6 @@ const WebsiteAnalysisPage: React.FC = () => {
     );
   }
 
-  // Calculate rating breakdown for display
   const ratingBreakdown = {
     5: overallReviewStats.five_count,
     4: overallReviewStats.four_count,
@@ -639,7 +702,7 @@ const WebsiteAnalysisPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Background Hero Image */}
+      {/* Background Image */}
       <div className="absolute inset-0 w-full overflow-hidden">
         <div className="absolute -left-[100px] w-2/3 bg-gradient-to-r from-black/8 via-black/4 to-transparent flex items-center justify-start">
           <Image
@@ -664,7 +727,7 @@ const WebsiteAnalysisPage: React.FC = () => {
           Back to Search
         </Button>
 
-        {/* Functional Search Bar */}
+        {/* Search Section */}
         <div className="mb-8">
           <form onSubmit={handleSearch} className="relative max-w-lg mx-auto">
             <input
@@ -689,14 +752,12 @@ const WebsiteAnalysisPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Loading indicator for search */}
           {isSearching && (
             <div className="text-center mt-4">
               <p className="text-blue-600 font-medium">Analyzing new website...</p>
             </div>
           )}
 
-          {/* Score Badge */}
           {analysisResult && (
             <div className="text-center mt-6">
               <div className="inline-flex items-center bg-white rounded-full px-6 py-3 shadow-lg border">
@@ -720,13 +781,11 @@ const WebsiteAnalysisPage: React.FC = () => {
           </div>
         )}
 
-        {/* Main Content - Only show if we have analysis results */}
+        {/* Main Content */}
         {analysisResult && (
           <>
-            {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-              {/* Left Column */}
+              {/* Left Column - Trust Score and Actions */}
               <div className="space-y-6">
                 {/* Trust Score Card */}
                 <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
@@ -774,7 +833,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* User Reviews Summary - Updated to use overallReviewStats */}
+                {/* User Reviews Summary */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                   <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
                   <div className="flex items-center gap-3 mb-4">
@@ -787,15 +846,14 @@ const WebsiteAnalysisPage: React.FC = () => {
                     From {overallReviewStats.count} total reviews.
                   </p>
 
-                  {/* Rating Breakdown */}
                   <div className="space-y-3">
                     {[5, 4, 3, 2, 1].map((rating) => (
                       <div key={rating} className="flex items-center gap-3 text-sm">
                         <span className="w-3 font-medium">{rating}</span>
-                        <Star className="w-4 h-4 text-green-500 fill-current flex-shrink-0" />
+                        <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
                         <div className="flex-1 bg-gray-200 rounded-full h-2.5">
                           <div
-                            className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                            className="bg-black h-2.5 rounded-full transition-all duration-500"
                             style={{ width: `${(ratingBreakdown[rating as keyof typeof ratingBreakdown] / (overallReviewStats.count || 1)) * 100}%` }}
                           />
                         </div>
@@ -811,9 +869,8 @@ const WebsiteAnalysisPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Middle Column - Details and Description */}
+              {/* Middle Column - Analysis Details */}
               <div className="space-y-6">
-                {/* Details Box */}
                 <div className="bg-gray-200 rounded-2xl shadow-lg p-6 border border-gray-300">
                   <h3 className="text-xl font-bold mb-6 text-gray-800">Details</h3>
 
@@ -851,7 +908,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column - Screenshot, WHOIS, and Enamad */}
+              {/* Right Column - Technical Data */}
               <div className="space-y-6">
                 {/* Screenshot Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden max-h-[480px]">
@@ -925,7 +982,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                               <div className="text-4xl mb-3">📷</div>
                               <h4 className="text-lg font-semibold mb-2 text-gray-700">Screenshot Unavailable</h4>
                               <p className="text-sm text-gray-600 mb-3">{screenshotError}</p>
-                              <p className="text-xs text-gray-500 mb-3">A new screenshot may be generating in the background</p>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1037,7 +1093,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Certification Dates */}
+                        {/* Certification Period */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
@@ -1054,77 +1110,30 @@ const WebsiteAnalysisPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-
-                        {/* Services */}
-                        {enamadData.srvText && (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                              <Building className="w-4 h-4" />
-                              Services
-                            </h4>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <div className="space-y-1">
-                                {enamadData.srvText.split(',').filter(service => service.trim()).map((service, index) => (
-                                  <div key={index} className="text-xs bg-white px-2 py-1 rounded flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                    <span className="flex-1" dir="rtl">{service.trim()}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Verification Code */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Shield className="w-4 h-4" />
-                            Verification
-                          </h4>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Verification Code:</span>
-                              <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
-                                {enamadData.Code}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center py-8 text-center">
                         <div className="text-gray-500">
-                          {enamadError ? (
-                            <>
-                              <div className="text-4xl mb-3">🏆</div>
-                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Enamad Not Found</h4>
-                              <p className="text-sm text-gray-600 mb-3">{enamadError}</p>
-                              <p className="text-xs text-gray-500 mb-3">This website may not be certified with Enamad</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={refreshEnamadData}
-                                className="flex items-center gap-2 mx-auto"
-                                title="Retry Enamad lookup"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                                Try Again
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-6xl mb-4 opacity-60">🏆</div>
-                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Enamad Info</h4>
-                              <p className="text-sm">Please wait...</p>
-                            </>
-                          )}
+                          <div className="text-4xl mb-3">🏆</div>
+                          <h4 className="text-lg font-semibold mb-2 text-gray-700">Enamad Not Found</h4>
+                          <p className="text-sm text-gray-600 mb-3">{enamadError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refreshEnamadData}
+                            className="flex items-center gap-2 mx-auto"
+                            title="Retry Enamad lookup"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Try Again
+                          </Button>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* WHOIS Information Card */}
+                {/* Domain Information Card */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -1156,7 +1165,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                       </div>
                     ) : whoisData ? (
                       <div className="space-y-4 text-sm">
-                        {/* Domain Information */}
+                        {/* Domain Details */}
                         <div className="space-y-3">
                           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                             <Globe className="w-4 h-4" />
@@ -1177,18 +1186,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Age:</span>
                                 <span className="font-medium">{calculateDomainAge(whoisData.domain.created_date)}</span>
-                              </div>
-                            )}
-                            {whoisData.domain.expiration_date && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Expires:</span>
-                                <span className="font-medium">{formatDate(whoisData.domain.expiration_date)}</span>
-                              </div>
-                            )}
-                            {whoisData.domain.updated_date && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Updated:</span>
-                                <span className="font-medium">{formatDate(whoisData.domain.updated_date)}</span>
                               </div>
                             )}
                           </div>
@@ -1217,85 +1214,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                                   </div>
                                 </div>
                               )}
-                              {whoisData.registrar.phone && (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Phone:</span>
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3 text-gray-400" />
-                                    <span className="font-medium">{whoisData.registrar.phone}</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Name Servers */}
-                        {whoisData.domain.name_servers && whoisData.domain.name_servers.length > 0 && (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                              <Server className="w-4 h-4" />
-                              Name Servers
-                            </h4>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <div className="space-y-1">
-                                {whoisData.domain.name_servers.map((ns, index) => (
-                                  <div key={index} className="text-xs font-mono bg-white px-2 py-1 rounded">
-                                    {ns}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Organization Information */}
-                        {whoisData.registrant && (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                              <Building className="w-4 h-4" />
-                              Registrant
-                            </h4>
-                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                              {whoisData.registrant.organization && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Organization:</span>
-                                  <span className="font-medium">{whoisData.registrant.organization}</span>
-                                </div>
-                              )}
-                              {(whoisData.registrant.country || whoisData.registrant.province) && (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Location:</span>
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 text-gray-400" />
-                                    <span className="font-medium">
-                                      {[whoisData.registrant.province, whoisData.registrant.country]
-                                        .filter(Boolean)
-                                        .join(', ')}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Domain Status */}
-                        {whoisData.domain.status && whoisData.domain.status.length > 0 && (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                              <Shield className="w-4 h-4" />
-                              Status
-                            </h4>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <div className="space-y-1">
-                                {whoisData.domain.status.map((status, index) => (
-                                  <div key={index} className="text-xs bg-white px-2 py-1 rounded flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                    {status}
-                                  </div>
-                                ))}
-                              </div>
                             </div>
                           </div>
                         )}
@@ -1303,29 +1221,19 @@ const WebsiteAnalysisPage: React.FC = () => {
                     ) : (
                       <div className="flex items-center justify-center py-8 text-center">
                         <div className="text-gray-500">
-                          {whoisError ? (
-                            <>
-                              <div className="text-4xl mb-3">🌐</div>
-                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Domain Info Unavailable</h4>
-                              <p className="text-sm text-gray-600 mb-3">{whoisError}</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={refreshWhoisData}
-                                className="flex items-center gap-2 mx-auto"
-                                title="Retry WHOIS lookup"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                                Try Again
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-6xl mb-4 opacity-60">🌐</div>
-                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Domain Info</h4>
-                              <p className="text-sm">Please wait...</p>
-                            </>
-                          )}
+                          <div className="text-4xl mb-3">🌐</div>
+                          <h4 className="text-lg font-semibold mb-2 text-gray-700">Domain Info Unavailable</h4>
+                          <p className="text-sm text-gray-600 mb-3">{whoisError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refreshWhoisData}
+                            className="flex items-center gap-2 mx-auto"
+                            title="Retry WHOIS lookup"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Try Again
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1334,7 +1242,7 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Description Box - Moved here as a full-width section */}
+            {/* Analysis Description */}
             <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
               <h3 className="text-2xl font-bold mb-6 text-gray-800">Analysis Description</h3>
               <div className="prose max-w-none">
@@ -1344,9 +1252,11 @@ const WebsiteAnalysisPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Write a Review Section */}
+            {/* Review Section */}
             <div className="mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
               <h3 className="text-2xl font-bold mb-6 text-gray-800">Write a review!</h3>
+              
+              {/* User Review Form */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex">
                   {renderStars(newReview.rating, true, (rating) => setNewReview({...newReview, rating}))}
@@ -1355,12 +1265,15 @@ const WebsiteAnalysisPage: React.FC = () => {
                   {newReview.rating > 0 ? `${newReview.rating} star${newReview.rating > 1 ? 's' : ''}` : 'Click to rate'}
                 </span>
               </div>
+              
               <textarea
                 value={newReview.comment}
                 onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
                 placeholder="Share your experience with this website..."
                 className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all mb-6"
               />
+              
+              {/* Messages */}
               {reviewSubmissionMessage && (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                   <span className="block sm:inline">{reviewSubmissionMessage}</span>
@@ -1371,6 +1284,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                   <span className="block sm:inline">{reviewSubmissionError}</span>
                 </div>
               )}
+              
               <Button
                 variant="outline"
                 size="lg"
@@ -1381,7 +1295,7 @@ const WebsiteAnalysisPage: React.FC = () => {
                 Submit Review
               </Button>
 
-              {/* Admin Comment Box - Conditionally rendered */}
+              {/* Admin Comment Section */}
               {isAdmin && (
                 <div className="mt-8 pt-8 border-t border-gray-200">
                   <h4 className="text-xl font-bold mb-4 text-gray-800">Admin Comment</h4>
@@ -1404,7 +1318,7 @@ const WebsiteAnalysisPage: React.FC = () => {
               )}
             </div>
 
-            {/* User Reviews List */}
+            {/* Reviews List */}
             {reviewsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="flex flex-col items-center gap-3">
@@ -1424,7 +1338,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                     <div key={review.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          {/* Conditional rendering for stars: only show if not an admin comment */}
                           {!review.isAdminComment && renderStars(review.rating)}
                           <span className="text-sm text-gray-500">{review.date}</span>
                           {review.author && <span className="text-sm text-gray-500 font-medium">- {review.author}</span>}
@@ -1435,7 +1348,6 @@ const WebsiteAnalysisPage: React.FC = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {/* Delete button - Conditionally rendered based on isAdmin state */}
                           {isAdmin && (
                             <Button
                               variant="ghost"
@@ -1462,6 +1374,15 @@ const WebsiteAnalysisPage: React.FC = () => {
       {/* Screenshot Modal */}
       <ScreenshotModal />
     </div>
+  );
+};
+
+// Main component with Suspense wrapper
+const WebsiteAnalysisPage: React.FC = () => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <WebsiteAnalysisContent />
+    </Suspense>
   );
 };
 
