@@ -50,6 +50,7 @@
 - **Database**: PostgreSQL, MongoDB  
 - **Authentication**: JWT  
 - **AI/ML**: Custom trust score model for URL analysis
+- **Email Verification**: MojoAuth
 
 ## License
 
