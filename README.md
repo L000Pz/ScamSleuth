@@ -6,43 +6,50 @@
 
 ## Overview
 
-**Scam Sleuth** is a platform that allows users to report scam projects, and for admins to review, manage, and inform the public about various scams. The website provides a secure environment for users to submit reports, while also offering valuable content in the form of blog posts to keep everyone informed about the latest scams.
+**Scam Sleuth** is a platform that allows users to report scam projects, analyze websites using AI, and for admins to review, manage, and inform the public about various scams. The website provides a secure environment for users to submit reports, check suspicious URLs, and stay informed through blog posts.
 
 ## How It Works
 
 ### 1. **User Registration & Authentication**
 - **Sign Up**: New users can sign up with their email, name, and password. Their password is securely hashed, and they must verify their email before their account becomes active.
-- **Login**: Returning users can log in using their email and password. Once authenticated, they can access the scam report submission page.
+- **Login**: Returning users can log in using their email and password. Once authenticated, they can access features like scam reporting, URL analysis, and commenting.
 
 ### 2. **Submitting Scam Reports**
 - **Report Form**: Once logged in, users can submit reports on scam projects. They can provide details like the project name, a description, and any evidence (e.g., links, screenshots).
 - **Submission Review**: All submitted reports are sent to the admin panel for review. The reports are private and only visible to admins until further action is taken.
 
-### 3. **Admin Dashboard**
-- **Review Reports**: Admins can log in and access a comprehensive list of all user-submitted scam reports. They can filter these reports by date, project type, or status to help prioritize their review.
-- **Blog Management**: Admins can write, edit, and publish blog posts to inform users about specific scams or scam types (e.g., phishing, investment fraud, identity theft). These blog posts are visible to the public once published.
-  
-### 4. **Blog Posts**
-- **Viewing Blogs**: Website visitors can view publicly available blog posts. Blog posts are organized by date and category (e.g., phishing, financial scams). Users can read blog posts to stay informed about the latest scams.
-- **Comments**: Registered users can comment on blog posts to share insights, ask questions, or discuss the content. Admins have the ability to moderate and approve comments before they are publicly visible.
+### 3. **Ask AI: Website Trustworthiness Checker**
+- **AI-Powered Analysis**: Users can input a website URL to analyze how secure and trustworthy it is.
+- **Scoring System**: The AI model evaluates the submitted URL and returns a **trust score**, which indicates how likely the website is to be legitimate or a scam.
+- **Community Feedback**: After checking a URL, users can **leave comments** on the result page, enabling discussion and sharing additional context.
 
-### 5. **Media in Blog Posts**
-- **Adding Media**: Admins can enrich blog posts with images, videos, and other media types. These media files are securely stored and can be reused across multiple posts. This helps to provide detailed evidence and make the blog content more engaging.
+### 4. **Admin Dashboard**
+- **Review Reports**: Admins can access a comprehensive list of all user-submitted scam reports. They can filter these reports by date, project type, or status to prioritize review.
+- **Blog Management**: Admins can write, edit, and publish blog posts to inform users about specific scams or scam types (e.g., phishing, investment fraud, identity theft). These blog posts are visible to the public once published.
+
+### 5. **Blog Posts**
+- **Viewing Blogs**: Website visitors can view publicly available blog posts organized by date and category.
+- **Comments**: Registered users can comment on blog posts to share insights, ask questions, or discuss the topic. Admins can moderate these comments before they appear publicly.
+
+### 6. **Media in Blog Posts**
+- **Adding Media**: Admins can enrich blog posts with images, videos, and other media types. These are securely stored and reusable, helping to enhance post quality and clarity.
 
 ## Key Features
 
-- **Secure User Authentication**: Users must verify their emails and log in securely to report scams.
-- **Report Submission**: Users can submit detailed scam reports, which are reviewed privately by admins.
-- **Admin Dashboard**: Admins manage scam reports and blog content, ensuring the platform stays current and informative.
-- **Public Blog Display**: Users can view blog posts categorized by scam type, helping them stay informed about emerging threats.
-- **Interactive Comments**: Registered users can comment on blog posts, fostering interaction and knowledge sharing.
+- **Secure User Authentication**: Email verification and JWT-secured sessions.
+- **Scam Report Submission**: Structured form for submitting detailed scam project reports.
+- **AI-Based URL Scanning**: Input any website URL and receive a trust score generated by an AI model.
+- **Commenting on URLs**: Community engagement through comments on each analyzed URL.
+- **Admin Dashboard**: Comprehensive tools for managing reports, blogs, and user-generated content.
+- **Blog System**: Informative blog posts categorized by scam type and moderated user comments.
 
 ## Technologies Used
 
-- **Frontend**: Next.js
-- **Backend**: .NET 7.0, Golang
-- **Database**: PostgreSQL, MongoDB
-- **Authentication**: JWT
+- **Frontend**: Next.js  
+- **Backend**: .NET 7.0, Golang, Python  
+- **Database**: PostgreSQL, MongoDB  
+- **Authentication**: JWT  
+- **AI/ML**: Custom trust score model for URL analysis
 
 ## License
 
@@ -52,7 +59,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 For questions or inquiries, please contact:
 
-- **Front-End Developer Email**: [mahbodseyedzadegan@gmail.com](mailto:mahbodseyedzadegan@gmail.com)
-- **Back-End Developers Email**: [arianaariaee83@gmail.com](mailto:arianaariaee83@gmail.com),[armin890ebp@gmail.com](mailto:armin890ebp@gmail.com)
+- **Front-End Developer Email**: [mahbodseyedzadegan@gmail.com](mailto:mahbodseyedzadegan@gmail.com)  
+- **Back-End Developers Email**: [arianaariaee83@gmail.com](mailto:arianaariaee83@gmail.com), [armin890ebp@gmail.com](mailto:armin890ebp@gmail.com)  
 - **GitHub**: [https://github.com/L000Pz/ScamSleuth](https://github.com/L000Pz/ScamSleuth)
-
