@@ -1,7 +1,7 @@
-/*using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Public.Application.PublicManagement;
+using Public.Contracts;
 using Public.Domain;
 using Public.Presentation.Controllers;
 
@@ -13,6 +13,11 @@ namespace Public.Tests
         private readonly Mock<IShowRecentReviews> _mockShowRecentReviews;
         private readonly Mock<IReturnReviewById> _mockReturnReviewById;
         private readonly Mock<IGetScamTypes> _mockGetScamTypes;
+        private readonly Mock<IShowReviewComments> _mockShowReviewComments;
+        private readonly Mock<IShowUrlComments> _mockShowUrlComments;
+        private readonly Mock<IGetUrlRating> _mockGetUrlRating;
+        private readonly Mock<IShowRecentComments> _mockShowRecentComments;
+        private readonly Mock<ISearchReviews> _mockSearchReviews;
         private readonly PublicController _controller;
         
         private static DateTime testDate = DateTime.Now;
@@ -23,12 +28,22 @@ namespace Public.Tests
             _mockShowRecentReviews = new Mock<IShowRecentReviews>();
             _mockReturnReviewById = new Mock<IReturnReviewById>();
             _mockGetScamTypes = new Mock<IGetScamTypes>();
+            _mockShowReviewComments = new Mock<IShowReviewComments>();
+            _mockShowUrlComments = new Mock<IShowUrlComments>();
+            _mockGetUrlRating = new Mock<IGetUrlRating>();
+            _mockShowRecentComments = new Mock<IShowRecentComments>();
+            _mockSearchReviews = new Mock<ISearchReviews>();
 
             _controller = new PublicController(
                 _mockShowAllReviews.Object,
                 _mockShowRecentReviews.Object,
                 _mockReturnReviewById.Object,
-                _mockGetScamTypes.Object
+                _mockGetScamTypes.Object,
+                _mockShowReviewComments.Object,
+                _mockShowUrlComments.Object,
+                _mockGetUrlRating.Object,
+                _mockShowRecentComments.Object,
+                _mockSearchReviews.Object
             );
         }
 
@@ -56,13 +71,56 @@ namespace Public.Tests
                     review_date = testDate,
                     review_content_id = id
                 },
-                Content = new Review_Content
-                {
-                    review_content_id = id,
-                    review_content = $"Test Content {id}"
-                },
-                
+                Content = $"Test Content {id}",
+                Media = new List<Review_Content_Media>(),
+                ReviewWriterDetails = new ReviewWriterDetails("testuser", "Test User", null, "test@example.com")
             };
+        }
+
+        private ReviewCommentDetails CreateTestReviewComment(int id)
+        {
+            return new ReviewCommentDetails
+            {
+                Comments = new ReviewComment
+                {
+                    comment_id = id,
+                    review_id = 1,
+                    writer_id = id,
+                    writer_role = "user",
+                    comment_content = $"Test comment {id}",
+                    created_at = testDate
+                },
+                WriterDetails = new CommentWriterDetails($"user{id}", $"User {id}", null)
+            };
+        }
+
+        private UrlCommentDetails CreateTestUrlComment(int id)
+        {
+            return new UrlCommentDetails
+            {
+                Comments = new UrlComment
+                {
+                    comment_id = id,
+                    url_id = 1,
+                    writer_id = id,
+                    writer_role = "user",
+                    rating = 4,
+                    comment_content = $"Test URL comment {id}",
+                    created_at = testDate
+                },
+                WriterDetails = new CommentWriterDetails($"user{id}", $"User {id}", null)
+            };
+        }
+
+        private RecentCommentDetails CreateTestRecentComment(int id)
+        {
+            return new RecentCommentDetails(
+                $"user{id}",
+                $"Recent comment {id}",
+                "https://example.com",
+                4.5,
+                testDate
+            );
         }
 
         // GetRecentReviews Tests
@@ -105,6 +163,47 @@ namespace Public.Tests
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Equal("No reviews found", badRequestResult.Value);
+        }
+
+        // GetRecentComments Tests
+        [Fact]
+        public async Task GetRecentComments_HasComments_ReturnsOkResult()
+        {
+            // Arrange
+            var comments = new List<RecentCommentDetails>
+            {
+                CreateTestRecentComment(1),
+                CreateTestRecentComment(2)
+            };
+
+            _mockShowRecentComments
+                .Setup(x => x.Handle(3))
+                .ReturnsAsync(comments);
+
+            // Act
+            var result = await _controller.GetRecentComments();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedComments = Assert.IsType<List<RecentCommentDetails>>(okResult.Value);
+            Assert.Equal(2, returnedComments.Count);
+            Assert.Equal("user1", returnedComments[0].username);
+        }
+
+        [Fact]
+        public async Task GetRecentComments_NoComments_ReturnsBadRequest()
+        {
+            // Arrange
+            _mockShowRecentComments
+                .Setup(x => x.Handle(3))
+                .ReturnsAsync((List<RecentCommentDetails>)null);
+
+            // Act
+            var result = await _controller.GetRecentComments();
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("No comments could be found!", badRequestResult.Value);
         }
 
         // GetAllReviews Tests
@@ -225,20 +324,223 @@ namespace Public.Tests
             Assert.Equal("Review information could not be found!", badRequestResult.Value);
         }
 
+        // GetReviewComments Tests
         [Fact]
-        public async Task GetReviewById_ZeroId_ReturnsBadRequest()
+        public async Task GetReviewComments_HasComments_ReturnsOkResult()
         {
             // Arrange
-            _mockReturnReviewById
-                .Setup(x => x.Handle(0))
-                .ReturnsAsync((ReviewDetails)null);
+            var comments = new List<ReviewCommentDetails>
+            {
+                CreateTestReviewComment(1),
+                CreateTestReviewComment(2)
+            };
+
+            _mockShowReviewComments
+                .Setup(x => x.Handle(1))
+                .ReturnsAsync(comments);
 
             // Act
-            var result = await _controller.GetReviewById(0);
+            var result = await _controller.GetReviewComments(1);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedComments = Assert.IsType<List<ReviewCommentDetails>>(okResult.Value);
+            Assert.Equal(2, returnedComments.Count);
+            Assert.Equal("Test comment 1", returnedComments[0].Comments.comment_content);
+        }
+
+        [Fact]
+        public async Task GetReviewComments_NoComments_ReturnsBadRequest()
+        {
+            // Arrange
+            _mockShowReviewComments
+                .Setup(x => x.Handle(999))
+                .ReturnsAsync((List<ReviewCommentDetails>)null);
+
+            // Act
+            var result = await _controller.GetReviewComments(999);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("Review information could not be found!", badRequestResult.Value);
+            Assert.Equal("No comments could be found for this review!", badRequestResult.Value);
+        }
+
+        // GetUrlComments Tests
+        [Fact]
+        public async Task GetUrlComments_HasComments_ReturnsOkResult()
+        {
+            // Arrange
+            var url = "https://example.com";
+            var comments = new List<UrlCommentDetails>
+            {
+                CreateTestUrlComment(1),
+                CreateTestUrlComment(2)
+            };
+
+            _mockShowUrlComments
+                .Setup(x => x.Handle(url))
+                .ReturnsAsync(comments);
+
+            // Act
+            var result = await _controller.GetUrlComments(url);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedComments = Assert.IsType<List<UrlCommentDetails>>(okResult.Value);
+            Assert.Equal(2, returnedComments.Count);
+            Assert.Equal("Test URL comment 1", returnedComments[0].Comments.comment_content);
+        }
+
+        [Fact]
+        public async Task GetUrlComments_NoComments_ReturnsBadRequest()
+        {
+            // Arrange
+            var url = "https://nonexistent.com";
+            _mockShowUrlComments
+                .Setup(x => x.Handle(url))
+                .ReturnsAsync((List<UrlCommentDetails>)null);
+
+            // Act
+            var result = await _controller.GetUrlComments(url);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("No comments could be found for this url!", badRequestResult.Value);
+        }
+
+        // GetUrlRatings Tests
+        [Fact]
+        public async Task GetUrlRatings_HasRatings_ReturnsOkResult()
+        {
+            // Arrange
+            var url = "https://example.com";
+            var ratings = new UrlRatings(4.2, 100, 30, 25, 20, 15, 10);
+
+            _mockGetUrlRating
+                .Setup(x => x.Handle(url))
+                .ReturnsAsync(ratings);
+
+            // Act
+            var result = await _controller.GetUrlRatings(url);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedRatings = Assert.IsType<UrlRatings>(okResult.Value);
+            Assert.Equal(4.2, returnedRatings.average);
+            Assert.Equal(100, returnedRatings.count);
+        }
+
+        [Fact]
+        public async Task GetUrlRatings_NoRatings_ReturnsBadRequest()
+        {
+            // Arrange
+            var url = "https://nonexistent.com";
+            _mockGetUrlRating
+                .Setup(x => x.Handle(url))
+                .ReturnsAsync((UrlRatings)null);
+
+            // Act
+            var result = await _controller.GetUrlRatings(url);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Couldn't retrieve url's ratings!", badRequestResult.Value);
+        }
+
+        // Search Tests
+        [Fact]
+        public async Task Search_HasResults_ReturnsOkResult()
+        {
+            // Arrange
+            var searchInput = "phishing";
+            var searchResults = new List<Review>
+            {
+                CreateTestReview(1),
+                CreateTestReview(2)
+            };
+
+            _mockSearchReviews
+                .Setup(x => x.Handle(searchInput))
+                .ReturnsAsync(searchResults);
+
+            // Act
+            var result = await _controller.Search(searchInput);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedResults = Assert.IsType<List<Review>>(okResult.Value);
+            Assert.Equal(2, returnedResults.Count);
+        }
+
+        [Fact]
+        public async Task Search_NoResults_ReturnsBadRequest()
+        {
+            // Arrange
+            var searchInput = "nonexistent";
+            _mockSearchReviews
+                .Setup(x => x.Handle(searchInput))
+                .ReturnsAsync((List<Review>)null);
+
+            // Act
+            var result = await _controller.Search(searchInput);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Couldn't find any matched results!", badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task Search_EmptyInput_ReturnsOkResult()
+        {
+            // Arrange
+            var searchInput = "";
+            var searchResults = new List<Review>();
+
+            _mockSearchReviews
+                .Setup(x => x.Handle(searchInput))
+                .ReturnsAsync(searchResults);
+
+            // Act
+            var result = await _controller.Search(searchInput);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedResults = Assert.IsType<List<Review>>(okResult.Value);
+            Assert.Empty(returnedResults);
+        }
+
+        // View Tests
+        [Fact]
+        public async Task View_ValidReviewId_ReturnsOkResult()
+        {
+            // Arrange
+            var reviewId = 1;
+            _mockReturnReviewById
+                .Setup(x => x.HandleView(reviewId))
+                .ReturnsAsync(true);
+
+            // Act
+            var result = await _controller.View(reviewId);
+
+            // Assert
+            var okResult = Assert.IsType<OkResult>(result);
+        }
+
+        [Fact]
+        public async Task View_InvalidReviewId_ReturnsBadRequest()
+        {
+            // Arrange
+            var reviewId = 999;
+            _mockReturnReviewById
+                .Setup(x => x.HandleView(reviewId))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _controller.View(reviewId);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Couldn't increase view!", badRequestResult.Value);
         }
 
         // Edge Cases
@@ -295,5 +597,55 @@ namespace Public.Tests
             var returnedScamTypes = Assert.IsType<List<Scam_Type>>(okResult.Value);
             Assert.Empty(returnedScamTypes);
         }
+
+        [Fact]
+        public async Task GetReviewById_ZeroId_ReturnsBadRequest()
+        {
+            // Arrange
+            _mockReturnReviewById
+                .Setup(x => x.Handle(0))
+                .ReturnsAsync((ReviewDetails)null);
+
+            // Act
+            var result = await _controller.GetReviewById(0);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Review information could not be found!", badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task GetUrlComments_EmptyUrl_ReturnsBadRequest()
+        {
+            // Arrange
+            var emptyUrl = "";
+            _mockShowUrlComments
+                .Setup(x => x.Handle(emptyUrl))
+                .ReturnsAsync((List<UrlCommentDetails>)null);
+
+            // Act
+            var result = await _controller.GetUrlComments(emptyUrl);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("No comments could be found for this url!", badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task GetUrlRatings_EmptyUrl_ReturnsBadRequest()
+        {
+            // Arrange
+            var emptyUrl = "";
+            _mockGetUrlRating
+                .Setup(x => x.Handle(emptyUrl))
+                .ReturnsAsync((UrlRatings)null);
+
+            // Act
+            var result = await _controller.GetUrlRatings(emptyUrl);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Couldn't retrieve url's ratings!", badRequestResult.Value);
+        }
     }
-}*/
+}
