@@ -1,12 +1,22 @@
+// app/admin-dashboard/write-review/page.tsx
 "use client"
 
 import { Button } from '@/components/ui/button';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { getScamTypes, submitReview, uploadFile, deleteFile } from './actions';
-import LexicalEditor from '@/components/LexicalEditor';
-import { getHtmlFromEditor } from '@/components/editor/lexicalHtmlConversion';
+import dynamic from 'next/dynamic';
+
+// Dynamic import برای TinyMCE
+const TinyMCEEditor = dynamic(() => import('@/components/TinyMCEEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[500px] border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+      <p className="text-gray-500">Loading editor...</p>
+    </div>
+  )
+});
 
 interface ScamType {
   scam_type_id: number;
@@ -27,7 +37,6 @@ interface ReviewForm {
 
 export default function WriteReviewPage() {
   const router = useRouter();
-  const editorRef = useRef<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scamTypes, setScamTypes] = useState<ScamType[]>([]);
@@ -35,6 +44,7 @@ export default function WriteReviewPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   const [form, setForm] = useState<ReviewForm>({
     title: '',
@@ -44,6 +54,8 @@ export default function WriteReviewPage() {
   });
 
   useEffect(() => {
+    setMounted(true);
+    
     const fetchScamTypes = async () => {
       const result = await getScamTypes();
       
@@ -154,23 +166,12 @@ export default function WriteReviewPage() {
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    // If the event exists, prevent default behavior
-    if (e) {
-      e.preventDefault();
-    }
-    
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Get content from Lexical editor
-      let content = '';
-      if (editorRef.current) {
-        content = await getHtmlFromEditor(editorRef.current);
-      }
-      
-      if (!content) {
+      if (!form.content.trim()) {
         setError('Content is required');
         setIsSubmitting(false);
         return;
@@ -183,7 +184,7 @@ export default function WriteReviewPage() {
       }
 
       const reviewData = {
-        content,
+        content: form.content,
         title: form.title.trim(),
         scam_type_id: form.scam_type_id,
         review_date: new Date().toISOString(),
@@ -205,12 +206,9 @@ export default function WriteReviewPage() {
     }
   };
 
-  const handleEditorChange = (editorState: any, editor: any) => {
-    // Save a reference to the editor
-    if (!editorRef.current) {
-      editorRef.current = editor;
-    }
-  };
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -227,7 +225,7 @@ export default function WriteReviewPage() {
           <h2 className="text-[40px] font-bold">Write a Review</h2>
         </div>
         <Button
-          onClick={() => handleSubmit()}
+          onClick={handleSubmit}
           disabled={isSubmitting}
           className="rounded-full px-6 font-bold bg-black hover:bg-gray-800"
           type="button"
@@ -243,7 +241,6 @@ export default function WriteReviewPage() {
         </Button>
       </div>
 
-      {/* Removed form element and onSubmit to prevent default form submission */}
       <div className="space-y-6">
         <div className="bg-background rounded-xl p-6 shadow-md">
           <div className="space-y-4">
@@ -349,11 +346,11 @@ export default function WriteReviewPage() {
             Content
           </label>
           
-          {/* Lexical Editor */}
-          <LexicalEditor
+          <TinyMCEEditor
+            value={form.content}
+            onChange={(content) => setForm(prev => ({ ...prev, content }))}
             height={500}
             placeholder="Start writing your review here..."
-            onChange={handleEditorChange}
           />
         </div>
       </div>

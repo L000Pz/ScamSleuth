@@ -1,3 +1,4 @@
+// app/scams/[id]/page.tsx
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -10,13 +11,13 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
   getPublicReview, 
-  incrementReviewView, // Imported new action
+  incrementReviewView,
   getReviewComments, 
   submitComment, 
   toggleCommentLike, 
   downloadMedia, 
   checkUserAuthentication,
-  deleteReviewComment, // Import the new delete function
+  deleteReviewComment,
   type TransformedReview,
   type Comment,
   type CommentSubmission
@@ -34,12 +35,9 @@ const formatTimestamp = (utcString: string, options?: {
   format?: 'short' | 'long' | 'full';
 }): string => {
   try {
-    // Backend sends: "2025-07-24T15:25:40.568267" (UTC without Z)
-    // We need to add Z to tell JavaScript it's UTC
     const utcIsoString = utcString.endsWith('Z') ? utcString : utcString + 'Z';
     const date = new Date(utcIsoString);
     
-    // Validate the date
     if (isNaN(date.getTime())) {
       console.error('Invalid date:', utcString);
       return utcString;
@@ -51,15 +49,13 @@ const formatTimestamp = (utcString: string, options?: {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    // Show relative time for recent comments
-    if (options?.relative && diffMs < 7 * 24 * 60 * 60 * 1000) { // Within 7 days
-      if (diffMs < 60000) return 'Just now'; // Less than 1 minute
+    if (options?.relative && diffMs < 7 * 24 * 60 * 60 * 1000) {
+      if (diffMs < 60000) return 'Just now';
       if (diffMinutes < 60) return `${diffMinutes}m ago`;
       if (diffHours < 24) return `${diffHours}h ago`;
       if (diffDays < 7) return `${diffDays}d ago`;
     }
 
-    // Format based on options - JavaScript will automatically convert UTC to local time
     const formatOptions: Intl.DateTimeFormatOptions = {};
     
     switch (options?.format) {
@@ -96,7 +92,6 @@ const formatTimestamp = (utcString: string, options?: {
         break;
     }
 
-    // Use toLocaleString for proper timezone conversion to user's local time
     if (options?.includeTime) {
       return date.toLocaleString(undefined, formatOptions);
     } else {
@@ -104,7 +99,7 @@ const formatTimestamp = (utcString: string, options?: {
     }
   } catch (error) {
     console.error('Error formatting timestamp:', error);
-    return utcString; // Fallback to original string
+    return utcString;
   }
 };
 
@@ -118,15 +113,13 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Updated AuthenticatedUser to include role
 interface AuthenticatedUser {
   name: string;
   username: string;
   profile_picture_id: number | null;
-  role: string; // Added role
+  role: string;
 }
 
-// CommentAvatar component
 const CommentAvatar = ({ author, size = "w-8 h-8" }: { 
   author: Comment['author'] | AuthenticatedUser; 
   size?: string;
@@ -156,7 +149,6 @@ const CommentAvatar = ({ author, size = "w-8 h-8" }: {
   );
 };
 
-// Login Prompt Component
 const LoginPrompt = ({ onLoginClick, onSignupClick }: { 
   onLoginClick: () => void; 
   onSignupClick: () => void; 
@@ -194,7 +186,6 @@ const LoginPrompt = ({ onLoginClick, onSignupClick }: {
   );
 };
 
-// Reddit-style CommentItem component with expandable threads
 const CommentItem = ({ 
   comment, 
   depth = 0,
@@ -204,14 +195,14 @@ const CommentItem = ({
   isSubmittingReply,
   likedComments,
   expandedThreads,
-  isAdmin, // Pass isAdmin prop down
+  isAdmin,
   onToggleLike,
   onStartReply,
   onCancelReply,
   onReplyChange,
   onSubmitReply,
   onToggleThread,
-  onDeleteComment // New prop for delete functionality
+  onDeleteComment
 }: { 
   comment: Comment; 
   depth?: number;
@@ -221,29 +212,27 @@ const CommentItem = ({
   isSubmittingReply: boolean;
   likedComments: Set<string>;
   expandedThreads: Set<string>;
-  isAdmin: boolean; // Receive isAdmin
+  isAdmin: boolean;
   onToggleLike: (commentId: string) => void;
   onStartReply: (commentId: string) => void;
   onCancelReply: () => void;
   onReplyChange: (content: string) => void;
   onSubmitReply: (commentId: string) => void;
   onToggleThread: (commentId: string) => void;
-  onDeleteComment: (commentId: string) => void; // New prop for delete
+  onDeleteComment: (commentId: string) => void;
 }) => {
   const isReplying = replyingTo === comment.id;
-  const maxDepth = 3; // Limit nesting depth
+  const maxDepth = 3;
   const hasReplies = comment.replies && comment.replies.length > 0;
   const isThreadExpanded = expandedThreads.has(comment.id);
   const shouldShowExpandButton = hasReplies && depth >= maxDepth;
   
-  // Function to count total nested replies
   const countNestedReplies = (replies: Comment[]): number => {
     return replies.reduce((total, reply) => {
       return total + 1 + (reply.replies ? countNestedReplies(reply.replies) : 0);
     }, 0);
   };
 
-  // Flatten deeply nested comments for thread view
   const flattenComments = (comments: Comment[], startDepth: number = 0): Array<Comment & { threadDepth: number }> => {
     const flattened: Array<Comment & { threadDepth: number }> = [];
     
@@ -281,13 +270,12 @@ const CommentItem = ({
                   </span>
                 </>
               )}
-              {comment.isAdminComment && ( // Admin tag
+              {comment.isAdminComment && (
                 <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
                   Admin
                 </span>
               )}
             </div>
-            {/* Comment content with proper text wrapping */}
             <div className="text-black text-sm leading-relaxed break-words whitespace-pre-wrap">
               {comment.content}
             </div>
@@ -317,12 +305,12 @@ const CommentItem = ({
               </span>
             )}
 
-            {isAdmin && ( // Delete button for admin
+            {isAdmin && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDeleteComment(comment.id)}
-                className="text-red hover:text-red-700 hover:bg-red-50 font-medium p-1 ml-auto" // ml-auto to push it right
+                className="text-red hover:text-red-700 hover:bg-red-50 font-medium p-1 ml-auto"
                 title="Delete comment (Admin only)"
               >
                 <Trash2 className="w-4 h-4" />
@@ -331,7 +319,6 @@ const CommentItem = ({
             )}
           </div>
 
-          {/* Reply form */}
           {isReplying && currentUser && (
             <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex gap-3">
@@ -374,7 +361,6 @@ const CommentItem = ({
             </div>
           )}
 
-          {/* Normal nested replies - show when depth is less than max */}
           {hasReplies && depth < maxDepth && !shouldShowExpandButton && (
             <div className="mt-4 space-y-4">
               {comment.replies!.map((reply) => (
@@ -388,20 +374,19 @@ const CommentItem = ({
                   isSubmittingReply={isSubmittingReply}
                   likedComments={likedComments}
                   expandedThreads={expandedThreads}
-                  isAdmin={isAdmin} // Pass isAdmin down
+                  isAdmin={isAdmin}
                   onToggleLike={onToggleLike}
                   onStartReply={onStartReply}
                   onCancelReply={onCancelReply}
                   onReplyChange={onReplyChange}
                   onSubmitReply={onSubmitReply}
                   onToggleThread={onToggleThread}
-                  onDeleteComment={onDeleteComment} // Pass delete handler
+                  onDeleteComment={onDeleteComment}
                 />
               ))}
             </div>
           )}
 
-          {/* Expandable thread button for deeply nested comments */}
           {shouldShowExpandButton && (
             <div className="mt-4">
               <button
@@ -426,7 +411,6 @@ const CommentItem = ({
             </div>
           )}
 
-          {/* Expanded thread view - Reddit style flattened comments */}
           {shouldShowExpandButton && isThreadExpanded && hasReplies && (
             <div className="mt-4 border-l-2 border-blue-500 pl-4">
               <div className="space-y-3 bg-blue-50/30 rounded-lg p-3 border border-blue-200">
@@ -456,7 +440,7 @@ const CommentItem = ({
                           Depth {reply.threadDepth + 1}
                         </span>
                       )}
-                      {reply.isAdminComment && ( // Admin tag for nested replies
+                      {reply.isAdminComment && (
                         <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
                           Admin
                         </span>
@@ -482,7 +466,7 @@ const CommentItem = ({
                           {replyingTo === reply.id ? 'Cancel' : 'Reply'}
                         </button>
                       )}
-                      {isAdmin && ( // Delete button for nested replies
+                      {isAdmin && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -496,7 +480,6 @@ const CommentItem = ({
                       )}
                     </div>
 
-                    {/* Reply form for thread items */}
                     {replyingTo === reply.id && currentUser && (
                       <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
                         <div className="flex gap-3">
@@ -563,7 +546,7 @@ export default function ReviewPage({ params }: PageProps) {
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false); // New state for isAdmin
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [separatedMedia, setSeparatedMedia] = useState<{
     visualMedia: MediaItem[];
     documents: MediaItem[];
@@ -575,12 +558,10 @@ export default function ReviewPage({ params }: PageProps) {
   const [refreshingComments, setRefreshingComments] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   
-  // Media library states
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Helper function to determine media type
   const getMediaType = async (mediaId: number): Promise<'image' | 'video' | 'document'> => {
     try {
       const response = await fetch(getMediaUrl(mediaId), { 
@@ -612,19 +593,15 @@ export default function ReviewPage({ params }: PageProps) {
         const bytes = new Uint8Array(arrayBuffer);
         
         if (bytes.length >= 4) {
-          // PNG signature
           if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
             return 'image';
           }
-          // JPEG signature
           if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
             return 'image';
           }
-          // GIF signature
           if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
             return 'image';
           }
-          // PDF signature
           if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
             return 'document';
           }
@@ -637,7 +614,6 @@ export default function ReviewPage({ params }: PageProps) {
     return 'image';
   };
 
-  // Separate media items into visual and documents
   const separateMedia = async (media: any[]): Promise<{ visualMedia: MediaItem[], documents: MediaItem[] }> => {
     const visualMedia: MediaItem[] = [];
     const documents: MediaItem[] = [];
@@ -660,7 +636,6 @@ export default function ReviewPage({ params }: PageProps) {
     return { visualMedia, documents };
   };
 
-  // Resolve params promise
   useEffect(() => {
     const resolveParams = async () => {
       const resolved = await params;
@@ -669,7 +644,6 @@ export default function ReviewPage({ params }: PageProps) {
     resolveParams();
   }, [params]);
 
-  // Check authentication status and user role
   useEffect(() => {
     const checkAuthAndRole = async () => {
       try {
@@ -678,7 +652,6 @@ export default function ReviewPage({ params }: PageProps) {
         
         setIsAuthenticated(authResult.isAuthenticated);
         setCurrentUser(authResult.user || null);
-        // Set isAdmin based on the role returned by checkUserAuthentication
         setIsAdmin(authResult.user?.role === 'admin'); 
       } catch (error) {
         console.error('Error checking authentication:', error);
@@ -693,7 +666,6 @@ export default function ReviewPage({ params }: PageProps) {
     checkAuthAndRole();
   }, []);
 
-  // Fetch review data
   useEffect(() => {
     const fetchReviewData = async () => {
       if (!resolvedParams) return;
@@ -702,13 +674,12 @@ export default function ReviewPage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
-        // Increment view count
         if (resolvedParams.id) {
           await incrementReviewView(resolvedParams.id);
         }
 
         const [reviewResult, commentsResult] = await Promise.all([
-          getPublicReview(resolvedParams.id), // Re-fetch review to get updated views
+          getPublicReview(resolvedParams.id),
           getReviewComments(resolvedParams.id)
         ]);
 
@@ -754,7 +725,6 @@ export default function ReviewPage({ params }: PageProps) {
     fetchReviewData();
   }, [resolvedParams]);
 
-  // Function to refresh comments after submission or deletion
   const refreshComments = async () => {
     if (!resolvedParams) return;
     
@@ -771,7 +741,6 @@ export default function ReviewPage({ params }: PageProps) {
     }
   };
 
-  // Authentication handlers
   const handleLoginClick = () => {
     const currentUrl = window.location.pathname + window.location.search;
     sessionStorage.setItem('redirectAfterLogin', currentUrl);
@@ -881,12 +850,10 @@ export default function ReviewPage({ params }: PageProps) {
     }
   };
 
-  // Simplified comment like handler (no longer used as per previous request)
   const handleCommentLike = async (commentId: string) => {
     return;
   };
 
-  // NEW: Delete comment handler for admins
   const handleDeleteReviewComment = async (commentId: string) => {
     if (!isAdmin) {
       alert('You do not have permission to delete comments.');
@@ -896,12 +863,12 @@ export default function ReviewPage({ params }: PageProps) {
       return;
     }
 
-    setRefreshingComments(true); // Indicate comments are being refreshed (deleted)
+    setRefreshingComments(true);
     try {
       const result = await deleteReviewComment(commentId);
       if (result.success) {
         alert(result.message || 'Comment deleted successfully.');
-        await refreshComments(); // Refresh comments list after deletion
+        await refreshComments();
       } else {
         console.error('Failed to delete comment:', result.error);
         alert(result.error || 'Failed to delete comment.');
@@ -914,8 +881,6 @@ export default function ReviewPage({ params }: PageProps) {
     }
   };
 
-
-  // Reply handlers
   const handleStartReply = (commentId: string) => {
     if (!currentUser) {
       handleLoginClick();
@@ -934,7 +899,6 @@ export default function ReviewPage({ params }: PageProps) {
     setReplyContent(content);
   };
 
-  // Thread expansion handler
   const handleToggleThread = (commentId: string) => {
     setExpandedThreads(prev => {
       const newSet = new Set(prev);
@@ -947,7 +911,6 @@ export default function ReviewPage({ params }: PageProps) {
     });
   };
 
-  // Media library functions
   const openMediaLibrary = (index: number) => {
     setSelectedMediaIndex(index);
     setZoom(1);
@@ -1006,7 +969,6 @@ export default function ReviewPage({ params }: PageProps) {
     );
   };
 
-  // Media Library Modal Component
   const MediaLibraryModal = () => {
     if (selectedMediaIndex === null) return null;
 
@@ -1018,7 +980,6 @@ export default function ReviewPage({ params }: PageProps) {
     return (
       <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
         <div className="relative w-full h-full">
-          {/* Header */}
           <div className="absolute top-0 left-0 right-0 z-10 bg-black/50 backdrop-blur-sm p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -1082,7 +1043,6 @@ export default function ReviewPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Navigation arrows */}
           {visualMedia.length > 1 && (
             <>
               <Button
@@ -1104,7 +1064,6 @@ export default function ReviewPage({ params }: PageProps) {
             </>
           )}
 
-          {/* Media content */}
           <div className="absolute inset-0 pt-16 pb-8 px-4 flex items-center justify-center">
             {currentMedia.type === 'image' ? (
               <div 
@@ -1135,7 +1094,6 @@ export default function ReviewPage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Thumbnail strip */}
           {visualMedia.length > 1 && (
             <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4">
               <div className="flex items-center justify-center gap-2 overflow-x-auto">
@@ -1199,391 +1157,455 @@ export default function ReviewPage({ params }: PageProps) {
   const { visualMedia, documents } = separatedMedia;
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          className="mb-6 flex items-center gap-2 font-medium text-[16px]" 
-          onClick={() => router.push('/scams')}
-        >
-          <ArrowLeft size={20} />
-          Back to Reviews
-        </Button>
+    <>
+      <style jsx global>{`
+        /* TinyMCE Content Styles */
+        .tinymce-content ul,
+        .tinymce-content ol {
+          list-style: revert !important;
+          margin: revert !important;
+          padding: revert !important;
+        }
 
-        {/* Main Content */}
-        <Card className="shadow-xl border-0 bg-cardWhite mb-8 overflow-hidden">
-          <CardContent className="p-0">
-            {/* Header with Author Info */}
-            <div className="bg-gradient-to-r from-cardWhite to-gray-50 p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <ProfilePicture />
-                  <div>
-                    <h3 className="font-semibold text-black text-lg">{review.writer.name}</h3>
-                    <p className="text-gray-600 text-sm">@{review.writer.username}</p>
-                    {review.writer.contact_info && (
-                      <p className="text-gray-500 text-xs mt-1">{review.writer.contact_info}</p>
-                    )}
+        .tinymce-content li {
+          display: list-item !important;
+        }
+
+        .tinymce-content {
+          font-size: 16px;
+          line-height: 1.7;
+          color: #374151;
+        }
+
+        .tinymce-content h1 { font-size: 2em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
+        .tinymce-content h2 { font-size: 1.5em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
+        .tinymce-content h3 { font-size: 1.25em; font-weight: 600; margin: 1.5rem 0 1rem 0; }
+        .tinymce-content p { margin-bottom: 1rem; }
+
+        .tinymce-content ul { 
+          list-style-type: disc !important;
+          margin: 1rem 0 !important;
+          padding-left: 2.5rem !important;
+        }
+        
+        .tinymce-content ol { 
+          list-style-type: decimal !important;
+          margin: 1rem 0 !important;
+          padding-left: 2.5rem !important;
+        }
+        
+        .tinymce-content li { 
+          margin-bottom: 0.5rem !important;
+        }
+
+        .tinymce-content ul ul { list-style-type: circle !important; }
+        .tinymce-content ul ul ul { list-style-type: square !important; }
+        .tinymce-content ol ol { list-style-type: lower-alpha !important; }
+
+        .tinymce-content [dir="rtl"] ul,
+        .tinymce-content [dir="rtl"] ol {
+          padding-right: 2.5rem !important;
+          padding-left: 0 !important;
+        }
+
+        .tinymce-content strong { font-weight: 700 !important; }
+        .tinymce-content em { font-style: italic !important; }
+        .tinymce-content u { text-decoration: underline !important; }
+        .tinymce-content s { text-decoration: line-through !important; }
+
+        .tinymce-content table {
+          border-collapse: collapse !important;
+          width: 100% !important;
+          margin: 1rem 0 !important;
+        }
+
+        .tinymce-content table td,
+        .tinymce-content table th {
+          border: 1px solid #e5e7eb !important;
+          padding: 0.75rem !important;
+        }
+
+        .tinymce-content table th {
+          background: #f3f4f6 !important;
+          font-weight: 600 !important;
+        }
+
+        .tinymce-content [dir="rtl"] {
+          direction: rtl !important;
+          text-align: right !important;
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <Button 
+            variant="ghost" 
+            className="mb-6 flex items-center gap-2 font-medium text-[16px]" 
+            onClick={() => router.push('/scams')}
+          >
+            <ArrowLeft size={20} />
+            Back to Reviews
+          </Button>
+
+          <Card className="shadow-xl border-0 bg-cardWhite mb-8 overflow-hidden">
+            <CardContent className="p-0">
+              <div className="bg-gradient-to-r from-cardWhite to-gray-50 p-6 border-b border-gray-200">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <ProfilePicture />
+                    <div>
+                      <h3 className="font-semibold text-black text-lg">{review.writer.name}</h3>
+                      <p className="text-gray-600 text-sm">@{review.writer.username}</p>
+                      {review.writer.contact_info && (
+                        <p className="text-gray-500 text-xs mt-1">{review.writer.contact_info}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                  <Calendar size={16} />
-                  <span 
-                    className="text-sm font-medium"
-                    title={formatTimestamp(review.date, { format: 'full', includeTime: true })}
-                  >
-                    {formatTimestamp(review.date, { format: 'long' })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                  <Eye size={16} />
-                  <span className="text-sm font-medium">{review.views} Views</span>
-                </div>
-              </div>
-              
-              <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight break-words">
-                {review.title}
-              </h1>
-            </div>
-
-            {/* Media Library Section - Images and Videos */}
-            {(visualMedia.length > 0 || isLoadingMedia) && (
-              <div className="p-6 bg-gradient-to-b from-white to-gray-50 border-b border-gray-200">
-                <h2 className="text-xl font-semibold mb-4 text-black flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-red" />
-                  Media Gallery
-                  {!isLoadingMedia && (
-                    <span className="text-sm font-normal text-gray-600 ml-2">
-                      ({visualMedia.length} {visualMedia.length === 1 ? 'item' : 'items'})
+                  <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                    <Calendar size={16} />
+                    <span 
+                      className="text-sm font-medium"
+                      title={formatTimestamp(review.date, { format: 'full', includeTime: true })}
+                    >
+                      {formatTimestamp(review.date, { format: 'long' })}
                     </span>
-                  )}
-                </h2>
-                
-                {isLoadingMedia ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div key={index} className="aspect-square bg-gray-200 rounded-lg animate-pulse" />
-                    ))}
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {visualMedia.map((media, index) => (
-                      <div 
-                        key={media.media_id}
-                        className="relative group cursor-pointer bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-red/30"
-                        onClick={() => openMediaLibrary(index)}
-                      >
-                        <div className="aspect-square relative">
-                          {media.type === 'image' ? (
-                            <Image
-                              src={getMediaUrl(media.media_id)}
-                              alt={media.name || 'Media'}
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center relative">
-                              <Video className="w-8 h-8 text-gray-400" />
-                              <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                VIDEO
+                  <div className="flex items-center gap-2 text-black bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                    <Eye size={16} />
+                    <span className="text-sm font-medium">{review.views} Views</span>
+                  </div>
+                </div>
+                
+                <h1 
+                  className="text-2xl md:text-3xl font-bold text-black leading-tight break-words"
+                  style={{
+                    direction: /[\u0600-\u06FF]/.test(review.title) ? 'rtl' : 'ltr',
+                    textAlign: /[\u0600-\u06FF]/.test(review.title) ? 'right' : 'left'
+                  }}
+                >
+                  {review.title}
+                </h1>
+              </div>
+
+              {(visualMedia.length > 0 || isLoadingMedia) && (
+                <div className="p-6 bg-gradient-to-b from-white to-gray-50 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold mb-4 text-black flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-red" />
+                    Media Gallery
+                    {!isLoadingMedia && (
+                      <span className="text-sm font-normal text-gray-600 ml-2">
+                        ({visualMedia.length} {visualMedia.length === 1 ? 'item' : 'items'})
+                      </span>
+                    )}
+                  </h2>
+                  
+                  {isLoadingMedia ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="aspect-square bg-gray-200 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {visualMedia.map((media, index) => (
+                        <div 
+                          key={media.media_id}
+                          className="relative group cursor-pointer bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-red/30"
+                          onClick={() => openMediaLibrary(index)}
+                        >
+                          <div className="aspect-square relative">
+                            {media.type === 'image' ? (
+                              <Image
+                                src={getMediaUrl(media.media_id)}
+                                alt={media.name || 'Media'}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center relative">
+                                <Video className="w-8 h-8 text-gray-400" />
+                                <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                  VIDEO
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="bg-white/90 rounded-full p-2">
+                                  <Maximize2 className="w-4 h-4 text-black" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="p-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-black truncate">
+                                {media.type === 'image' ? 'Image' : 'Video'} {index + 1}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMediaDownload(media.media_id);
+                                }}
+                                disabled={downloadingIds.has(media.media_id)}
+                                className="p-1 hover:bg-red/10 rounded text-red disabled:opacity-50 transition-colors"
+                              >
+                                {downloadingIds.has(media.media_id) ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border border-red border-t-transparent" />
+                                ) : (
+                                  <Download className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="p-6 md:p-8 bg-white">
+                <div 
+                  className="tinymce-content break-words"
+                  dangerouslySetInnerHTML={{ __html: review.content }} 
+                />
+
+                {documents.length > 0 && (
+                  <div className="mt-10 pt-8 border-t border-gray-200">
+                    <h2 className="text-xl font-semibold mb-6 text-black flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-red" />
+                      Documents & Files
+                      <span className="text-sm font-normal text-gray-600 ml-2">
+                        ({documents.length} file{documents.length > 1 ? 's' : ''})
+                      </span>
+                    </h2>
+                    
+                    <div className="space-y-4">
+                      {documents.map((media, index) => (
+                        <div key={media.media_id} className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                          <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <File className="w-4 h-4 text-black" />
+                                <span className="text-sm font-medium text-black">
+                                  Document {index + 1}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => togglePreview(media.media_id)}
+                                  className="flex items-center gap-2 border-gray-300 text-black hover:bg-black hover:text-white"
+                                >
+                                  {previewingIds.has(media.media_id) ? (
+                                    <>
+                                      <EyeOff className="w-4 h-4" />
+                                      Hide
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="w-4 h-4" />
+                                      Preview
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMediaDownload(media.media_id)}
+                                  disabled={downloadingIds.has(media.media_id)}
+                                  className="flex items-center gap-2 border-red text-black hover:bg-red hover:text-white disabled:opacity-50"
+                                >
+                                  {downloadingIds.has(media.media_id) ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-red border-t-transparent" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                  {downloadingIds.has(media.media_id) ? 'Opening...' : 'Download'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {previewingIds.has(media.media_id) && (
+                            <div className="p-4 bg-white">
+                              <div className="relative bg-gray-100 rounded-lg overflow-hidden min-h-[200px] flex items-center justify-center">
+                                <File className="w-16 h-16 text-gray-400" />
                               </div>
                             </div>
                           )}
-                          
-                          {/* Overlay */}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <div className="bg-white/90 rounded-full p-2">
-                                <Maximize2 className="w-4 h-4 text-black" />
-                              </div>
-                            </div>
-                          </div>
                         </div>
-                        
-                        {/* Media info */}
-                        <div className="p-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-black truncate">
-                              {media.type === 'image' ? 'Image' : 'Video'} {index + 1}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMediaDownload(media.media_id);
-                              }}
-                              disabled={downloadingIds.has(media.media_id)}
-                              className="p-1 hover:bg-red/10 rounded text-red disabled:opacity-50 transition-colors"
-                            >
-                              {downloadingIds.has(media.media_id) ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border border-red border-t-transparent" />
-                              ) : (
-                                <Download className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            {/* Review Content */}
-            <div className="p-6 md:p-8 bg-white">
-              <div 
-                className="content-display break-words"
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '1.7',
-                  color: '#374151',
-                  wordWrap: 'break-word',
-                  overflowWrap: 'break-word'
-                }}
-                dangerouslySetInnerHTML={{ __html: review.content }} 
-              />
+          <Card className="shadow-xl border-0 bg-cardWhite">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-black flex items-center gap-3">
+                  <MessageCircle className="w-6 h-6 text-red" />
+                  Discussion
+                  <span className="text-lg font-normal text-gray-600">
+                    ({comments.length} {comments.length === 1 ? 'comment' : 'comments'})
+                  </span>
+                  {refreshingComments && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-red border-t-transparent ml-2" />
+                  )}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 border-gray-300 text-black hover:bg-gray-100"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+              </div>
 
-              {/* Documents Section - Only show if there are documents */}
-              {documents.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-gray-200">
-                  <h2 className="text-xl font-semibold mb-6 text-black flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-red" />
-                    Documents & Files
-                    <span className="text-sm font-normal text-gray-600 ml-2">
-                      ({documents.length} file{documents.length > 1 ? 's' : ''})
-                    </span>
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    {documents.map((media, index) => (
-                      <div key={media.media_id} className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
-                        <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <File className="w-4 h-4 text-black" />
-                              <span className="text-sm font-medium text-black">
-                                Document {index + 1}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => togglePreview(media.media_id)}
-                                className="flex items-center gap-2 border-gray-300 text-black hover:bg-black hover:text-white"
-                              >
-                                {previewingIds.has(media.media_id) ? (
-                                  <>
-                                    <EyeOff className="w-4 h-4" />
-                                    Hide
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-4 h-4" />
-                                    Preview
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleMediaDownload(media.media_id)}
-                                disabled={downloadingIds.has(media.media_id)}
-                                className="flex items-center gap-2 border-red text-black hover:bg-red hover:text-white disabled:opacity-50"
-                              >
-                                {downloadingIds.has(media.media_id) ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-red border-t-transparent" />
-                                ) : (
-                                  <Download className="w-4 h-4" />
-                                )}
-                                {downloadingIds.has(media.media_id) ? 'Opening...' : 'Download'}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {previewingIds.has(media.media_id) && (
-                          <div className="p-4 bg-white">
-                            <div className="relative bg-gray-100 rounded-lg overflow-hidden min-h-[200px] flex items-center justify-center">
-                              <File className="w-16 h-16 text-gray-400" />
-                            </div>
-                          </div>
-                        )}
+              {isAuthenticated && currentUser ? (
+                <div className="mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex gap-3">
+                    <CommentAvatar author={currentUser} />
+                    <div className="flex-1 min-w-0">
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Share your thoughts about this review..."
+                        className="w-full p-4 border border-gray-300 rounded-lg text-sm bg-white resize-none focus:outline-none focus:ring-2 focus:ring-red focus:border-red transition-all"
+                        rows={4}
+                        style={{ 
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word'
+                        }}
+                      />
+                      <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
+                        <p className="text-xs text-gray-500">
+                          Be respectful and constructive in your comments
+                        </p>
+                        <Button
+                          onClick={handleSubmitComment}
+                          disabled={!newComment.trim() || isSubmittingComment}
+                          className="bg-red hover:bg-red/90 text-white px-6 py-2 disabled:opacity-50 border-0"
+                        >
+                          {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Comments Section */}
-        <Card className="shadow-xl border-0 bg-cardWhite">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-black flex items-center gap-3">
-                <MessageCircle className="w-6 h-6 text-red" />
-                Discussion
-                <span className="text-lg font-normal text-gray-600">
-                  ({comments.length} {comments.length === 1 ? 'comment' : 'comments'})
-                </span>
-                {refreshingComments && (
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-red border-t-transparent ml-2" />
-                )}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 border-gray-300 text-black hover:bg-gray-100"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </Button>
-            </div>
-
-            {/* Comment Input - Show different content based on authentication */}
-            {isAuthenticated && currentUser ? (
-              <div className="mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="flex gap-3">
-                  <CommentAvatar author={currentUser} />
-                  <div className="flex-1 min-w-0">
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Share your thoughts about this review..."
-                      className="w-full p-4 border border-gray-300 rounded-lg text-sm bg-white resize-none focus:outline-none focus:ring-2 focus:ring-red focus:border-red transition-all"
-                      rows={4}
-                      style={{ 
-                        wordWrap: 'break-word',
-                        overflowWrap: 'break-word'
-                      }}
-                    />
-                    <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
-                      <p className="text-xs text-gray-500">
-                        Be respectful and constructive in your comments
-                      </p>
-                      <Button
-                        onClick={handleSubmitComment}
-                        disabled={!newComment.trim() || isSubmittingComment}
-                        className="bg-red hover:bg-red/90 text-white px-6 py-2 disabled:opacity-50 border-0"
-                      >
-                        {isSubmittingComment ? 'Posting...' : 'Post Comment'}
-                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              // Show login prompt for unauthenticated users
-              <div className="mb-8">
-                <LoginPrompt 
-                  onLoginClick={handleLoginClick}
-                  onSignupClick={handleSignupClick}
-                />
-              </div>
-            )}
+              ) : (
+                <div className="mb-8">
+                  <LoginPrompt 
+                    onLoginClick={handleLoginClick}
+                    onSignupClick={handleSignupClick}
+                  />
+                </div>
+              )}
 
-            {/* Comments List */}
-            <div className="space-y-6">
-              {comments.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-black mb-2">No comments yet</h3>
-                  <p className="text-gray-600 mb-4">Be the first to share your thoughts about this review.</p>
-                  {!isAuthenticated && (
-                    <div className="flex justify-center gap-2 mt-3">
+              <div className="space-y-6">
+                {comments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-black mb-2">No comments yet</h3>
+                    <p className="text-gray-600 mb-4">Be the first to share your thoughts about this review.</p>
+                    {!isAuthenticated && (
+                      <div className="flex justify-center gap-2 mt-3">
+                        <Button
+                          onClick={handleLoginClick}
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                        >
+                          Sign In to Comment
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  comments.map((comment: Comment) => (
+                    <CommentItem 
+                      key={comment.id} 
+                      comment={comment} 
+                      currentUser={currentUser}
+                      replyingTo={replyingTo}
+                      replyContent={replyContent}
+                      isSubmittingReply={isSubmittingReply}
+                      likedComments={new Set()}
+                      expandedThreads={expandedThreads}
+                      isAdmin={isAdmin}
+                      onToggleLike={handleCommentLike}
+                      onStartReply={handleStartReply}
+                      onCancelReply={handleCancelReply}
+                      onReplyChange={handleReplyChange}
+                      onSubmitReply={handleSubmitReply}
+                      onToggleThread={handleToggleThread}
+                      onDeleteComment={handleDeleteReviewComment}
+                    />
+                  ))
+                )}
+              </div>
+
+              {!isAuthenticated && comments.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-3">
+                      Want to join the discussion?
+                    </p>
+                    <div className="flex justify-center gap-3">
                       <Button
                         onClick={handleLoginClick}
                         size="sm"
-                        variant="outline"
-                        className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                        className="bg-red hover:bg-red/90 text-white border-0 flex items-center gap-2"
                       >
-                        Sign In to Comment
+                        <LogIn className="w-4 h-4" />
+                        Sign In
+                      </Button>
+                      <Button
+                        onClick={handleSignupClick}
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Create Account
                       </Button>
                     </div>
-                  )}
-                </div>
-              ) : (
-                comments.map((comment: Comment) => (
-                  <CommentItem 
-                    key={comment.id} 
-                    comment={comment} 
-                    currentUser={currentUser}
-                    replyingTo={replyingTo}
-                    replyContent={replyContent}
-                    isSubmittingReply={isSubmittingReply}
-                    likedComments={new Set()} // Pass an empty set, as likes are mocked and not interactive
-                    expandedThreads={expandedThreads}
-                    isAdmin={isAdmin} // Pass isAdmin to CommentItem
-                    onToggleLike={handleCommentLike} // Still passed, but functionality is no-op
-                    onStartReply={handleStartReply}
-                    onCancelReply={handleCancelReply}
-                    onReplyChange={handleReplyChange}
-                    onSubmitReply={handleSubmitReply}
-                    onToggleThread={handleToggleThread}
-                    onDeleteComment={handleDeleteReviewComment} // Pass the delete handler
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Authentication prompt at bottom if not logged in and there are comments */}
-            {!isAuthenticated && comments.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="text-center">
-                  <p className="text-gray-600 mb-3">
-                    Want to join the discussion?
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <Button
-                      onClick={handleLoginClick}
-                      size="sm"
-                      className="bg-red hover:bg-red/90 text-white border-0 flex items-center gap-2"
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Sign In
-                    </Button>
-                    <Button
-                      onClick={handleSignupClick}
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Create Account
-                    </Button>
                   </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            variant="outline"
-            onClick={() => router.push('/scams')}
-            className="flex items-center gap-2 border-gray-300 text-black hover:bg-black hover:text-white"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to All Reviews
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => router.push('/report')}
-            className="flex items-center gap-2 border-red text-black hover:bg-red hover:text-white transition-colors"
-          >
-            Report Similar Scam
-          </Button>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              variant="outline"
+              onClick={() => router.push('/scams')}
+              className="flex items-center gap-2 border-gray-300 text-black hover:bg-black hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to All Reviews
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => router.push('/report')}
+              className="flex items-center gap-2 border-red text-black hover:bg-red hover:text-white transition-colors"
+            >
+              Report Similar Scam
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Media Library Modal */}
       <MediaLibraryModal />
-    </div>
+    </>
   );
 }
