@@ -12,8 +12,8 @@ const HeroSection = () => {
         <Image
           src={heroImage}
           alt="Detective Dog"
-          layout="fill" 
-          objectFit="cover" 
+          fill
+          style={{ objectFit: "cover" }}
           className="h-full"
         />
       </div>
