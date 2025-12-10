@@ -134,7 +134,7 @@ func SendToAI(site string) models.CompletionResponse {
 	fmt.Println("this is enamad data")
 	fmt.Println(string(jsonEnamad))
 	payload := map[string]interface{}{
-		"model": "deepseek/deepseek-r1:free",
+		"model": "qwen/qwq-32b",
 		"messages": []map[string]string{
 			{
 				"role": "system",

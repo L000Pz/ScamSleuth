@@ -55,11 +55,11 @@ export const metadata: Metadata = {
   title: "‌Scam Sleuth",
   description: "Uncovering Scams, One Report at a Time.",
   icons: {
-    icon: "../../public/favicon.ico", 
-    shortcut: "../../public/favicon-32x32.png", 
-    apple: "../../public/apple-touch-icon.png", 
+    icon: "/favicon.ico", 
+    shortcut: "/favicon-32x32.png", 
+    apple: "/apple-touch-icon.png", 
   },
-  manifest: "../../public/site.webmanifest",
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
