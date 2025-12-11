@@ -10,6 +10,7 @@ interface TinyMCEEditorProps {
   height?: number;
   placeholder?: string;
   direction?: 'ltr' | 'rtl';
+  onImagePick?: () => void; // برای باز کردن Image Picker Modal
 }
 
 export default function TinyMCEEditor({ 
@@ -17,7 +18,8 @@ export default function TinyMCEEditor({
   onChange, 
   height = 500,
   placeholder = 'Start writing...',
-  direction = 'ltr'
+  direction = 'ltr',
+  onImagePick
 }: TinyMCEEditorProps) {
   const editorRef = useRef<any>(null);
 
@@ -29,11 +31,10 @@ export default function TinyMCEEditor({
       onEditorChange={onChange}
       init={{
         height,
-        menubar: true,  // این رو true کن تا منوی بالا بیاد
+        menubar: true,
         
-        // plugins اصلی
         plugins: [
-          'advlist',        // لیست پیشرفته
+          'advlist',
           'autolink',
           'lists',
           'link',
@@ -60,11 +61,10 @@ export default function TinyMCEEditor({
           'save'
         ],
         
-        // Toolbar با font controls
         toolbar: 
           'undo redo | ' +
-          'blocks | ' +                    // این جایگزین formatselect شده
-          'fontfamily fontsize | ' +       // این‌ها controls فونت هستن
+          'blocks | ' +
+          'fontfamily fontsize | ' +
           'bold italic underline strikethrough | ' +
           'forecolor backcolor | ' +
           'alignleft aligncenter alignright alignjustify | ' +
@@ -73,7 +73,6 @@ export default function TinyMCEEditor({
           'link image media table blockquote codesample emoticons | ' +
           'removeformat code fullscreen help',
         
-        // فونت‌ها (جدید)
         font_family_formats: 
           'Arial=arial,helvetica,sans-serif; ' +
           'Arial Black=arial black,sans-serif; ' +
@@ -89,10 +88,8 @@ export default function TinyMCEEditor({
           'Vazir=Vazir,tahoma; ' +
           'Yekan=Yekan,tahoma',
         
-        // اندازه فونت (جدید)
         font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt',
         
-        // فرمت‌های heading
         block_formats: 
           'Paragraph=p; ' +
           'Heading 1=h1; ' +
@@ -102,14 +99,24 @@ export default function TinyMCEEditor({
           'Heading 5=h5; ' +
           'Heading 6=h6',
         
+        // 🔥 این بخش جدید - برای Image Picker
+        file_picker_types: 'image',
+        file_picker_callback: (callback, value, meta) => {
+          if (meta.filetype === 'image' && onImagePick) {
+            // ذخیره callback برای استفاده بعدی
+            (window as any).tinyMCEImageCallback = callback;
+            // باز کردن modal
+            onImagePick();
+          }
+        },
+        
         // تنظیمات تصویر
         image_advtab: true,
         image_caption: true,
+        automatic_uploads: false, // چون خودمون آپلود می‌کنیم
         
-        // تنظیمات لینک
         link_default_target: '_blank',
         
-        // تنظیمات کد
         codesample_languages: [
           { text: 'HTML/XML', value: 'markup' },
           { text: 'JavaScript', value: 'javascript' },
@@ -122,13 +129,10 @@ export default function TinyMCEEditor({
           { text: 'SQL', value: 'sql' },
         ],
         
-        // رنگ‌ها
         color_cols: 8,
         
-        // Quick toolbar
         quickbars_selection_toolbar: 'bold italic underline | blocks | forecolor backcolor',
         
-        // استایل محتوا
         content_style: 
           'body { ' +
           '  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; ' +

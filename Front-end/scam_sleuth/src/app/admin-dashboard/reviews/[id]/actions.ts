@@ -36,10 +36,9 @@ export interface ReviewWriterDetails {
   contact_info?: string;
 }
 
-// Fixed: API returns content as direct string, not as object
 export interface PublicReviewResponse {
   review: Review;
-  content: string; // This is the actual structure from your API
+  content: string;
   media: MediaItem[];
   reviewWriterDetails?: ReviewWriterDetails;
 }
@@ -103,8 +102,9 @@ async function makeAuthenticatedRequest(
   });
 
   if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
     throw new ReviewApiError(
-      `Request failed: ${response.statusText}`,
+      `Request failed: ${response.statusText} - ${errorText}`,
       response.status,
       url
     );
@@ -149,7 +149,6 @@ export async function getPublicReview(id: string): Promise<ApiResponse<Transform
       };
     }
 
-    // Fixed: Access content directly as string, not as object property
     const reviewContent = reviewData.content || '';
 
     // Transform data with better date handling
@@ -162,7 +161,7 @@ export async function getPublicReview(id: string): Promise<ApiResponse<Transform
           month: 'long',
           day: 'numeric'
         }) : 'Unknown date',
-      content: reviewContent, // Fixed: Use content directly
+      content: reviewContent,
       media: reviewData.media || [],
       writer: reviewData.reviewWriterDetails
     };
@@ -256,6 +255,7 @@ export async function deleteReview(id: string): Promise<ApiResponse<void>> {
 
 /**
  * Updates a review's title and content with enhanced validation and error handling
+ * Now uses the correct API endpoints with review_id instead of review_content_id
  */
 export async function updateReview(params: UpdateReviewParams): Promise<ApiResponse<void>> {
   try {
@@ -298,46 +298,38 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
       };
     }
 
-    // First, get the current review to retrieve the content_id
-    const currentReviewResponse = await makeAuthenticatedRequest(
-      `${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/reviewId?review_id=${reviewId}`
-    );
-
-    const currentReviewData: PublicReviewResponse = await currentReviewResponse.json();
-    
-    // For updates, we need to get the content ID from the review object
-    if (!currentReviewData.review?.review_content_id) {
-      return { 
-        success: false, 
-        error: 'Unable to find review content information' 
-      };
-    }
-
-    const contentId = currentReviewData.review.review_content_id;
-
     // Update content and title in parallel for better performance
+    // Using the correct API structure: review_id and new_content/new_title
     const [contentUpdate, titleUpdate] = await Promise.all([
       makeAuthenticatedRequest(
         `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewContent`,
         {
-          method: 'PUT',
+          method: 'POST',
           body: JSON.stringify({
-            review_content_id: contentId,
-            review_content: content.trim()
+            review_id: reviewId,
+            new_content: content.trim()
           })
         }
       ),
       makeAuthenticatedRequest(
         `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewTitle`,
         {
-          method: 'PUT',
+          method: 'POST',
           body: JSON.stringify({
             review_id: reviewId,
-            title: title.trim()
+            new_title: title.trim()
           })
         }
       )
     ]);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Review updated successfully:', {
+        reviewId,
+        titleLength: title.length,
+        contentLength: content.length
+      });
+    }
 
     return { success: true };
 
@@ -357,6 +349,12 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
           error: 'You do not have permission to update this review' 
         };
       }
+      if (error.statusCode === 400) {
+        return { 
+          success: false, 
+          error: 'Invalid request data. Please check your input and try again.' 
+        };
+      }
       return { 
         success: false, 
         error: `Failed to update review: ${error.message}` 
@@ -366,6 +364,117 @@ export async function updateReview(params: UpdateReviewParams): Promise<ApiRespo
     return { 
       success: false, 
       error: 'An unexpected error occurred while updating the review' 
+    };
+  }
+}
+
+/**
+ * Updates only the review content
+ */
+export async function updateReviewContent(
+  reviewId: number,
+  newContent: string
+): Promise<ApiResponse<void>> {
+  try {
+    if (!newContent || newContent.trim() === '') {
+      return { 
+        success: false, 
+        error: 'Review content cannot be empty' 
+      };
+    }
+
+    if (reviewId <= 0) {
+      return { 
+        success: false, 
+        error: 'Invalid review ID' 
+      };
+    }
+
+    await makeAuthenticatedRequest(
+      `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewContent`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          review_id: reviewId,
+          new_content: newContent.trim()
+        })
+      }
+    );
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error in updateReviewContent:', error);
+    
+    if (error instanceof ReviewApiError) {
+      return { 
+        success: false, 
+        error: `Failed to update content: ${error.message}` 
+      };
+    }
+
+    return { 
+      success: false, 
+      error: 'An unexpected error occurred while updating the content' 
+    };
+  }
+}
+
+/**
+ * Updates only the review title
+ */
+export async function updateReviewTitle(
+  reviewId: number,
+  newTitle: string
+): Promise<ApiResponse<void>> {
+  try {
+    if (!newTitle || newTitle.trim() === '') {
+      return { 
+        success: false, 
+        error: 'Review title cannot be empty' 
+      };
+    }
+
+    if (newTitle.trim().length > 200) {
+      return { 
+        success: false, 
+        error: 'Review title is too long (maximum 200 characters)' 
+      };
+    }
+
+    if (reviewId <= 0) {
+      return { 
+        success: false, 
+        error: 'Invalid review ID' 
+      };
+    }
+
+    await makeAuthenticatedRequest(
+      `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/UpdateReviewTitle`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          review_id: reviewId,
+          new_title: newTitle.trim()
+        })
+      }
+    );
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error in updateReviewTitle:', error);
+    
+    if (error instanceof ReviewApiError) {
+      return { 
+        success: false, 
+        error: `Failed to update title: ${error.message}` 
+      };
+    }
+
+    return { 
+      success: false, 
+      error: 'An unexpected error occurred while updating the title' 
     };
   }
 }

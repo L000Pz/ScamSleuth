@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { getScamTypes, submitReview, uploadFile, deleteFile } from './actions';
 import dynamic from 'next/dynamic';
+import ImagePickerModal from '@/components/ImagePickerModal';
 
-// Dynamic import برای TinyMCE
 const TinyMCEEditor = dynamic(() => import('@/components/TinyMCEEditor'), {
   ssr: false,
   loading: () => (
@@ -45,6 +45,7 @@ export default function WriteReviewPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   
   const [form, setForm] = useState<ReviewForm>({
     title: '',
@@ -166,6 +167,15 @@ export default function WriteReviewPage() {
     }
   };
 
+  // 🔥 Handler برای انتخاب عکس از Image Picker
+  const handleImageSelect = (url: string) => {
+    const callback = (window as any).tinyMCEImageCallback;
+    if (callback) {
+      callback(url, { alt: 'Uploaded image' });
+      (window as any).tinyMCEImageCallback = null;
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -211,155 +221,174 @@ export default function WriteReviewPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/admin-dashboard/reviews')}
+              className="p-2"
+              type="button"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            <h2 className="text-[40px] font-bold">Write a Review</h2>
+          </div>
           <Button
-            variant="ghost"
-            onClick={() => router.push('/admin-dashboard/reviews')}
-            className="p-2"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="rounded-full px-6 font-bold bg-black hover:bg-gray-800"
             type="button"
           >
-            <ArrowLeft className="h-6 w-6" />
+            {isSubmitting ? (
+              'Publishing...'
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Publish
+              </>
+            )}
           </Button>
-          <h2 className="text-[40px] font-bold">Write a Review</h2>
         </div>
-        <Button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="rounded-full px-6 font-bold bg-black hover:bg-gray-800"
-          type="button"
-        >
-          {isSubmitting ? (
-            'Publishing...'
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Publish
-            </>
-          )}
-        </Button>
-      </div>
 
-      <div className="space-y-6">
-        <div className="bg-background rounded-xl p-6 shadow-md">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                placeholder="Enter review title"
-                required
-              />
-            </div>
+        <div className="space-y-6">
+          <div className="bg-background rounded-xl p-6 shadow-md">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  placeholder="Enter review title"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
-                Scam Type
-              </label>
-              <select
-                value={form.scam_type_id}
-                onChange={(e) => setForm(prev => ({ ...prev, scam_type_id: Number(e.target.value) }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                required
-              >
-                {scamTypes.map((type) => (
-                  <option key={type.scam_type_id} value={type.scam_type_id}>
-                    {type.scam_type}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Scam Type
+                </label>
+                <select
+                  value={form.scam_type_id}
+                  onChange={(e) => setForm(prev => ({ ...prev, scam_type_id: Number(e.target.value) }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  required
+                >
+                  {scamTypes.map((type) => (
+                    <option key={type.scam_type_id} value={type.scam_type_id}>
+                      {type.scam_type}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
-                Attachments
-              </label>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
-                    multiple
-                  />
-                  <Button 
-                    type="button"
-                    onClick={handleUploadFiles}
-                    disabled={isUploading || selectedFiles.length === 0}
-                    className="whitespace-nowrap"
-                  >
-                    {isUploading ? (
-                      'Uploading...'
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Files
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {fileUploadError && (
-                  <p className="text-red-500 text-sm">{fileUploadError}</p>
-                )}
-
-                {uploadedFiles.length > 0 && (
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      Uploaded Files:
-                    </p>
-                    <ul className="space-y-2">
-                      {uploadedFiles.map((file) => (
-                        <li 
-                          key={file.id}
-                          className="flex items-center justify-between bg-white p-2 rounded-lg"
-                        >
-                          <span className="text-sm text-gray-600">{file.name}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeUploadedFile(file.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Attachments
+                </label>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      onChange={handleFileChange}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                      multiple
+                    />
+                    <Button 
+                      type="button"
+                      onClick={handleUploadFiles}
+                      disabled={isUploading || selectedFiles.length === 0}
+                      className="whitespace-nowrap"
+                    >
+                      {isUploading ? (
+                        'Uploading...'
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Files
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
+
+                  {fileUploadError && (
+                    <p className="text-red-500 text-sm">{fileUploadError}</p>
+                  )}
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Uploaded Files:
+                      </p>
+                      <ul className="space-y-2">
+                        {uploadedFiles.map((file) => (
+                          <li 
+                            key={file.id}
+                            className="flex items-center justify-between bg-white p-2 rounded-lg"
+                          >
+                            <span className="text-sm text-gray-600">{file.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadedFile(file.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="bg-background rounded-xl p-6 shadow-md">
+            <label className="block text-sm font-medium text-gray-500 mb-4">
+              Content
+            </label>
+            
+            <TinyMCEEditor
+              value={form.content}
+              onChange={(content) => setForm(prev => ({ ...prev, content }))}
+              height={500}
+              placeholder="Start writing your review here..."
+              onImagePick={() => setIsImagePickerOpen(true)}
+            />
+          </div>
         </div>
 
-        <div className="bg-background rounded-xl p-6 shadow-md">
-          <label className="block text-sm font-medium text-gray-500 mb-4">
-            Content
-          </label>
-          
-          <TinyMCEEditor
-            value={form.content}
-            onChange={(content) => setForm(prev => ({ ...prev, content }))}
-            height={500}
-            placeholder="Start writing your review here..."
-          />
-        </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
+            {error}
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
-          {error}
-        </div>
-      )}
-    </div>
+      {/* Image Picker Modal */}
+      <ImagePickerModal
+        isOpen={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onSelect={handleImageSelect}
+        uploadedFiles={uploadedFiles}
+        onFileUploaded={(file) => {
+          setUploadedFiles(prev => [...prev, file]);
+          setForm(prev => ({
+            ...prev,
+            media: [...prev.media, file.id]
+          }));
+        }}
+        onFileDeleted={(id) => removeUploadedFile(id)}
+      />
+    </>
   );
 }

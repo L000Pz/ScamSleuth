@@ -71,6 +71,14 @@ export default function Navbar(): JSX.Element {
           }
         },
         {
+          icon: '📋',
+          label: 'Scam Reports',
+          action: () => {
+            router.push('/admin-dashboard');
+            setIsProfileDropdownOpen(false);
+          }
+        },
+        {
           icon: '📝',
           label: 'Reviews',
           action: () => {
@@ -86,14 +94,7 @@ export default function Navbar(): JSX.Element {
             setIsProfileDropdownOpen(false);
           }
         },
-        {
-          icon: '📋',
-          label: 'Scam Reports',
-          action: () => {
-            router.push('/admin-dashboard');
-            setIsProfileDropdownOpen(false);
-          }
-        },
+        
         ...commonItems
       ];
     } else {

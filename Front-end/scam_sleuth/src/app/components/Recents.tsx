@@ -5,27 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Eye, ChevronRight, RefreshCw, TrendingUp } from 'lucide-react';
 import ScamCard from './card';
 import ScamCardSkeleton from './ScamCardSkeleton';
-import { getRecentReviews } from './actions';
+import { getDetailedReviews, type DetailedReview } from './actions';
 import heroImage from '@/assets/images/hero.png';
 
-interface Review {
-  review_id: number;
-  title: string;
-  description: string;
-  review_date: string;
-  scam_type_id: number;
-  review_content_id: number;
-}
-
-interface TransformedScam {
-  id: number;
-  name: string;
-  description: string;
-  imageUrl?: string;
-}
-
 export default function RecentScams() {
-  const [scams, setScams] = useState<TransformedScam[]>([]);
+  const [scams, setScams] = useState<DetailedReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,17 +22,10 @@ export default function RecentScams() {
         setIsLoading(true);
       }
       
-      const result = await getRecentReviews();
+      const result = await getDetailedReviews();
       
       if (result.success && result.data) {
-        const transformedScams: TransformedScam[] = result.data
-          .slice(0, 6)
-          .map((review: Review) => ({
-            id: review.review_id,
-            name: review.title,
-            description: review.description || 'No description available',
-          }));
-        setScams(transformedScams);
+        setScams(result.data);
         setError(null);
       } else {
         setError(result.error || 'Failed to load recent scams');
@@ -71,11 +48,9 @@ export default function RecentScams() {
   };
 
   const handleViewAll = () => {
-    // Navigate to all scams page
     window.location.href = '/scams';
   };
 
-  // Container variants for staggered animation
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -87,7 +62,6 @@ export default function RecentScams() {
     }
   };
 
-  // Item variants for individual cards
   const itemVariants = {
     hidden: { 
       opacity: 0, 
@@ -109,7 +83,6 @@ export default function RecentScams() {
   if (error) {
     return (
       <section className="py-12 bg-gradient-to-br from-[#BBB8AF] via-[#C5C2B8] to-[#BBB8AF] px-4 md:px-[100px] md:py-16 relative overflow-hidden">
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-10 left-10 w-64 h-64 bg-red rounded-full blur-3xl"></div>
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-black rounded-full blur-3xl"></div>
@@ -195,28 +168,28 @@ export default function RecentScams() {
                 Recent Scams
               </h2>
             </div>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-sm md:text-lg">
               Stay informed about the latest fraud attempts in your area
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl backdrop-blur-sm border border-white/20 disabled:opacity-50"
+              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-gray-700 px-3 md:px-4 py-2 rounded-xl text-sm md:text-base font-medium transition-all duration-200 shadow-lg hover:shadow-xl backdrop-blur-sm border border-white/20 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
             </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleViewAll}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-red to-red/80 hover:from-red/90 hover:to-red/70 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl group"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-red to-red/80 hover:from-red/90 hover:to-red/70 text-white px-4 md:px-6 py-2 rounded-xl text-sm md:text-base font-medium transition-all duration-200 shadow-lg hover:shadow-xl group"
             >
               <Eye className="w-4 h-4" />
               View All
@@ -233,7 +206,7 @@ export default function RecentScams() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 place-items-center"
             >
               {Array.from({ length: 6 }, (_, i) => (
                 <motion.div
@@ -241,6 +214,7 @@ export default function RecentScams() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
+                  className="w-full max-w-[280px]"
                 >
                   <ScamCardSkeleton />
                 </motion.div>
@@ -252,7 +226,7 @@ export default function RecentScams() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 place-items-center"
             >
               {scams.map((scam) => (
                 <motion.div
@@ -262,17 +236,18 @@ export default function RecentScams() {
                     y: -5,
                     transition: { type: "spring", stiffness: 300, damping: 20 }
                   }}
-                  className="group"
+                  className="group w-full max-w-[280px]"
                 >
                   <div className="relative">
-                    {/* Glow effect on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-red/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
                     <div className="relative">
                       <ScamCard
                         id={scam.id}
                         name={scam.name}
                         description={scam.description}
-                        imageUrl={heroImage}
+                        date={scam.date}
+                        scamType={scam.scamType}
+                        imageUrl={scam.imageUrl || heroImage}
                       />
                     </div>
                   </div>
@@ -289,41 +264,41 @@ export default function RecentScams() {
           transition={{ delay: 0.8 }}
           className="mt-12 pt-8 border-t border-white/20"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-white/20 shadow-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 md:p-6 text-center border border-white/20 shadow-lg">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-12 h-12 bg-red/10 rounded-full flex items-center justify-center mx-auto mb-3"
+                className="w-10 h-10 md:w-12 md:h-12 bg-red/10 rounded-full flex items-center justify-center mx-auto mb-3"
               >
-                <AlertTriangle className="w-6 h-6 text-red" />
+                <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-red" />
               </motion.div>
-              <h3 className="text-2xl font-bold text-gray-800">{scams.length}</h3>
-              <p className="text-gray-600">Recent Reports</p>
+              <h3 className="text-xl md:text-2xl font-bold text-gray-800">{scams.length}</h3>
+              <p className="text-sm md:text-base text-gray-600">Recent Reports</p>
             </div>
             
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-white/20 shadow-lg">
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 md:p-6 text-center border border-white/20 shadow-lg">
               <motion.div
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3"
+                className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3"
               >
-                <Eye className="w-6 h-6 text-blue-500" />
+                <Eye className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
               </motion.div>
-              <h3 className="text-2xl font-bold text-gray-800">24/7</h3>
-              <p className="text-gray-600">Monitoring</p>
+              <h3 className="text-xl md:text-2xl font-bold text-gray-800">24/7</h3>
+              <p className="text-sm md:text-base text-gray-600">Monitoring</p>
             </div>
             
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-white/20 shadow-lg">
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 md:p-6 text-center border border-white/20 shadow-lg">
               <motion.div
                 animate={{ y: [0, -5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3"
+                className="w-10 h-10 md:w-12 md:h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3"
               >
-                <TrendingUp className="w-6 h-6 text-green-500" />
+                <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
               </motion.div>
-              <h3 className="text-2xl font-bold text-gray-800">Live</h3>
-              <p className="text-gray-600">Updates</p>
+              <h3 className="text-xl md:text-2xl font-bold text-gray-800">Live</h3>
+              <p className="text-sm md:text-base text-gray-600">Updates</p>
             </div>
           </div>
         </motion.div>

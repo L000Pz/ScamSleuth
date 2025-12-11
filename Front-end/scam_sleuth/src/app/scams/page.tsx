@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prefer-const */
-// List
 "use client";
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Grid, List, Calendar, TrendingUp, Shield, Clock, ArrowUpDown } from 'lucide-react';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
-import { fetchScamReports, searchScamReportsByTitle, type ScamReport } from './actions'; // Imported searchScamReportsByTitle
+import { fetchScamReports, searchScamReportsByTitle, type ScamReport } from './actions';
 
-// Enhanced ScamCard component with better design (risk tags removed)
 interface ScamCardProps {
   scam: ScamReport;
   onReview: (id: string) => void;
@@ -19,18 +17,33 @@ interface ScamCardProps {
 }
 
 const ScamCard = ({ scam, onReview, viewMode }: ScamCardProps) => {
+  const isPersian = (text: string): boolean => {
+    const persianRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return persianRegex.test(text);
+  };
+
+  const titleIsPersian = isPersian(scam.name);
+  const descIsPersian = scam.description ? isPersian(scam.description) : false;
+
   if (viewMode === 'grid') {
     return (
       <div className="group bg-cardWhite rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gradWhite/30 hover:border-red/40 hover:-translate-y-1">
-        {/* Header */}
         <div className="relative h-32 bg-gradient-to-br from-black to-gradWhite overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <Image 
-            src={heroImage} 
-            alt="Scam illustration" 
-            fill
-            className="object-cover opacity-30"
-          />
+          {scam.imageUrl ? (
+            <img
+              src={scam.imageUrl}
+              alt={scam.name}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+            />
+          ) : (
+            <Image 
+              src={heroImage} 
+              alt="Scam illustration" 
+              fill
+              className="object-cover opacity-30"
+            />
+          )}
           <div className="absolute bottom-4 left-4">
             <span className="px-3 py-1 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full font-medium">
               {scam.type}
@@ -38,20 +51,31 @@ const ScamCard = ({ scam, onReview, viewMode }: ScamCardProps) => {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 flex flex-col h-40">
-          <h3 className="font-bold text-lg text-black mb-2 line-clamp-2 group-hover:text-red transition-colors flex-grow overflow-hidden text-ellipsis">
+        <div className="p-6 flex flex-col h-52">
+          <h3 
+            className={`font-bold text-lg text-black mb-2 line-clamp-2 group-hover:text-red transition-colors overflow-hidden ${titleIsPersian ? 'text-right' : 'text-left'}`}
+            dir={titleIsPersian ? 'rtl' : 'ltr'}
+          >
             {scam.name}
           </h3>
+
+          {scam.description && (
+            <p 
+              className={`text-sm text-black/70 mb-3 line-clamp-2 overflow-hidden ${descIsPersian ? 'text-right' : 'text-left'}`}
+              dir={descIsPersian ? 'rtl' : 'ltr'}
+            >
+              {scam.description}
+            </p>
+          )}
           
-          <div className="flex items-center gap-2 text-sm text-black/70 mb-4">
+          <div className="flex items-center gap-2 text-sm text-black/70 mb-4 mt-auto">
             <Calendar className="w-4 h-4" />
             <span>{scam.date}</span>
           </div>
 
           <Button 
             onClick={() => onReview(scam.id)}
-            className="w-full bg-gradient-to-r from-red to-red/90 hover:from-red/90 hover:to-red text-white border-0 rounded-xl font-semibold transition-all duration-200 hover:scale-105 mt-auto"
+            className="w-full bg-gradient-to-r from-red to-red/90 hover:from-red/90 hover:to-red text-white border-0 rounded-xl font-semibold transition-all duration-200 hover:scale-105"
           >
             View Details
           </Button>
@@ -60,29 +84,46 @@ const ScamCard = ({ scam, onReview, viewMode }: ScamCardProps) => {
     );
   }
 
-  // List view
   return (
     <div className="group bg-cardWhite rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gradWhite/30 hover:border-red/40">
-      <div className="flex items-stretch min-h-24">
-        {/* Left accent */}
+      <div className="flex items-stretch min-h-32">
         <div className="w-2 bg-red flex-shrink-0" />
         
-        {/* Image */}
-        <div className="w-16 h-16 sm:w-20 sm:h-20 m-4 relative rounded-lg overflow-hidden flex-shrink-0 self-center">
-          <Image 
-            src={heroImage} 
-            alt="Scam illustration" 
-            fill
-            className="object-cover"
-          />
+        <div className="w-24 h-24 m-4 relative rounded-lg overflow-hidden flex-shrink-0 self-center">
+          {scam.imageUrl ? (
+            <img
+              src={scam.imageUrl}
+              alt={scam.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <Image 
+              src={heroImage} 
+              alt="Scam illustration" 
+              fill
+              className="object-cover"
+            />
+          )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 py-4 pr-4 flex flex-col justify-between min-h-24">
+        <div className="flex-1 py-4 pr-4 flex flex-col justify-between">
           <div className="flex-1">
-            <h3 className="font-bold text-base sm:text-lg text-black mb-2 line-clamp-2 group-hover:text-red transition-colors overflow-hidden text-ellipsis">
+            <h3 
+              className={`font-bold text-base sm:text-lg text-black mb-2 line-clamp-2 group-hover:text-red transition-colors overflow-hidden ${titleIsPersian ? 'text-right' : 'text-left'}`}
+              dir={titleIsPersian ? 'rtl' : 'ltr'}
+            >
               {scam.name}
             </h3>
+
+            {scam.description && (
+              <p 
+                className={`text-sm text-black/60 mb-2 line-clamp-2 overflow-hidden ${descIsPersian ? 'text-right' : 'text-left'}`}
+                dir={descIsPersian ? 'rtl' : 'ltr'}
+              >
+                {scam.description}
+              </p>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-black/70">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
@@ -120,11 +161,10 @@ export default function ScamsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reports, setReports] = useState<ScamReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<ScamReport[]>([]);
-  const [backendSearchResults, setBackendSearchResults] = useState<ScamReport[]>([]); // New state for backend results
-  const [isSearchingBackend, setIsSearchingBackend] = useState(false); // New state for backend search loading
+  const [backendSearchResults, setBackendSearchResults] = useState<ScamReport[]>([]);
+  const [isSearchingBackend, setIsSearchingBackend] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get unique scam types for filter
   const scamTypes = Array.from(new Set(reports.map(report => report.type)));
 
   useEffect(() => {
@@ -136,7 +176,6 @@ export default function ScamsPage() {
         setError(fetchError);
       } else if (data) {
         setReports(data);
-        // Initially, filtered reports are all reports
         setFilteredReports(data); 
       }
       
@@ -146,11 +185,10 @@ export default function ScamsPage() {
     loadReports();
   }, []);
 
-  // Effect for backend search and combining results
   useEffect(() => {
     const performSearch = async () => {
       if (searchQuery.trim() === '') {
-        setBackendSearchResults([]); // Clear backend results if search query is empty
+        setBackendSearchResults([]);
         setIsSearchingBackend(false);
         return;
       }
@@ -159,7 +197,6 @@ export default function ScamsPage() {
       const { data, error: searchError } = await searchScamReportsByTitle(searchQuery);
       if (searchError) {
         console.error("Backend search error:", searchError);
-        // Optionally, show an error to the user
       } else if (data) {
         setBackendSearchResults(data);
       }
@@ -168,59 +205,47 @@ export default function ScamsPage() {
 
     const handler = setTimeout(() => {
       performSearch();
-    }, 500); // Debounce search to avoid too many API calls
+    }, 500);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [searchQuery]); // Rerun when search query changes
+  }, [searchQuery]);
 
-  // Filter and sort reports (now considers backendSearchResults)
   useEffect(() => {
-  let reportsToFilterAndSort: ScamReport[] = [];
+    let reportsToFilterAndSort: ScamReport[] = [];
 
-  // If there's a search query, prioritize backend search results
-  if (searchQuery.trim() !== '') {
-    reportsToFilterAndSort = backendSearchResults;
-  } else {
-    // Otherwise, use the initially fetched reports
-    reportsToFilterAndSort = reports;
-  }
-
-  let filtered = reportsToFilterAndSort.filter(report => {
-    // Apply type filter regardless of search origin
-    const matchesType = selectedType === 'all' || report.type === selectedType;
-
-    // When a search query is active, the backendSearchResults *should* already be
-    // relevant to the search query, so we only need to apply the type filter.
-    // If there's no search query, we still apply the client-side search against 'reports'
-    // (though in this revised logic, when searchQuery is empty, we only use 'reports').
-    // The key here is that if backendSearchResults are being used, their content
-    // is assumed to be what the user is looking for regarding the search term.
-    return matchesType;
-  });
-
-  // Sort reports
-  filtered.sort((a, b) => {
-    let comparison = 0;
-
-    switch (sortBy) {
-      case 'date':
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-        break;
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'type':
-        comparison = a.type.localeCompare(b.type);
-        break;
+    if (searchQuery.trim() !== '') {
+      reportsToFilterAndSort = backendSearchResults;
+    } else {
+      reportsToFilterAndSort = reports;
     }
 
-    return sortOrder === 'desc' ? -comparison : comparison;
-  });
+    let filtered = reportsToFilterAndSort.filter(report => {
+      const matchesType = selectedType === 'all' || report.type === selectedType;
+      return matchesType;
+    });
 
-  setFilteredReports(filtered);
-}, [reports, searchQuery, selectedType, sortBy, sortOrder, backendSearchResults]);
+    filtered.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'date':
+          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          break;
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'type':
+          comparison = a.type.localeCompare(b.type);
+          break;
+      }
+
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    setFilteredReports(filtered);
+  }, [reports, searchQuery, selectedType, sortBy, sortOrder, backendSearchResults]);
 
   const handleSort = (criteria: 'date' | 'name' | 'type') => {
     if (sortBy === criteria) {
@@ -239,7 +264,6 @@ export default function ScamsPage() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#BBB8AF' }}>
         <div className="container mx-auto px-4 py-8">
-          {/* Loading skeleton */}
           <div className="animate-pulse">
             <div className="h-12 bg-cardWhite rounded-lg mb-8 w-1/3"></div>
             <div className="h-16 bg-cardWhite rounded-xl mb-8"></div>
@@ -274,9 +298,7 @@ export default function ScamsPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#BBB8AF' }}>
-      
-        {/* Header */}
-        <div className="bg-gradient-to-r from-black via-black to-red text-white py-8">
+      <div className="bg-gradient-to-r from-black via-black to-red text-white py-8">
         <div className="max-w-6xl mx-auto px-4 md:px-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-3 h-3 bg-red rounded-full animate-pulse"></div>
@@ -288,12 +310,8 @@ export default function ScamsPage() {
         </div>
       </div>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        
-
-        {/* Controls */}
         <div className="bg-cardWhite rounded-2xl shadow-lg border border-gradWhite/30 p-6 mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-            {/* Search */}
             <div className="lg:col-span-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black/50 w-5 h-5" />
@@ -304,7 +322,7 @@ export default function ScamsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gradWhite/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red/20 focus:border-red transition-all bg-white"
                 />
-                 {isSearchingBackend && (
+                {isSearchingBackend && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black/50">
                     <svg className="animate-spin h-5 w-5 text-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -315,7 +333,6 @@ export default function ScamsPage() {
               </div>
             </div>
 
-            {/* Type Filter */}
             <div className="lg:col-span-3">
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black/50 w-5 h-5" />
@@ -332,7 +349,6 @@ export default function ScamsPage() {
               </div>
             </div>
 
-            {/* Sort */}
             <div className="lg:col-span-3">
               <div className="flex gap-2">
                 {(['date', 'name', 'type'] as const).map((option) => (
@@ -358,7 +374,6 @@ export default function ScamsPage() {
               </div>
             </div>
 
-            {/* View Mode Toggle */}
             <div className="lg:col-span-2 flex justify-end">
               <div className="flex bg-gradWhite/20 rounded-xl p-1">
                 <Button
@@ -382,7 +397,6 @@ export default function ScamsPage() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-cardWhite rounded-xl p-6 shadow-md border border-gradWhite/30">
             <div className="flex items-center gap-3">
@@ -428,8 +442,7 @@ export default function ScamsPage() {
           </div>
         </div>
 
-        {/* Results */}
-        {filteredReports.length === 0 && !isSearchingBackend ? ( // Added !isSearchingBackend
+        {filteredReports.length === 0 && !isSearchingBackend ? (
           <div className="text-center py-16 bg-cardWhite rounded-2xl shadow-lg border border-gradWhite/30">
             <div className="text-black/40 text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-black mb-2">No scams found</h3>
@@ -451,7 +464,7 @@ export default function ScamsPage() {
               </Button>
             )}
           </div>
-        ) : isSearchingBackend ? ( // Show loading indicator during backend search
+        ) : isSearchingBackend ? (
           <div className="text-center py-16 bg-cardWhite rounded-2xl shadow-lg border border-gradWhite/30">
             <div className="text-black/40 text-6xl mb-4">
               <svg className="animate-spin mx-auto h-12 w-12 text-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
