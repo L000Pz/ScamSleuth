@@ -50,6 +50,8 @@ interface ScamReport {
   description: string;
   date: string;
   reportDate: string;
+  rawScamDate: string;
+  rawReportDate: string;
   financialLoss: number;
   reporterName: string;
   contactInfo: string;

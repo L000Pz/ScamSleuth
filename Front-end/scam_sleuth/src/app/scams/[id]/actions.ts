@@ -12,7 +12,7 @@ export interface PublicReviewResponse {
     scam_type_id: number;
     review_date: string;
     review_content_id: number;
-    views: number; // Added views property
+    views: number;
   };
   content: string;
   media: Array<{
@@ -30,7 +30,8 @@ export interface PublicReviewResponse {
 export interface TransformedReview {
   id: string;
   title: string;
-  date: string; // Keep as original UTC string from backend
+  date: string;
+  rawDate: string;
   content: string;
   media: Array<{
     review_id: number;
@@ -42,7 +43,7 @@ export interface TransformedReview {
     profile_picture_id: number | null;
     contact_info: string;
   };
-  views: number; // Added views property
+  views: number;
 }
 
 export interface CommentApiResponseItem {
@@ -51,9 +52,9 @@ export interface CommentApiResponseItem {
     root_id: number | null;
     review_id: number;
     writer_id: number;
-    writer_role: string; // This role is crucial for admin tag
+    writer_role: string;
     comment_content: string;
-    created_at: string; // UTC timestamp from backend
+    created_at: string;
   };
   writerDetails: {
     username: string;
@@ -71,12 +72,13 @@ export interface Comment {
     writer_id: number;
   };
   content: string;
-  timestamp: string; // Keep as original UTC string from backend
-  likes: number; // Mocked
+  timestamp: string;
+  rawTimestamp: string;
+  likes: number;
   replies: Comment[];
   root_id: number | null;
   review_id: number;
-  isAdminComment: boolean; // Added for admin tag
+  isAdminComment: boolean;
 }
 
 export interface CommentSubmission {
@@ -94,11 +96,10 @@ interface UserInfo {
   bio: string | null;
   profile_picture_id: number | null;
   token: string;
-  role: string; // "admin" or "user"
+  role: string;
   is_verified?: boolean;
 }
 
-// Helper to get user info from token (used for auth checks in server actions)
 async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   try {
     const response = await fetch(
@@ -125,6 +126,50 @@ async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
   }
 }
 
+function formatSmartTimestamp(utcString: string): string {
+  try {
+    const utcIsoString = utcString.endsWith('Z') ? utcString : utcString + 'Z';
+    const date = new Date(utcIsoString);
+    
+    if (isNaN(date.getTime())) {
+      return utcString;
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return 'Just now';
+    }
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+    }
+    
+    if (diffHours < 24) {
+      return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    }
+    
+    if (diffDays < 7) {
+      return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).replace(',', ' •');
+  } catch (error) {
+    return utcString;
+  }
+}
+
 function buildCommentTree(apiResponseItems: CommentApiResponseItem[]): Comment[] {
   const commentMap = new Map<number, Comment>();
   const rootComments: Comment[] = [];
@@ -141,12 +186,13 @@ function buildCommentTree(apiResponseItems: CommentApiResponseItem[]): Comment[]
         writer_id: apiComment.writer_id
       },
       content: apiComment.comment_content,
-      timestamp: apiComment.created_at,
+      timestamp: formatSmartTimestamp(apiComment.created_at),
+      rawTimestamp: apiComment.created_at,
       likes: Math.floor(Math.random() * 20),
       replies: [],
       root_id: apiComment.root_id,
       review_id: apiComment.review_id,
-      isAdminComment: apiComment.writer_role === 'admin' // Set isAdminComment
+      isAdminComment: apiComment.writer_role === 'admin'
     };
 
     commentMap.set(apiComment.comment_id, comment);
@@ -167,10 +213,10 @@ function buildCommentTree(apiResponseItems: CommentApiResponseItem[]): Comment[]
     }
   });
 
-  rootComments.sort((a, b) => new Date(b.timestamp + 'Z').getTime() - new Date(a.timestamp + 'Z').getTime());
+  rootComments.sort((a, b) => new Date(b.rawTimestamp + 'Z').getTime() - new Date(a.rawTimestamp + 'Z').getTime());
   
   rootComments.forEach(comment => {
-    comment.replies.sort((a, b) => new Date(a.timestamp + 'Z').getTime() - new Date(b.timestamp + 'Z').getTime());
+    comment.replies.sort((a, b) => new Date(a.rawTimestamp + 'Z').getTime() - new Date(b.rawTimestamp + 'Z').getTime());
   });
 
   return rootComments;
@@ -203,7 +249,8 @@ export async function getPublicReview(id: string): Promise<{
     const transformedReview: TransformedReview = {
       id: reviewData.review.review_id.toString(),
       title: reviewData.review.title,
-      date: reviewData.review.review_date,
+      date: formatSmartTimestamp(reviewData.review.review_date),
+      rawDate: reviewData.review.review_date,
       content: reviewData.content,
       media: reviewData.media || [],
       writer: {
@@ -212,7 +259,7 @@ export async function getPublicReview(id: string): Promise<{
         profile_picture_id: reviewData.reviewWriterDetails.profile_picture_id,
         contact_info: reviewData.reviewWriterDetails.contact_info
       },
-      views: reviewData.review.views // Mapped views property
+      views: reviewData.review.views
     };
 
     return { success: true, data: transformedReview };
@@ -229,6 +276,7 @@ export async function getRecentReviews(limit: number = 2): Promise<{
     title: string;
     author: string;
     date: string;
+    rawDate: string;
     excerpt: string;
   }>;
   error?: string;
@@ -258,7 +306,8 @@ export async function getRecentReviews(limit: number = 2): Promise<{
         id: review.review_id.toString(),
         title: review.title,
         author: 'Anonymous',
-        date: review.review_date,
+        date: formatSmartTimestamp(review.review_date),
+        rawDate: review.review_date,
         excerpt: review.title.length > 80 
           ? review.title.substring(0, 80) + '...' 
           : review.title
@@ -328,7 +377,6 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
       return { success: false, error: 'Failed to get user information' };
     }
 
-    // Determine which endpoint to call based on user role
     let apiUrl = '';
     if (currentUser.data.role === 'admin') {
       apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/WriteReviewComment`;
@@ -342,7 +390,7 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
       comment_content: commentData.content
     };
 
-    const response = await fetch(apiUrl, { // Use the determined apiUrl
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -355,31 +403,31 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Comment submission failed:', response.status, errorText);
-      return { success: false, error: `Failed to submit comment: ${errorText}` }; // Include errorText
+      return { success: false, error: `Failed to submit comment: ${errorText}` };
     }
 
     const responseText = await response.text();
     console.log('Comment submission response:', responseText);
     
-    // The writer_id needs to be obtained from the token or the backend response
-    // For now, we'll use a placeholder if not available directly from current user
     const writerId = currentUser.data.writer_id || 0; 
+    const now = new Date().toISOString().replace('Z', '');
 
     const newComment: Comment = {
-      id: Date.now().toString(), // Or better, extract from backend response if available
+      id: Date.now().toString(),
       author: {
         name: currentUser.data.name,
         username: currentUser.data.username,
         profile_picture_id: currentUser.data.profile_picture_id,
-        writer_id: writerId, // Use actual writer ID if available
+        writer_id: writerId,
       },
       content: commentData.content,
-      timestamp: new Date().toISOString().replace('Z', ''),
+      timestamp: 'Just now',
+      rawTimestamp: now,
       likes: 0,
       replies: [],
       root_id: commentData.parentCommentId ? parseInt(commentData.parentCommentId) : null,
       review_id: parseInt(commentData.reviewId),
-      isAdminComment: currentUser.data.role === 'admin' // Correctly set admin status
+      isAdminComment: currentUser.data.role === 'admin'
     };
 
     return { success: true, data: newComment };
@@ -389,7 +437,6 @@ export async function submitComment(commentData: CommentSubmission): Promise<{
   }
 }
 
-// Mocked like/unlike comment
 export async function toggleCommentLike(commentId: string, isLiked: boolean): Promise<{
   success: boolean;
   newLikeCount?: number;
@@ -420,8 +467,6 @@ export async function downloadMedia(mediaId: number): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
-    // No actual download logic here, as the client-side window.open is used.
-    // This action ensures auth check before allowing the client to initiate download.
     if (!token) {
       return { success: false, error: 'Authentication required to download media.' };
     }
@@ -439,8 +484,8 @@ export async function getCurrentUser(): Promise<{
     name: string;
     username: string;
     profile_picture_id: number | null;
-    role: string; // Include role
-    writer_id?: number; // Add writer_id as it might be useful for new comments
+    role: string;
+    writer_id?: number;
   };
   error?: string;
 }> {
@@ -474,8 +519,8 @@ export async function getCurrentUser(): Promise<{
         name: userInfo.name,
         username: userInfo.username,
         profile_picture_id: userInfo.profile_picture_id,
-        role: userInfo.role, // Return the role
-        writer_id: userInfo.admin_id || userInfo.user_id || null, // Capture writer_id if available
+        role: userInfo.role,
+        writer_id: userInfo.admin_id || userInfo.user_id || null,
       }
     };
   } catch (error) {
@@ -490,11 +535,11 @@ export async function checkUserAuthentication(): Promise<{
     name: string;
     username: string;
     profile_picture_id: number | null;
-    role: string; // Include role
+    role: string;
   };
 }> {
   try {
-    const currentUserResult = await getCurrentUser(); // Reuse getCurrentUser
+    const currentUserResult = await getCurrentUser();
 
     if (currentUserResult.success && currentUserResult.data) {
       return { isAuthenticated: true, user: currentUserResult.data };
@@ -526,8 +571,6 @@ export async function deleteReviewComment(commentId: string): Promise<{
       return { success: false, error: 'Unauthorized: Admin privileges required to delete comments.' };
     }
 
-    // Assuming endpoint for deleting review comments
-    // Adjust this URL based on your actual API if different
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/DeleteReviewComment?comment_id=${commentId}`, {
       method: 'DELETE',
       headers: {
@@ -577,7 +620,7 @@ export async function incrementReviewView(reviewId: string): Promise<{
       method: 'PUT',
       headers: {
         'Accept': '*/*',
-        'Authorization': `Bearer ${token || ''}`, // Token might not be required or present for public views
+        'Authorization': `Bearer ${token || ''}`,
       },
       cache: 'no-store'
     });

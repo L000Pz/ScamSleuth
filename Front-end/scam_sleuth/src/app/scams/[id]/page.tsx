@@ -29,31 +29,22 @@ const getMediaUrl = (mediaId: number): string => {
 };
 
 // Utility function to format timestamps in user's local timezone
-const formatTimestamp = (utcString: string, options?: {
+const formatTimestamp = (timestamp: string, options?: {
   includeTime?: boolean;
   relative?: boolean;
   format?: 'short' | 'long' | 'full';
 }): string => {
+  if (timestamp.includes('ago') || timestamp === 'Just now') {
+    return timestamp;
+  }
+  
   try {
-    const utcIsoString = utcString.endsWith('Z') ? utcString : utcString + 'Z';
+    const utcIsoString = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
     const date = new Date(utcIsoString);
     
     if (isNaN(date.getTime())) {
-      console.error('Invalid date:', utcString);
-      return utcString;
-    }
-
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (options?.relative && diffMs < 7 * 24 * 60 * 60 * 1000) {
-      if (diffMs < 60000) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
+      console.error('Invalid date:', timestamp);
+      return timestamp;
     }
 
     const formatOptions: Intl.DateTimeFormatOptions = {};
@@ -62,7 +53,7 @@ const formatTimestamp = (utcString: string, options?: {
       case 'short':
         formatOptions.month = 'short';
         formatOptions.day = 'numeric';
-        if (options.includeTime) {
+        if (options?.includeTime) {
           formatOptions.hour = 'numeric';
           formatOptions.minute = '2-digit';
           formatOptions.hour12 = true;
@@ -72,7 +63,7 @@ const formatTimestamp = (utcString: string, options?: {
         formatOptions.year = 'numeric';
         formatOptions.month = 'long';
         formatOptions.day = 'numeric';
-        if (options.includeTime) {
+        if (options?.includeTime) {
           formatOptions.hour = 'numeric';
           formatOptions.minute = '2-digit';
           formatOptions.hour12 = true;
@@ -83,7 +74,7 @@ const formatTimestamp = (utcString: string, options?: {
         formatOptions.year = 'numeric';
         formatOptions.month = 'long';
         formatOptions.day = 'numeric';
-        if (options.includeTime) {
+        if (options?.includeTime) {
           formatOptions.hour = 'numeric';
           formatOptions.minute = '2-digit';
           formatOptions.second = '2-digit';
@@ -99,7 +90,7 @@ const formatTimestamp = (utcString: string, options?: {
     }
   } catch (error) {
     console.error('Error formatting timestamp:', error);
-    return utcString;
+    return timestamp;
   }
 };
 
@@ -258,9 +249,9 @@ const CommentItem = ({
               <span className="text-gray-500 text-xs">•</span>
               <span 
                 className="text-gray-500 text-xs" 
-                title={formatTimestamp(comment.timestamp, { format: 'full', includeTime: true })}
+                title={formatTimestamp(comment.rawTimestamp, { format: 'full', includeTime: true })}
               >
-                {formatTimestamp(comment.timestamp, { relative: true })}
+                {comment.timestamp}
               </span>
               {depth > 0 && (
                 <>

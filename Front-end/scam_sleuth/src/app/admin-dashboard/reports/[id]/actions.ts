@@ -19,7 +19,7 @@ interface ApiReportResponse {
     financial_loss: number;
     description: string;
   };
-  media: number[]; // Array of media IDs
+  media: number[];
   reportWriterDetails: {
     user_id: number;
     username: string;
@@ -30,7 +30,6 @@ interface ApiReportResponse {
   };
 }
 
-// Enhanced media interface with type detection
 interface MediaFile {
   report_id: number;
   media_id: number;
@@ -47,6 +46,8 @@ interface TransformedReport {
   description: string;
   date: string;
   reportDate: string;
+  rawScamDate: string;
+  rawReportDate: string;
   financialLoss: number;
   status: string;
   reporterName: string;
@@ -64,9 +65,6 @@ interface TransformedReport {
   media: MediaFile[];
 }
 
-/**
- * Fetch user info from token for authentication verification
- */
 async function getUserInfoFromToken(token: string) {
   try {
     const response = await fetch(
@@ -90,7 +88,6 @@ async function getUserInfoFromToken(token: string) {
   }
 }
 
-// Function to detect media type by making a HEAD request to get Content-Type
 async function detectMediaType(mediaId: number, token: string): Promise<{
   type: 'image' | 'video' | 'audio' | 'document' | 'unknown';
   mimeType?: string;
@@ -98,7 +95,6 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
   name?: string;
 }> {
   try {
-    // First try to get metadata with HEAD request
     const headResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Media/mediaManager/Get?id=${mediaId}`, {
       method: 'HEAD',
       headers: { 
@@ -116,7 +112,6 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
       contentType = headResponse.headers.get('content-type')?.toLowerCase() || '';
       contentLength = headResponse.headers.get('content-length') || '';
       
-      // Try to extract filename from content-disposition header
       const contentDisposition = headResponse.headers.get('content-disposition');
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -125,14 +120,13 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
         }
       }
     } else {
-      // If HEAD fails, try a small range request to get headers
       try {
         const rangeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Media/mediaManager/Get?id=${mediaId}`, {
           method: 'GET',
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Accept': '*/*',
-            'Range': 'bytes=0-1023' // Get first 1KB only
+            'Range': 'bytes=0-1023'
           },
           cache: 'no-store'
         });
@@ -155,7 +149,6 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
       }
     }
 
-    // Format file size
     let size: string | undefined;
     if (contentLength) {
       const bytes = parseInt(contentLength);
@@ -172,7 +165,6 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
       }
     }
 
-    // Determine file type based on content-type first
     let type: 'image' | 'video' | 'audio' | 'document' | 'unknown' = 'unknown';
 
     if (contentType) {
@@ -196,23 +188,18 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
       }
     }
 
-    // Fallback: detect by file extension if content-type detection failed
     if (type === 'unknown') {
       const extension = fileName.toLowerCase().split('.').pop() || '';
       
-      // Image extensions
       if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'].includes(extension)) {
         type = 'image';
       } 
-      // Video extensions
       else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'ogv', 'mpeg', 'mpg', 'm4v'].includes(extension)) {
         type = 'video';
       } 
-      // Audio extensions
       else if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma', 'opus', 'amr'].includes(extension)) {
         type = 'audio';
       } 
-      // Document extensions
       else if ([
         'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 
         'txt', 'rtf', 'csv', 'json', 'xml', 'html', 'htm',
@@ -231,7 +218,6 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
   } catch (error) {
     console.error(`Error detecting media type for ${mediaId}:`, error);
     
-    // Last resort: return unknown type with basic info
     return { 
       type: 'unknown',
       name: `media_${mediaId}`
@@ -239,27 +225,59 @@ async function detectMediaType(mediaId: number, token: string): Promise<{
   }
 }
 
-/**
- * Format date string to localized date
- */
-function formatDate(dateString: string): string {
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return dateString;
+function formatSmartDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
   }
+  
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  };
+  
+  return date.toLocaleDateString('en-US', options).replace(',', ' •');
 }
 
-/**
- * Get admin report by ID with enhanced media type detection
- * @param id - The report ID to fetch
- * @returns Promise with success status and report data or error
- */
+function formatDatePretty(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  });
+}
+
 export async function getAdminReport(id: string): Promise<{
   success: boolean;
   data?: TransformedReport;
@@ -273,7 +291,6 @@ export async function getAdminReport(id: string): Promise<{
       return { success: false, error: 'Authentication required. Please log in again.' };
     }
 
-    // Verify user is admin
     const userInfo = await getUserInfoFromToken(token);
     if (!userInfo) {
       return { success: false, error: 'Invalid authentication. Please log in again.' };
@@ -283,7 +300,6 @@ export async function getAdminReport(id: string): Promise<{
       return { success: false, error: 'Admin access required to view reports.' };
     }
 
-    // Fetch scam types and report data in parallel
     const [scamTypesRes, reportRes] = await Promise.all([
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Public/publicManager/scamTypes`, {
         headers: { 
@@ -301,7 +317,6 @@ export async function getAdminReport(id: string): Promise<{
       })
     ]);
 
-    // Check if both requests were successful
     if (!scamTypesRes.ok) {
       console.error('Failed to fetch scam types:', scamTypesRes.status, scamTypesRes.statusText);
       return { success: false, error: 'Failed to fetch scam type information.' };
@@ -315,22 +330,18 @@ export async function getAdminReport(id: string): Promise<{
       return { success: false, error: 'Failed to fetch report data.' };
     }
 
-    // Parse responses
     const [scamTypes, reportData]: [ApiScamType[], ApiReportResponse] = await Promise.all([
       scamTypesRes.json(),
       reportRes.json()
     ]);
 
-    // Validate report data structure
     if (!reportData?.report) {
       console.error('Invalid report data structure:', reportData);
       return { success: false, error: 'Invalid report data received from server.' };
     }
 
-    // Enhanced media processing with type detection
     const mediaFiles: MediaFile[] = [];
     if (reportData.media && reportData.media.length > 0) {
-      // Process media files in parallel for better performance
       const mediaPromises = reportData.media.map(async (mediaId: number) => {
         const mediaInfo = await detectMediaType(mediaId, token);
         return {
@@ -347,12 +358,10 @@ export async function getAdminReport(id: string): Promise<{
       mediaFiles.push(...resolvedMedia);
     }
 
-    // Find the matching scam type
     const scamType = scamTypes.find((type) => 
       type.scam_type_id === reportData.report.scam_type_id
     );
 
-    // Enhanced evidence description
     const getEvidenceDescription = (mediaFiles: MediaFile[]): string[] => {
       if (mediaFiles.length === 0) return [];
       
@@ -371,20 +380,21 @@ export async function getAdminReport(id: string): Promise<{
       return descriptions;
     };
 
-    // Transform the report data to match frontend expectations
     const transformedReport: TransformedReport = {
       id: reportData.report.report_id.toString(),
       type: scamType?.scam_type || 'Unknown Scam Type',
       name: reportData.report.title,
       description: reportData.report.description,
-      date: formatDate(reportData.report.scam_date),
-      reportDate: formatDate(reportData.report.report_date),
+      date: formatDatePretty(reportData.report.scam_date),
+      reportDate: formatSmartDate(reportData.report.report_date),
+      rawScamDate: reportData.report.scam_date,
+      rawReportDate: reportData.report.report_date,
       financialLoss: reportData.report.financial_loss || 0,
-      status: 'under_review', // This status is hardcoded, adjust if API provides it
+      status: 'under_review',
       reporterName: reportData.reportWriterDetails.name,
       contactInfo: reportData.reportWriterDetails.email,
       evidence: getEvidenceDescription(mediaFiles),
-      timeline: `Scam occurred on ${formatDate(reportData.report.scam_date)}`, // Hardcoded timeline, adjust if API provides it
+      timeline: `Scam occurred ${formatDatePretty(reportData.report.scam_date)}`,
       writer: {
         id: reportData.reportWriterDetails.user_id,
         username: reportData.reportWriterDetails.username,
@@ -401,7 +411,6 @@ export async function getAdminReport(id: string): Promise<{
   } catch (error) {
     console.error('Error in getAdminReport:', error);
     
-    // Provide more specific error messages based on error type
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return { success: false, error: 'Network error. Please check your connection and try again.' };
     }
@@ -417,9 +426,6 @@ export async function getAdminReport(id: string): Promise<{
   }
 }
 
-/**
- * Update report status (placeholder for future implementation)
- */
 export async function updateReportStatus(reportId: string, status: string): Promise<{
   success: boolean;
   error?: string;
@@ -432,13 +438,11 @@ export async function updateReportStatus(reportId: string, status: string): Prom
       return { success: false, error: 'Authentication required.' };
     }
 
-    // Verify admin access
     const userInfo = await getUserInfoFromToken(token);
     if (!userInfo || userInfo.role !== 'admin') {
       return { success: false, error: 'Admin access required.' };
     }
 
-    // TODO: Implement actual API call when endpoint is available
     console.log(`Would update report ${reportId} to status: ${status}`);
     
     return { success: true };
@@ -448,11 +452,6 @@ export async function updateReportStatus(reportId: string, status: string): Prom
   }
 }
 
-/**
- * Delete report
- * @param reportId - The ID of the report to delete
- * @returns Promise with success status or error
- */
 export async function deleteReport(reportId: string): Promise<{
   success: boolean;
   message?: string;
@@ -466,20 +465,18 @@ export async function deleteReport(reportId: string): Promise<{
       return { success: false, error: 'Authentication required.' };
     }
 
-    // Verify admin access
     const userInfo = await getUserInfoFromToken(token);
     if (!userInfo || userInfo.role !== 'admin') {
       return { success: false, error: 'Admin access required.' };
     }
 
-    // Perform actual API call to delete the report
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/Admin/adminManagement/DeleteReport?report_id=${reportId}`, {
       method: 'DELETE',
       headers: {
         'Accept': '*/*',
         'Authorization': `Bearer ${token}`,
       },
-      cache: 'no-store' // Ensure this request is always fresh
+      cache: 'no-store'
     });
 
     if (!response.ok) {
@@ -494,7 +491,7 @@ export async function deleteReport(reportId: string): Promise<{
       };
     }
 
-    const responseData = await response.text(); // Response is "Report deleted successfully."
+    const responseData = await response.text();
     const message = responseData.startsWith('"') && responseData.endsWith('"')
       ? responseData.slice(1, -1)
       : responseData;
@@ -507,9 +504,6 @@ export async function deleteReport(reportId: string): Promise<{
   }
 }
 
-/**
- * Add admin note to report (placeholder for future implementation)
- */
 export async function addAdminNote(reportId: string, note: string): Promise<{
   success: boolean;
   error?: string;
@@ -522,13 +516,11 @@ export async function addAdminNote(reportId: string, note: string): Promise<{
       return { success: false, error: 'Authentication required.' };
     }
 
-    // Verify admin access
     const userInfo = await getUserInfoFromToken(token);
     if (!userInfo || userInfo.role !== 'admin') {
       return { success: false, error: 'Admin access required.' };
     }
 
-    // TODO: Implement actual API call when endpoint is available
     console.log(`Would add note to report ${reportId}: ${note}`);
     
     return { success: true };

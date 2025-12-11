@@ -23,6 +23,7 @@ export interface ScamReport {
   type: string;
   name: string;
   date: string;
+  rawDate: string;
   content_id: number;
 }
 
@@ -31,6 +32,7 @@ export interface DetailedReview {
   name: string;
   description: string;
   date: string;
+  rawDate: string;
   scamType: string;
   imageUrl?: string;
 }
@@ -136,7 +138,6 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
 function stripHtml(html: string): string {
   let text = html.replace(/<[^>]*>/g, ' ');
   
-  // Common HTML entities
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -150,18 +151,15 @@ function stripHtml(html: string): string {
   text = text.replace(/&mdash;/g, '—');
   text = text.replace(/&ndash;/g, '–');
   
-  // ZWNJ and ZWJ 
   text = text.replace(/&zwnj;/g, ' ');
   text = text.replace(/&zwj;/g, '');
-  text = text.replace(/[\u200C]/g, ' '); // ZWNJ Unicode
-  text = text.replace(/[\u200D]/g, ''); // ZWJ Unicode
-  text = text.replace(/[\u200B\uFEFF]/g, ''); // Zero-width
+  text = text.replace(/[\u200C]/g, ' ');
+  text = text.replace(/[\u200D]/g, '');
+  text = text.replace(/[\u200B\uFEFF]/g, '');
   
-  // Any remaining HTML entities
   text = text.replace(/&[a-zA-Z]+;/g, '');
   text = text.replace(/&#\d+;/g, '');
   
-  // Normalize whitespace 
   text = text.replace(/  +/g, ' '); 
   text = text.trim();
   
@@ -189,8 +187,29 @@ function truncateText(text: string, maxLength: number = 100): string {
   return finalText.trim() + '...';
 }
 
-function formatDate(dateString: string): string {
+function formatSmartDate(dateString: string): string {
   const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+  
+  if (diffMinutes < 60) {
+    return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  if (diffDays < 7) {
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  }
   
   return new Intl.DateTimeFormat('en-US', { 
     year: 'numeric', 
@@ -288,7 +307,8 @@ export async function getDetailedReviews() {
               id: review.review_id,
               name: review.title,
               description: review.description || 'No description available',
-              date: formatDate(review.review_date),
+              date: formatSmartDate(review.review_date),
+              rawDate: review.review_date,
               scamType: scamTypesMap[review.scam_type_id] || 'Unknown',
             };
           }
@@ -335,7 +355,8 @@ export async function getDetailedReviews() {
             id: review.review_id,
             name: review.title,
             description,
-            date: formatDate(review.review_date),
+            date: formatSmartDate(review.review_date),
+            rawDate: review.review_date,
             scamType: scamTypeName,
             imageUrl,
           };
@@ -345,7 +366,8 @@ export async function getDetailedReviews() {
             id: review.review_id,
             name: review.title,
             description: review.description || 'No description available',
-            date: formatDate(review.review_date),
+            date: formatSmartDate(review.review_date),
+            rawDate: review.review_date,
             scamType: scamTypesMap[review.scam_type_id] || 'Unknown',
           };
         }
@@ -391,7 +413,8 @@ export async function fetchScamReports() {
       id: review.review_id.toString(),
       type: scamTypeMap.get(review.scam_type_id) || 'Unknown',
       name: review.title,
-      date: new Date(review.review_date).toLocaleDateString(),
+      date: formatSmartDate(review.review_date),
+      rawDate: review.review_date,
       content_id: review.review_content_id
     }));
 
@@ -436,7 +459,8 @@ export async function searchScamReportsByTitle(input: string) {
       id: review.review_id.toString(),
       type: scamTypeMap.get(review.scam_type_id) || 'Unknown',
       name: review.title,
-      date: new Date(review.review_date).toLocaleDateString(),
+      date: formatSmartDate(review.review_date),
+      rawDate: review.review_date,
       content_id: review.review_content_id
     }));
 

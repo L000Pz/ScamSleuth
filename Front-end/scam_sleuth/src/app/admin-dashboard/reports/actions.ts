@@ -9,7 +9,7 @@ interface ApiReport {
   writer_id: number;
   scam_type_id: number;
   scam_date: string;
-  report_date: string; // New field
+  report_date: string;
   financial_loss: number;
   description: string;
 }
@@ -24,9 +24,11 @@ interface TransformedReport {
   type: string;
   name: string;
   description: string;
-  scamDate: string; // When the scam occurred
-  reportDate: string; // When the report was submitted
-  date: string; // For backwards compatibility (using report_date)
+  scamDate: string; 
+  reportDate: string; 
+  date: string; 
+  rawScamDate: string; 
+  rawReportDate: string; 
   financial_loss: number;
 }
 
@@ -58,6 +60,61 @@ async function getUserInfoFromToken(token: string): Promise<any> {
     return null;
   }
 }
+
+function formatSmartDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  }
+  
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  };
+  
+  return date.toLocaleDateString('en-US', options).replace(',', ' •');
+}
+
+const formatDatePretty = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  });
+};
 
 export async function getReports(): Promise<ApiResponse> {
   try {
@@ -115,21 +172,11 @@ export async function getReports(): Promise<ApiResponse> {
       type: scamTypeMap.get(report.scam_type_id) || 'Unknown',
       name: report.title,
       description: report.description,
-      scamDate: new Date(report.scam_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
-      reportDate: new Date(report.report_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
-      date: new Date(report.report_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }), // For backwards compatibility, using report_date as the primary date
+      scamDate: formatDatePretty(report.scam_date), 
+      reportDate: formatSmartDate(report.report_date), 
+      date: formatSmartDate(report.report_date), 
+      rawScamDate: report.scam_date, 
+      rawReportDate: report.report_date, 
       financial_loss: report.financial_loss
     }));
 

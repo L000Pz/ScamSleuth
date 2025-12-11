@@ -567,7 +567,7 @@ export default function ScamReportPage({ params }: PageParams): JSX.Element {
                         {report.type}
                       </span>
                     </div>
-                    <div className="text-left sm:text-right bg-white p-3 rounded-lg border border-gray-200 flex-shrink-0">
+                    <div className="text-left sm:text-left bg-white p-3 rounded-lg border border-gray-200 flex-shrink-0">
                       <p className="text-gray-600 text-sm mb-2">
                         <span className="font-medium">Report ID:</span> {report.id}
                       </p>

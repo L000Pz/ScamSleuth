@@ -231,7 +231,7 @@ export default function ScamsPage() {
 
       switch (sortBy) {
         case 'date':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          comparison = new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime();
           break;
         case 'name':
           comparison = a.name.localeCompare(b.name);
@@ -419,7 +419,7 @@ export default function ScamsPage() {
                 <p className="text-sm text-black/60">This Week</p>
                 <p className="text-2xl font-bold text-black">
                   {filteredReports.filter(report => {
-                    const reportDate = new Date(report.date);
+                    const reportDate = new Date(report.rawDate);
                     const weekAgo = new Date();
                     weekAgo.setDate(weekAgo.getDate() - 7);
                     return reportDate >= weekAgo;

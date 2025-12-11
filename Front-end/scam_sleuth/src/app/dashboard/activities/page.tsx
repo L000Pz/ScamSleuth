@@ -15,6 +15,8 @@ interface ActivityItem {
   description: string;
   date: string;
   scamDate: string;
+  rawReportDate: string; // اضافه شد
+  rawScamDate: string; // اضافه شد
   financialLoss: number;
 }
 
@@ -35,7 +37,6 @@ export default function ActivitiesPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sort options configuration
   const sortOptions: SortOption[] = [
     { value: 'reportDate', label: 'Report Date', icon: '📅' },
     { value: 'scamDate', label: 'Scam Date', icon: '⚠️' },
@@ -77,13 +78,9 @@ export default function ActivitiesPage(): JSX.Element {
   const handleSortChange = (newSortBy: string): void => {
     const newSort = newSortBy as SortBy;
     if (newSort === sortBy) {
-      // If same sort field, toggle order
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      // If different field, set new field with appropriate default order
       setSortBy(newSort);
-      // Financial loss and dates default to desc (highest/newest first)
-      // Names and types default to asc (alphabetical)
       setSortOrder(['financialLoss', 'reportDate', 'scamDate'].includes(newSort) ? 'desc' : 'asc');
     }
   };
@@ -92,16 +89,18 @@ export default function ActivitiesPage(): JSX.Element {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
   };
 
-  // Sort activities based on selected criteria
+  // مرتب‌سازی با استفاده از تاریخ‌های خام
   const sortedActivities = [...activities].sort((a, b) => {
     let comparison = 0;
     
     switch (sortBy) {
       case 'reportDate':
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        // استفاده از تاریخ خام به جای فرمت شده
+        comparison = new Date(a.rawReportDate).getTime() - new Date(b.rawReportDate).getTime();
         break;
       case 'scamDate':
-        comparison = new Date(a.scamDate).getTime() - new Date(b.scamDate).getTime();
+        // استفاده از تاریخ خام به جای فرمت شده
+        comparison = new Date(a.rawScamDate).getTime() - new Date(b.rawScamDate).getTime();
         break;
       case 'type':
         comparison = a.type.localeCompare(b.type);
@@ -119,7 +118,6 @@ export default function ActivitiesPage(): JSX.Element {
     return sortOrder === 'desc' ? -comparison : comparison;
   });
 
-  // Calculate total financial loss
   const totalFinancialLoss = activities.reduce((sum, activity) => sum + activity.financialLoss, 0);
 
   const formatCurrency = (amount: number): string => {
@@ -150,7 +148,6 @@ export default function ActivitiesPage(): JSX.Element {
               </Button>
             </div>
 
-            {/* Enhanced Stats Card */}
             <div className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-6">

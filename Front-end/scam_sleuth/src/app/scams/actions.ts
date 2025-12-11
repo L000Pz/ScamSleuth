@@ -8,6 +8,7 @@ export interface ScamReport {
   type: string;
   name: string;
   date: string;
+  rawDate: string;
   content_id: number;
   description?: string;
   imageUrl?: string;
@@ -16,7 +17,6 @@ export interface ScamReport {
 function stripHtml(html: string): string {
   let text = html.replace(/<[^>]*>/g, ' ');
   
-  // Common HTML entities
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -30,18 +30,15 @@ function stripHtml(html: string): string {
   text = text.replace(/&mdash;/g, '—');
   text = text.replace(/&ndash;/g, '–');
   
-  // ZWNJ and ZWJ 
   text = text.replace(/&zwnj;/g, ' ');
   text = text.replace(/&zwj;/g, '');
-  text = text.replace(/[\u200C]/g, ' '); // ZWNJ Unicode
-  text = text.replace(/[\u200D]/g, ''); // ZWJ Unicode
-  text = text.replace(/[\u200B\uFEFF]/g, ''); // Zero-width
+  text = text.replace(/[\u200C]/g, ' ');
+  text = text.replace(/[\u200D]/g, '');
+  text = text.replace(/[\u200B\uFEFF]/g, '');
   
-  // Any remaining HTML entities
   text = text.replace(/&[a-zA-Z]+;/g, '');
   text = text.replace(/&#\d+;/g, '');
   
-  // Normalize whitespace 
   text = text.replace(/  +/g, ' '); 
   text = text.trim();
   
@@ -67,6 +64,37 @@ function truncateText(text: string, maxLength: number = 100): string {
     : truncated;
   
   return finalText.trim() + '...';
+}
+
+function formatSmartDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  }
+  
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  });
 }
 
 export async function fetchScamReports() {
@@ -155,7 +183,8 @@ export async function fetchScamReports() {
           id: review.review_id.toString(),
           type: scamTypeMap.get(review.scam_type_id) || 'Unknown',
           name: truncateText(review.title, 40),
-          date: new Date(review.review_date).toLocaleDateString(),
+          date: formatSmartDate(review.review_date),
+          rawDate: review.review_date,
           content_id: review.review_content_id,
           description,
           imageUrl
@@ -258,7 +287,8 @@ export async function searchScamReportsByTitle(input: string) {
           id: review.review_id.toString(),
           type: scamTypeMap.get(review.scam_type_id) || 'Unknown',
           name: review.title,
-          date: new Date(review.review_date).toLocaleDateString(),
+          date: formatSmartDate(review.review_date),
+          rawDate: review.review_date,
           content_id: review.review_content_id,
           description,
           imageUrl

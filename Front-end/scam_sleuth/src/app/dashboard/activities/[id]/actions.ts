@@ -295,6 +295,30 @@ export async function getSpecificReport(id: string): Promise<{
         maximumFractionDigits: 0,
       }).format(amount);
     };
+    const formatDatePretty = (dateString: string): string => {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric"
+      });
+    };
+    const formatDateTimePretty = (dateString: string): string => {
+      const d = new Date(dateString);
+
+      const date = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric"
+      });
+
+      const time = d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+
+      return `${date} • ${time}`;
+    };
 
     // Enhanced evidence description
     const getEvidenceDescription = (mediaFiles: MediaFile[]): string => {
@@ -320,8 +344,8 @@ export async function getSpecificReport(id: string): Promise<{
       type: scamType?.scam_type || 'Unknown',
       name: reportData.report.title,
       description: reportData.report.description,
-      scamDate: new Date(reportData.report.scam_date).toLocaleDateString(), // When scam occurred
-      reportDate: new Date(reportData.report.report_date).toLocaleDateString(), // When reported
+      scamDate: formatDatePretty(reportData.report.scam_date), // When scam occurred
+      reportDate: formatDateTimePretty(reportData.report.report_date), // When reported
       reportedBy: reportData.writerDetails.name,
       status: "Under Review",
       details: {

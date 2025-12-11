@@ -11,9 +11,11 @@ interface ScamReport {
   type: string;
   name: string;
   description: string;
-  scamDate: string; // When the scam occurred
-  reportDate: string; // When the report was submitted
-  date: string; // For backwards compatibility
+  scamDate: string; 
+  reportDate: string; 
+  date: string; 
+  rawScamDate: string;
+  rawReportDate: string; 
   financial_loss: number;
 }
 
@@ -61,9 +63,11 @@ export default function AdminReportsPage() {
     const sortedReports = [...reports].sort((a, b) => {
       switch (criteria) {
         case 'reportDate':
-          return new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime();
+          
+          return new Date(b.rawReportDate).getTime() - new Date(a.rawReportDate).getTime();
         case 'scamDate':
-          return new Date(b.scamDate).getTime() - new Date(a.scamDate).getTime();
+          
+          return new Date(b.rawScamDate).getTime() - new Date(a.rawScamDate).getTime();
         case 'type':
           return a.type.localeCompare(b.type);
         case 'name':
