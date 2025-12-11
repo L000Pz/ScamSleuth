@@ -11,6 +11,7 @@ interface Review {
   type: string;
   name: string;
   date: string;
+  rawDate: string;
   content_id: number;
 }
 
@@ -24,6 +25,21 @@ export default function ReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  const sortReviews = (reviewsToSort: Review[], criteria: SortCriteria): Review[] => {
+    return [...reviewsToSort].sort((a, b) => {
+      switch (criteria) {
+        case 'date':
+          return new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime();
+        case 'type':
+          return a.type.localeCompare(b.type);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  };
+
   const fetchReviews = async (showRefreshLoader = false) => {
     try {
       if (showRefreshLoader) {
@@ -35,7 +51,8 @@ export default function ReviewsPage() {
       const result = await getReviews();
       
       if (result.success && result.data) {
-        setReviews(result.data);
+        const sortedData = sortReviews(result.data, sortBy);
+        setReviews(sortedData);
         setError(null);
       } else {
         setError(result.error || 'Failed to fetch reviews');
@@ -55,18 +72,7 @@ export default function ReviewsPage() {
 
   const handleSort = (criteria: SortCriteria) => {
     setSortBy(criteria);
-    const sortedReviews = [...reviews].sort((a, b) => {
-      switch (criteria) {
-        case 'date':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'type':
-          return a.type.localeCompare(b.type);
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default:
-          return 0;
-      }
-    });
+    const sortedReviews = sortReviews(reviews, criteria);
     setReviews(sortedReviews);
   };
 
@@ -133,7 +139,6 @@ export default function ReviewsPage() {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
@@ -152,7 +157,6 @@ export default function ReviewsPage() {
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Create Review Button */}
           <Button
             onClick={handleCreateReview}
             className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
@@ -161,7 +165,6 @@ export default function ReviewsPage() {
             Write Review
           </Button>
           
-          {/* Sort Controls */}
           <div className="flex items-center gap-2">
             <span className="text-lg sm:text-xl font-medium text-gray-700">Sort by:</span>
             <select 
@@ -177,7 +180,6 @@ export default function ReviewsPage() {
         </div>
       </div>
 
-      {/* Stats Summary */}
       {reviews.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
@@ -195,7 +197,6 @@ export default function ReviewsPage() {
         </div>
       )}
 
-      {/* Reviews List */}
       {reviews.length === 0 ? (
         <div className="text-center text-gray-500 mt-8 bg-gray-50 rounded-xl p-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -216,23 +217,19 @@ export default function ReviewsPage() {
               key={review.id}
               className="flex flex-col lg:flex-row bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 min-h-[120px]"
             >
-              {/* Type Badge - Fixed width on desktop */}
               <div className="bg-gradient-to-br from-gray-900 to-black text-white py-3 px-4 lg:p-4 w-full lg:w-24 lg:min-w-24 lg:max-w-24 flex items-center justify-center min-h-[50px]">
                 <span className="text-xs font-semibold text-center whitespace-pre-line lg:[writing-mode:vertical-rl] lg:rotate-180 leading-tight overflow-hidden">
                   {formatReviewType(review.type)}
                 </span>
               </div>
 
-              {/* Content - Fixed height container */}
               <div className="flex-grow p-4 lg:p-6">
                 <div className="flex flex-col lg:flex-row justify-between gap-4 h-full">
                   <div className="flex-grow">
-                    {/* Title - Truncated to prevent height variations */}
                     <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 line-clamp-1">
                       {truncateTitle(review.name)}
                     </h3>
                     
-                    {/* Date */}
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Calendar className="w-4 h-4 flex-shrink-0" />
                       <span className="font-medium">Published:</span>
@@ -240,7 +237,6 @@ export default function ReviewsPage() {
                     </div>
                   </div>
 
-                  {/* Action Button - Centered */}
                   <div className="flex items-center justify-end lg:justify-center">
                     <Button 
                       variant="outline"

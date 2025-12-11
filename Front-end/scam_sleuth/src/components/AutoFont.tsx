@@ -8,33 +8,42 @@ export default function AutoFont() {
     const persianRegex = /[\u0600-\u06FF]/;
     
     const applyFont = () => {
-      const allElements = document.querySelectorAll('body *');
-      
-      allElements.forEach((element) => {
-        const el = element as HTMLElement;
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
 
-        if (el.closest('.prose')) return;
-
-        const text = Array.from(el.childNodes)
-          .filter(node => node.nodeType === Node.TEXT_NODE)
-          .map(node => node.textContent)
-          .join('');
+      let node;
+      while (node = walker.nextNode()) {
+        const parent = node.parentElement;
         
-        if (text && persianRegex.test(text)) {
-          el.style.fontFamily = 'Vazirmatn, Tahoma, sans-serif';
-        } else if (text && text.trim()) {
-          el.style.fontFamily = 'Montserrat, sans-serif';
+        if (parent && parent.closest('.prose')) {
+          continue;
         }
-      });
+        
+        const text = node.textContent || '';
+        
+        if (parent && text.trim()) {
+          if (persianRegex.test(text)) {
+            parent.style.fontFamily = 'Vazirmatn, Tahoma, sans-serif';
+          } else {
+            parent.style.fontFamily = 'Montserrat, sans-serif';
+          }
+        }
+      }
     };
     
-    applyFont();
+    // اول لود بشه
+    setTimeout(applyFont, 100);
     
-    const observer = new MutationObserver(applyFont);
+    const observer = new MutationObserver(() => {
+      setTimeout(applyFont, 50);
+    });
+    
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
     });
     
     return () => observer.disconnect();

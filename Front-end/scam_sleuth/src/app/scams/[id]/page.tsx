@@ -1150,82 +1150,82 @@ export default function ReviewPage({ params }: PageProps) {
   return (
     <>
       <style jsx global>{`
-        /* TinyMCE Content Styles */
-        .tinymce-content ul,
-        .tinymce-content ol {
-          list-style: revert !important;
-          margin: revert !important;
-          padding: revert !important;
-        }
+          /* TinyMCE Content Styles */
+          .prose ul,
+          .prose ol {
+            list-style: revert !important;
+            margin: revert !important;
+            padding: revert !important;
+          }
 
-        .tinymce-content li {
-          display: list-item !important;
-        }
+          .prose li {
+            display: list-item !important;
+          }
 
-        .tinymce-content {
-          font-size: 16px;
-          line-height: 1.7;
-          color: #374151;
-        }
+          .prose {
+            font-size: 16px;
+            line-height: 1.7;
+      
+          }
 
-        .tinymce-content h1 { font-size: 2em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
-        .tinymce-content h2 { font-size: 1.5em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
-        .tinymce-content h3 { font-size: 1.25em; font-weight: 600; margin: 1.5rem 0 1rem 0; }
-        .tinymce-content p { margin-bottom: 1rem; }
+          .prose h1 { font-size: 2em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
+          .prose h2 { font-size: 1.5em; font-weight: 700; margin: 1.5rem 0 1rem 0; }
+          .prose h3 { font-size: 1.25em; font-weight: 600; margin: 1.5rem 0 1rem 0; }
+          .prose p { margin-bottom: 1rem; }
 
-        .tinymce-content ul { 
-          list-style-type: disc !important;
-          margin: 1rem 0 !important;
-          padding-left: 2.5rem !important;
-        }
-        
-        .tinymce-content ol { 
-          list-style-type: decimal !important;
-          margin: 1rem 0 !important;
-          padding-left: 2.5rem !important;
-        }
-        
-        .tinymce-content li { 
-          margin-bottom: 0.5rem !important;
-        }
+          .prose ul { 
+            list-style-type: disc !important;
+            margin: 1rem 0 !important;
+            padding-left: 2.5rem !important;
+          }
+          
+          .prose ol { 
+            list-style-type: decimal !important;
+            margin: 1rem 0 !important;
+            padding-left: 2.5rem !important;
+          }
+          
+          .prose li { 
+            margin-bottom: 0.5rem !important;
+          }
 
-        .tinymce-content ul ul { list-style-type: circle !important; }
-        .tinymce-content ul ul ul { list-style-type: square !important; }
-        .tinymce-content ol ol { list-style-type: lower-alpha !important; }
+          .prose ul ul { list-style-type: circle !important; }
+          .prose ul ul ul { list-style-type: square !important; }
+          .prose ol ol { list-style-type: lower-alpha !important; }
 
-        .tinymce-content [dir="rtl"] ul,
-        .tinymce-content [dir="rtl"] ol {
-          padding-right: 2.5rem !important;
-          padding-left: 0 !important;
-        }
+          .prose [dir="rtl"] ul,
+          .prose [dir="rtl"] ol {
+            padding-right: 2.5rem !important;
+            padding-left: 0 !important;
+          }
 
-        .tinymce-content strong { font-weight: 700 !important; }
-        .tinymce-content em { font-style: italic !important; }
-        .tinymce-content u { text-decoration: underline !important; }
-        .tinymce-content s { text-decoration: line-through !important; }
+          .prose strong { font-weight: 700 !important; }
+          .prose em { font-style: italic !important; }
+          .prose u { text-decoration: underline !important; }
+          .prose s { text-decoration: line-through !important; }
 
-        .tinymce-content table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-          margin: 1rem 0 !important;
-        }
+          .prose table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 1rem 0 !important;
+          }
 
-        .tinymce-content table td,
-        .tinymce-content table th {
-          border: 1px solid #e5e7eb !important;
-          padding: 0.75rem !important;
-        }
+          .prose table td,
+          .prose table th {
+            border: 1px solid #e5e7eb !important;
+            padding: 0.75rem !important;
+          }
 
-        .tinymce-content table th {
-          background: #f3f4f6 !important;
-          font-weight: 600 !important;
-        }
+          .prose table th {
+            background: #f3f4f6 !important;
+            font-weight: 600 !important;
+          }
 
-        .tinymce-content [dir="rtl"] {
-          direction: rtl !important;
-          text-align: right !important;
-        }
-      `}</style>
+          .prose [dir="rtl"] {
+            direction: rtl !important;
+            text-align: right !important;
+          }
+        `}</style>
       
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-4">
@@ -1359,9 +1359,9 @@ export default function ReviewPage({ params }: PageProps) {
                 </div>
               )}
 
-              <div className="p-6 md:p-8 bg-white">
+              <div className="p-6 bg-white">
                 <div 
-                  className="tinymce-content break-words"
+                  className="prose max-w-none break-words"
                   dangerouslySetInnerHTML={{ __html: review.content }} 
                 />
 

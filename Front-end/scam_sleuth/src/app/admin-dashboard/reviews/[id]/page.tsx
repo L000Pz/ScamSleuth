@@ -269,6 +269,7 @@ export default function ReviewPage({ params }: ReviewParams): JSX.Element {
   return (
     <>
       <style jsx global>{`
+        .content-display [style*="font-family"]{}
         /* Reset Tailwind's aggressive list resets */
         .content-display ul,
         .content-display ol {

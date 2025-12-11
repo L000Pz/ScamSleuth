@@ -202,6 +202,7 @@ export default function ScamsPage() {
       }
       setIsSearchingBackend(false);
     };
+    
 
     const handler = setTimeout(() => {
       performSearch();
@@ -255,7 +256,7 @@ export default function ScamsPage() {
       setSortOrder('desc');
     }
   };
-
+  
   const handleReview = (id: string) => {
     router.push(`/scams/${id}`);
   };

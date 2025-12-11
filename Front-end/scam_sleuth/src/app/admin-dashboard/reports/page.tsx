@@ -29,6 +29,25 @@ export default function AdminReportsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  const sortReports = (reportsToSort: ScamReport[], criteria: SortCriteria): ScamReport[] => {
+    return [...reportsToSort].sort((a, b) => {
+      switch (criteria) {
+        case 'reportDate':
+          return new Date(b.rawReportDate).getTime() - new Date(a.rawReportDate).getTime();
+        case 'scamDate':
+          return new Date(b.rawScamDate).getTime() - new Date(a.rawScamDate).getTime();
+        case 'type':
+          return a.type.localeCompare(b.type);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'financial_loss':
+          return b.financial_loss - a.financial_loss;
+        default:
+          return 0;
+      }
+    });
+  };
+
   const fetchReports = async (showRefreshLoader = false) => {
     try {
       if (showRefreshLoader) {
@@ -40,7 +59,8 @@ export default function AdminReportsPage() {
       const result = await getReports();
       
       if (result.success && result.data) {
-        setReports(result.data);
+        const sortedData = sortReports(result.data, sortBy);
+        setReports(sortedData);
         setError(null);
       } else {
         setError(result.error || 'Failed to fetch reports');
@@ -60,24 +80,7 @@ export default function AdminReportsPage() {
 
   const handleSort = (criteria: SortCriteria) => {
     setSortBy(criteria);
-    const sortedReports = [...reports].sort((a, b) => {
-      switch (criteria) {
-        case 'reportDate':
-          
-          return new Date(b.rawReportDate).getTime() - new Date(a.rawReportDate).getTime();
-        case 'scamDate':
-          
-          return new Date(b.rawScamDate).getTime() - new Date(a.rawScamDate).getTime();
-        case 'type':
-          return a.type.localeCompare(b.type);
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'financial_loss':
-          return b.financial_loss - a.financial_loss;
-        default:
-          return 0;
-      }
-    });
+    const sortedReports = sortReports(reports, criteria);
     setReports(sortedReports);
   };
 

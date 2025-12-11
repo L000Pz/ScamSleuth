@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/iran-sans-font@v5.0/fontface.css');
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/yekan-font@v1.0/fontface.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,161 +20,24 @@ body {
   :root {
     --radius: 0.5rem;
   }
-  
-  body {
-    font-family: 'Montserrat', 'Vazirmatn', sans-serif;
-  }
 }
-.prose * {
+.content-display {
+  font-family: initial !important;
+}
+
+.content-display * {
   font-family: inherit !important;
 }
-.prose {
-  @apply text-gray-800;
+/* TinyMCE prose fixes */
+.prose p,
+.prose div {
+  padding: 0 !important;
+  margin: 0 0 1rem 0 !important;
 }
 
-/* Lists styling */
-.prose :where(ul):not(:where([class~="not-prose"] *)) {
-  list-style-type: disc;
-  padding-right: 1.5rem;
-  margin: 1em 0;
-}
-
-.prose :where(ol):not(:where([class~="not-prose"] *)) {
-  list-style-type: decimal;
-  padding-right: 1.5rem;
-  margin: 1em 0;
-}
-
-.prose :where(li):not(:where([class~="not-prose"] *)) {
-  margin: 0.5em 0;
-}
-
-.prose :where(ul ul, ol ul):not(:where([class~="not-prose"] *)) {
-  list-style-type: circle;
-  margin: 0.5em 0;
-}
-
-.prose :where(ul ol, ol ol):not(:where([class~="not-prose"] *)) {
-  list-style-type: lower-alpha;
-  margin: 0.5em 0;
-}
-
-.prose :where(a):not(:where([class~="not-prose"] *)) {
-  color: #3b82f6;
-  text-decoration: underline;
-}
-
-.prose :where(a):hover:not(:where([class~="not-prose"] *)) {
-  color: #2563eb;
-}
-
-.prose :where(table):not(:where([class~="not-prose"] *)) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-}
-
-.prose :where(th):not(:where([class~="not-prose"] *)) {
-  border: 1px solid #e5e7eb;
-  padding: 0.75em;
-  background-color: #f9fafb;
-  font-weight: 600;
-}
-
-.prose :where(td):not(:where([class~="not-prose"] *)) {
-  border: 1px solid #e5e7eb;
-  padding: 0.75em;
-}
-
-.prose :where(img):not(:where([class~="not-prose"] *)) {
+.prose img {
   max-width: 100%;
   height: auto;
-  margin: 1em 0;
-  border-radius: 0.5rem;
-}
-
-.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-  border-right: 4px solid #e5e7eb;
-  padding-right: 1em;
-  margin: 1em 0;
-  font-style: italic;
-  color: #6b7280;
-}
-
-.prose :where(code):not(:where([class~="not-prose"] *)) {
-  background-color: #f3f4f6;
-  padding: 0.2em 0.4em;
-  border-radius: 0.25rem;
-  font-size: 0.875em;
-}
-
-.prose :where(pre):not(:where([class~="not-prose"] *)) {
-  background-color: #1f2937;
-  color: #f9fafb;
-  padding: 1em;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 1em 0;
-}
-
-.prose :where(pre code):not(:where([class~="not-prose"] *)) {
-  background-color: transparent;
-  padding: 0;
-  color: inherit;
-}
-
-.prose :where(h1):not(:where([class~="not-prose"] *)) {
-  font-size: 2em;
-  font-weight: 700;
-  margin: 0.67em 0;
-}
-
-.prose :where(h2):not(:where([class~="not-prose"] *)) {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin: 0.75em 0;
-}
-
-.prose :where(h3):not(:where([class~="not-prose"] *)) {
-  font-size: 1.25em;
-  font-weight: 600;
-  margin: 0.83em 0;
-}
-
-/* RTL specific */
-[dir="rtl"] .prose :where(ul):not(:where([class~="not-prose"] *)),
-[dir="rtl"] .prose :where(ol):not(:where([class~="not-prose"] *)) {
-  padding-right: 1.5rem;
-  padding-left: 0;
-}
-
-[dir="rtl"] .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-  border-right: 4px solid #e5e7eb;
-  border-left: none;
-  padding-right: 1em;
-  padding-left: 0;
-}
-
-/* LTR specific */
-[dir="ltr"] .prose :where(ul):not(:where([class~="not-prose"] *)),
-[dir="ltr"] .prose :where(ol):not(:where([class~="not-prose"] *)) {
-  padding-left: 1.5rem;
-  padding-right: 0;
-}
-
-[dir="ltr"] .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-  border-left: 4px solid #e5e7eb;
-  border-right: none;
-  padding-left: 1em;
-  padding-right: 0;
-}
-
-/* IMPORTANT: محتوای TinyMCE فونت خودش رو نگه داره */
-.prose * {
-  font-family: inherit !important;
-}
-
-/* فقط اگه فونت مشخص نشده، از default استفاده کن */
-.prose > * {
-  font-family: var(--prose-font, inherit);
+  margin: 1em auto;
+  display: block;
 }

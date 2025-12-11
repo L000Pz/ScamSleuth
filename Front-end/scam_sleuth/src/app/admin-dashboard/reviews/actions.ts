@@ -7,7 +7,39 @@ interface TransformedReview {
   type: string;
   name: string;
   date: string;
+  rawDate: string;
   content_id: number;
+}
+
+function formatSmartDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+  
+  if (diffMinutes < 60) {
+    return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  if (diffDays < 7) {
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  });
 }
 
 export async function getReviews() {
@@ -19,7 +51,6 @@ export async function getReviews() {
       return { success: false, error: 'Authentication required' };
     }
 
-    // First API call - Get scam types
     const scamTypesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Public/publicManager/scamTypes`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -27,7 +58,6 @@ export async function getReviews() {
       }
     });
 
-    // Second API call - Get reviews
     const reviewsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Admin/adminManagement/GetAdminReviews`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -48,7 +78,8 @@ export async function getReviews() {
       id: review.review_id.toString(),
       type: scamTypeMap.get(review.scam_type_id) || 'Unknown',
       name: review.title,
-      date: new Date(review.review_date).toLocaleDateString(),
+      date: formatSmartDate(review.review_date),
+      rawDate: review.review_date,
       content_id: review.review_content_id
     }));
 
