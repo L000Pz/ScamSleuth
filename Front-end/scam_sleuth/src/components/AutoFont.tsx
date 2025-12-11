@@ -8,7 +8,6 @@ export default function AutoFont() {
     const persianRegex = /[\u0600-\u06FF]/;
     
     const applyFont = () => {
-      // همه element ها رو بگیر
       const allElements = document.querySelectorAll('body *');
       
       allElements.forEach((element) => {
