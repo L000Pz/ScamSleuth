@@ -1,12 +1,13 @@
-// src/app/layout.tsx
+// app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import localFont from 'next/font/local';
+import { Vazirmatn } from 'next/font/google';
 import Footer from './components/Footer';
 import Navbar from "./components/header";
-
+import AutoFont from "@/components/AutoFont";
 
 const Montserrat = localFont({
   src: [
@@ -51,15 +52,22 @@ const Montserrat = localFont({
       style: 'italic',
     },
   ],
+  variable: '--font-montserrat',
+});
+
+const vazir = Vazirmatn({
+  subsets: ['arabic', 'latin'],
+  variable: '--font-vazir',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: "‌Scam Sleuth",
   description: "Uncovering Scams, One Report at a Time.",
   icons: {
-    icon: "/favicon.ico", 
-    shortcut: "/favicon-32x32.png", 
-    apple: "/apple-touch-icon.png", 
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
 };
@@ -70,9 +78,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={Montserrat.className}>
-      <body className="bg-background flex flex-col">
+    <html lang="en" className={`${Montserrat.variable} ${vazir.variable}`}>
+      <head>
+        <link 
+          rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/gh/rastikerdar/iran-sans-font@v5.0/fontface.css" 
+        />
+        <link 
+          rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/gh/rastikerdar/yekan-font@v1.0/fontface.css" 
+        />
+        
+        {/* Google Fonts for additional English fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Impact&display=swap" 
+          rel="stylesheet" 
+        />
+      </head>
+      <body className={`${Montserrat.className} bg-background flex flex-col`}>
         <Navbar />
+        <AutoFont />
         <div className="pt-2 md:pt-5">
           <main className="flex-grow">{children}</main>
         </div>
