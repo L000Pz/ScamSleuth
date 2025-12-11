@@ -136,6 +136,7 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
 function stripHtml(html: string): string {
   let text = html.replace(/<[^>]*>/g, ' ');
   
+  // Common HTML entities
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -149,7 +150,20 @@ function stripHtml(html: string): string {
   text = text.replace(/&mdash;/g, '—');
   text = text.replace(/&ndash;/g, '–');
   
-  text = text.replace(/\s+/g, ' ').trim();
+  // ZWNJ and ZWJ 
+  text = text.replace(/&zwnj;/g, ' ');
+  text = text.replace(/&zwj;/g, '');
+  text = text.replace(/[\u200C]/g, ' '); // ZWNJ Unicode
+  text = text.replace(/[\u200D]/g, ''); // ZWJ Unicode
+  text = text.replace(/[\u200B\uFEFF]/g, ''); // Zero-width
+  
+  // Any remaining HTML entities
+  text = text.replace(/&[a-zA-Z]+;/g, '');
+  text = text.replace(/&#\d+;/g, '');
+  
+  // Normalize whitespace 
+  text = text.replace(/  +/g, ' '); 
+  text = text.trim();
   
   return text;
 }

@@ -18,7 +18,8 @@ const config: Config = {
           'BlinkMacSystemFont', 
           'Segoe UI', 
           'Roboto', 
-          'sans-serif'
+          'sans-serif',
+		  'Vazirmatn'
         ],
         vazir: ['Vazir', 'Tahoma', 'sans-serif'],
       	},

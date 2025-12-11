@@ -69,7 +69,7 @@ export default function ScamCard({ id, name, description, date, scamType, imageU
           className={`font-bold text-sm text-black mb-2 group-hover:text-red transition-colors leading-tight line-clamp-2 h-[40px] overflow-hidden ${titleIsPersian ? 'text-right' : 'text-left'}`}
           dir={titleIsPersian ? 'rtl' : 'ltr'}
         >
-          {name}
+          {truncateText(name, 30)}
         </h3>
         
         <p 

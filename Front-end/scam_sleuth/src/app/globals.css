@@ -1,9 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-
 
 body {
   background-color: #BBB8AF; 
@@ -18,5 +17,9 @@ body {
 @layer base {
   :root {
     --radius: 0.5rem;
+  }
+  
+  body {
+    font-family: 'Montserrat', 'Vazirmatn',  sans-serif;
   }
 }
