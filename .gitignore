@@ -78,7 +78,7 @@ ScaffoldingReadMe.txt
 *.obj
 *.tlog
 *.tmp
-
+/Services/AI2
 # Package manager directories
 node_modules/
 jspm_packages/

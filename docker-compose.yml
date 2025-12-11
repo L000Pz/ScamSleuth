@@ -67,20 +67,25 @@ services:
   scamsleuth-ai:
     container_name: scamsleuth-ai
     build:
-      context: ./Services/AI
+      context: ./Services/AI2
       dockerfile: Dockerfile
     volumes:
-      - ./Services/AI:/app
+      - ./Services/AI2:/app
     ports:
       - "6996:6996"
     environment:
+      - POSTGRES_URL=postgresql://postgres:admin@postgres_container:5432/ScamSleuth_db
+      - MONGODB_URL=mongodb://admin:admin@mongodb_container:27017
       - mongodb_container
       - ASPNETCORE_ENVIRONMENT=Development
+    env_file:
+      - ./Services/AI2/.env
     depends_on:
       - mongodb_container
       - postgres_container
     networks:
       - scamsleuth-network
+    restart: unless-stopped
 
   db-handler:
     container_name: db-handler

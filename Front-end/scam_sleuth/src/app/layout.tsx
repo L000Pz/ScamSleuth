@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
 import localFont from 'next/font/local';
 import Footer from './components/Footer';
 import Navbar from "./components/header";
@@ -75,6 +76,7 @@ export default function RootLayout({
           <main className="flex-grow">{children}</main>
         </div>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
