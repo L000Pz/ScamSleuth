@@ -27,10 +27,11 @@ import {
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import heroImage from '@/assets/images/hero.png';
+import { SkeletonCard, SkeletonText, SkeletonImage } from '@/components/ui/skeleton';
 
-// Import your actions - you'll need to create these based on your existing actions
 import {
   analyzeWebsite,
+  loadExtraWebsiteData,
   getLatestScreenshotByDomain,
   getWhoisData,
   getEnamadData,
@@ -87,6 +88,7 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
   const [searchQuery, setSearchQuery] = useState<string>(initialWebsite);
   const [currentWebsite, setCurrentWebsite] = useState<string>(initialWebsite);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingExtra, setIsLoadingExtra] = useState<boolean>(true); // ⭐ جدید
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +143,7 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
     return dateString;
   };
 
-  const formatDate = (dateString: string | undefined): string => {
+  const formatDate = (dateString: string | undefined | null): string => {
     if (!dateString) return 'Not available';
     try {
       const date = new Date(dateString);
@@ -152,28 +154,6 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
       });
     } catch {
       return 'Invalid date';
-    }
-  };
-
-  const calculateDomainAge = (createdDate: string | undefined): string => {
-    if (!createdDate) return 'Unknown';
-    try {
-      const created = new Date(createdDate);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - created.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const years = Math.floor(diffDays / 365);
-      const months = Math.floor((diffDays % 365) / 30);
-
-      if (years > 0) {
-        return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` and ${months} month${months > 1 ? 's' : ''}` : ''}`;
-      } else if (months > 0) {
-        return `${months} month${months > 1 ? 's' : ''}`;
-      } else {
-        return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
-      }
-    } catch {
-      return 'Unknown';
     }
   };
 
@@ -258,51 +238,74 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
     }
   }, []);
 
+  // ⭐ تابع جدید برای لود اطلاعات اضافی
+  const loadExtraData = useCallback(async (website: string): Promise<void> => {
+    setIsLoadingExtra(true);
+    
+    try {
+      const extraData = await loadExtraWebsiteData(website);
+      
+      // Update states با اطلاعات اضافی
+      if (extraData.screenshotUrl) {
+        setScreenshotUrl(extraData.screenshotUrl);
+        setScreenshotError(null);
+      } else {
+        setScreenshotError('No screenshot available');
+      }
+
+      if (extraData.whoisData) {
+        setWhoisData(extraData.whoisData);
+        setWhoisError(null);
+      } else {
+        setWhoisError('WHOIS data not available');
+      }
+
+      if (extraData.enamadData) {
+        setEnamadData(extraData.enamadData);
+        setEnamadError(null);
+      } else {
+        setEnamadError('Enamad certification not found');
+      }
+
+      if (extraData.reviewStats) {
+        setOverallReviewStats(extraData.reviewStats);
+      }
+
+    } catch (err) {
+      console.error('Error loading extra data:', err);
+    } finally {
+      setIsLoadingExtra(false);
+    }
+  }, []);
+
+  // ⭐ تابع performAnalysis بهینه شده
   const performAnalysis = useCallback(async (website: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
+      // ⭐ فقط analysis اصلی رو منتظر بمون
       const result = await analyzeWebsite(website);
 
       if (result.success && result.data) {
         setAnalysisResult(result.data);
         setCurrentWebsite(website);
+        setIsLoading(false); // ⭐ زودتر false میشه - صفحه نمایش داده میشه
+        
+        // ⭐ بقیه رو در پس‌زمینه load کن
+        loadExtraData(website); // بدون await
+        fetchComments(website); // بدون await
 
-        setScreenshotUrl(result.data.screenshotUrl || null);
-        setScreenshotError(result.data.screenshotUrl ? null : 'No screenshot available');
-
-        setWhoisData(result.data.whoisData || null);
-        setWhoisError(result.data.whoisData ? null : 'WHOIS data not available');
-
-        setEnamadData(result.data.enamadData || null);
-        setEnamadError(result.data.enamadData ? null : 'Enamad certification not found');
-
-        if (result.data.reviewStats) {
-          setOverallReviewStats(result.data.reviewStats);
-        } else {
-          setOverallReviewStats({
-            average: 0,
-            count: 0,
-            five_count: 0,
-            four_count: 0,
-            three_count: 0,
-            two_count: 0,
-            one_count: 0
-          });
-        }
-
-        await fetchComments(website);
       } else {
         setError(result.error || 'Failed to analyze website');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('An unexpected error occurred during analysis');
-      console.error('Analysis error:', err);
-    } finally {
       setIsLoading(false);
+      console.error('Analysis error:', err);
     }
-  }, [fetchComments]);
+  }, [loadExtraData, fetchComments]);
 
   const refreshScreenshot = async (): Promise<void> => {
     if (!currentWebsite) return;
@@ -579,13 +582,6 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
   };
 
   const handleDeleteComment = async (commentId: string): Promise<void> => {
-    // IMPORTANT: Replaced window.confirm with a custom modal/message box as per instructions
-    // For this example, I'll use a simple console log, but in a real app, you'd trigger a modal.
-    console.log('Confirm delete for comment:', commentId);
-    // In a real app, you'd have a state variable for a modal and show it here.
-    // E.g., setIsConfirmModalOpen(true); setCommentToDelete(commentId);
-    // For now, proceeding directly for demonstration, but remember the instruction.
-
     setReviewSubmissionMessage(null);
     setReviewSubmissionError(null);
 
@@ -843,39 +839,43 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
                 </div>
 
                 {/* User Reviews Summary */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                  <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-4xl font-bold text-gray-800">{overallReviewStats.average.toFixed(1)}</span>
-                    <div className="flex">
-                      {renderStars(Math.round(overallReviewStats.average))}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-6">
-                    From {overallReviewStats.count} total reviews.
-                  </p>
-
-                  <div className="space-y-3">
-                    {[5, 4, 3, 2, 1].map((rating) => (
-                      <div key={rating} className="flex items-center gap-3 text-sm">
-                        <span className="w-3 font-medium">{rating}</span>
-                        <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
-                        <div className="flex-1 bg-gray-200 rounded-full h-2.5">
-                          <div
-                            className="bg-black h-2.5 rounded-full transition-all duration-500"
-                            style={{ width: `${(ratingBreakdown[rating as keyof typeof ratingBreakdown] / (overallReviewStats.count || 1)) * 100}%` }}
-                          />
-                        </div>
-                        <span className="w-8 text-xs text-gray-500 text-right">
-                          {ratingBreakdown[rating as keyof typeof ratingBreakdown]}
-                        </span>
+                {isLoadingExtra ? (
+                  <SkeletonCard height="h-96" />
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 className="text-lg font-bold mb-6 text-gray-800">User Score Based on Review</h3>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-4xl font-bold text-gray-800">{overallReviewStats.average.toFixed(1)}</span>
+                      <div className="flex">
+                        {renderStars(Math.round(overallReviewStats.average))}
                       </div>
-                    ))}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-6">
+                      From {overallReviewStats.count} total reviews.
+                    </p>
+
+                    <div className="space-y-3">
+                      {[5, 4, 3, 2, 1].map((rating) => (
+                        <div key={rating} className="flex items-center gap-3 text-sm">
+                          <span className="w-3 font-medium">{rating}</span>
+                          <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                          <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-black h-2.5 rounded-full transition-all duration-500"
+                              style={{ width: `${(ratingBreakdown[rating as keyof typeof ratingBreakdown] / (overallReviewStats.count || 1)) * 100}%` }}
+                            />
+                          </div>
+                          <span className="w-8 text-xs text-gray-500 text-right">
+                            {ratingBreakdown[rating as keyof typeof ratingBreakdown]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-4 italic">
+                      Reviews are made by registered members.
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-4 italic">
-                    Reviews are made by registered members.
-                  </p>
-                </div>
+                )}
               </div>
 
               {/* Middle Column - Analysis Details */}
@@ -955,12 +955,9 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
                   </div>
 
                   <div className="relative h-[280px] bg-gray-50 overflow-hidden">
-                    {screenshotLoading ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-                          <p className="text-sm text-gray-600">Loading screenshot...</p>
-                        </div>
+                    {(screenshotLoading || isLoadingExtra) && !screenshotUrl ? (
+                      <div className="absolute inset-0">
+                        <SkeletonImage height="h-full" />
                       </div>
                     ) : screenshotUrl ? (
                       <div className="relative h-full group cursor-pointer" onClick={() => setIsScreenshotModalOpen(true)}>
@@ -986,29 +983,19 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-center p-4">
                         <div className="text-gray-500">
-                          {screenshotError ? (
-                            <>
-                              <div className="text-4xl mb-3">📷</div>
-                              <h4 className="text-lg font-semibold mb-2 text-gray-700">Screenshot Unavailable</h4>
-                              <p className="text-sm text-gray-600 mb-3">{screenshotError}</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={refreshScreenshot}
-                                className="flex items-center gap-2 mx-auto"
-                                title="Check for new screenshot"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                                Try Again
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-6xl mb-4 opacity-60">🌐</div>
-                              <h4 className="text-xl font-bold mb-2 text-gray-700">Loading Screenshot</h4>
-                              <p className="text-sm">Please wait...</p>
-                            </>
-                          )}
+                          <div className="text-4xl mb-3">📷</div>
+                          <h4 className="text-lg font-semibold mb-2 text-gray-700">Screenshot Unavailable</h4>
+                          <p className="text-sm text-gray-600 mb-3">{screenshotError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refreshScreenshot}
+                            className="flex items-center gap-2 mx-auto"
+                            title="Check for new screenshot"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Try Again
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1016,241 +1003,332 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
                 </div>
 
                 {/* Enamad Certification Card */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Award className="w-5 h-5" />
-                        Enamad Certification
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={refreshEnamadData}
-                        disabled={enamadLoading}
-                        className="flex items-center gap-2"
-                        title="Refresh Enamad data"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${enamadLoading ? 'animate-spin' : ''}`} />
-                        {enamadLoading ? 'Loading...' : 'Refresh'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-4 max-h-[400px] overflow-y-auto">
-                    {enamadLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
-                          <p className="text-sm text-gray-600">Loading Enamad information...</p>
-                        </div>
+                {(isLoadingExtra && !enamadData) ? (
+                  <SkeletonCard height="h-96" />
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                          <Award className="w-5 h-5" />
+                          Enamad Certification
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshEnamadData}
+                          disabled={enamadLoading}
+                          className="flex items-center gap-2"
+                          title="Refresh Enamad data"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${enamadLoading ? 'animate-spin' : ''}`} />
+                          {enamadLoading ? 'Loading...' : 'Refresh'}
+                        </Button>
                       </div>
-                    ) : enamadData ? (
-                      <div className="space-y-4 text-sm">
-                        {/* Certification Status */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Certification Status
-                          </h4>
-                          <div className="bg-green-50 rounded-lg p-3 space-y-2 border border-green-200">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Status:</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="font-medium text-green-700">Certified</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Level:</span>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 ${getEnamadLevelInfo(enamadData.logolevel).color} rounded-full`}></div>
-                                <span className="font-medium">{getEnamadLevelInfo(enamadData.logolevel).text}</span>
-                              </div>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Certificate ID:</span>
-                              <span className="font-medium text-xs font-mono bg-white px-2 py-1 rounded">
-                                {enamadData.id}
-                              </span>
-                            </div>
+                    </div>
+
+                    <div className="p-4 max-h-[400px] overflow-y-auto">
+                      {enamadLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
+                            <p className="text-sm text-gray-600">Loading Enamad information...</p>
                           </div>
                         </div>
-
-                        {/* Business Information */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Building className="w-4 h-4" />
-                            Business Information
-                          </h4>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Business Name:</span>
-                              <span className="font-medium text-right max-w-[60%]" dir="rtl">
-                                {enamadData.nameper}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Location:</span>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-gray-400" />
-                                <span className="font-medium">
-                                  {enamadData.cityName}, {enamadData.stateName}
+                      ) : enamadData ? (
+                        <div className="space-y-4 text-sm">
+                          {/* Certification Status */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4" />
+                              Certification Status
+                            </h4>
+                            <div className="bg-green-50 rounded-lg p-3 space-y-2 border border-green-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600">Status:</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                  <span className="font-medium text-green-700">Certified</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600">Level:</span>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3 h-3 ${getEnamadLevelInfo(enamadData.logolevel).color} rounded-full`}></div>
+                                  <span className="font-medium">{getEnamadLevelInfo(enamadData.logolevel).text}</span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Certificate ID:</span>
+                                <span className="font-medium text-xs font-mono bg-white px-2 py-1 rounded">
+                                  {enamadData.id}
                                 </span>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Certification Period */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Certification Period
-                          </h4>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Approved:</span>
-                              <span className="font-medium">{formatPersianDate(enamadData.approvedate)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Expires:</span>
-                              <span className="font-medium">{formatPersianDate(enamadData.expdate)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center py-8 text-center">
-                        <div className="text-gray-500">
-                          <div className="text-4xl mb-3">🏆</div>
-                          <h4 className="text-lg font-semibold mb-2 text-gray-700">Enamad Not Found</h4>
-                          <p className="text-sm text-gray-600 mb-3">{enamadError}</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={refreshEnamadData}
-                            className="flex items-center gap-2 mx-auto"
-                            title="Retry Enamad lookup"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                            Try Again
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Domain Information Card */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Globe className="w-5 h-5" />
-                        Domain Information
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={refreshWhoisData}
-                        disabled={whoisLoading}
-                        className="flex items-center gap-2"
-                        title="Refresh WHOIS data"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${whoisLoading ? 'animate-spin' : ''}`} />
-                        {whoisLoading ? 'Loading...' : 'Refresh'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-4 max-h-[400px] overflow-y-auto">
-                    {whoisLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
-                          <p className="text-sm text-gray-600">Loading domain information...</p>
-                        </div>
-                      </div>
-                    ) : whoisData ? (
-                      <div className="space-y-4 text-sm">
-                        {/* Domain Details */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Globe className="w-4 h-4" />
-                            Domain Details
-                          </h4>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                            {/* Added conditional checks for whoisData.domain before accessing its properties */}
-                            {whoisData.domain && whoisData.domain.domain && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Domain:</span>
-                                <span className="font-medium">{whoisData.domain.domain}</span>
-                              </div>
-                            )}
-                            {whoisData.domain && whoisData.domain.created_date && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Created:</span>
-                                <span className="font-medium">{formatDate(whoisData.domain.created_date)}</span>
-                              </div>
-                            )}
-                            {whoisData.domain && whoisData.domain.created_date && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Age:</span>
-                                <span className="font-medium">{calculateDomainAge(whoisData.domain.created_date)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Registrar Information */}
-                        {whoisData.registrar && (
+                          {/* Business Information */}
                           <div className="space-y-3">
                             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                               <Building className="w-4 h-4" />
-                              Registrar
+                              Business Information
                             </h4>
                             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                              {whoisData.registrar.name && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Business Name:</span>
+                                <span className="font-medium text-right max-w-[60%]" dir="rtl">
+                                  {enamadData.nameper}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Location:</span>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-gray-400" />
+                                  <span className="font-medium">
+                                    {enamadData.cityName}, {enamadData.stateName}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Certification Period */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              Certification Period
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Approved:</span>
+                                <span className="font-medium">{formatPersianDate(enamadData.approvedate)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expires:</span>
+                                <span className="font-medium">{formatPersianDate(enamadData.expdate)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center py-8 text-center">
+                          <div className="text-gray-500">
+                            <div className="text-4xl mb-3">🏆</div>
+                            <h4 className="text-lg font-semibold mb-2 text-gray-700">Enamad Not Found</h4>
+                            <p className="text-sm text-gray-600 mb-3">{enamadError}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={refreshEnamadData}
+                              className="flex items-center gap-2 mx-auto"
+                              title="Retry Enamad lookup"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              Try Again
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Domain Information Card */}
+                {(isLoadingExtra && !whoisData) ? (
+                  <SkeletonCard height="h-96" />
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                          <Globe className="w-5 h-5" />
+                          Domain Information
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshWhoisData}
+                          disabled={whoisLoading}
+                          className="flex items-center gap-2"
+                          title="Refresh WHOIS data"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${whoisLoading ? 'animate-spin' : ''}`} />
+                          {whoisLoading ? 'Loading...' : 'Refresh'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 max-h-[400px] overflow-y-auto">
+                      {whoisLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-500 border-t-transparent"></div>
+                            <p className="text-sm text-gray-600">Loading domain information...</p>
+                          </div>
+                        </div>
+                      ) : whoisData ? (
+                        <div className="space-y-4 text-sm">
+                          {/* Domain Details */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                              <Globe className="w-4 h-4" />
+                              Domain Details
+                            </h4>
+                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                              {whoisData.domain && (
                                 <div className="flex justify-between">
-                                  <span className="text-gray-600">Name:</span>
-                                  <span className="font-medium">{whoisData.registrar.name}</span>
+                                  <span className="text-gray-600">Domain:</span>
+                                  <span className="font-medium">{whoisData.domain}</span>
                                 </div>
                               )}
-                              {whoisData.registrar.email && (
+                              
+                              {whoisData.creation_date && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Created:</span>
+                                  <span className="font-medium">{formatDate(whoisData.creation_date)}</span>
+                                </div>
+                              )}
+                              
+                              {whoisData.domain_age_days !== null && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Age:</span>
+                                  <span className="font-medium">
+                                    {Math.floor(whoisData.domain_age_days / 365)} years
+                                    {whoisData.domain_age_days % 365 > 0 && 
+                                      ` and ${Math.floor((whoisData.domain_age_days % 365) / 30)} months`
+                                    }
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {whoisData.expiration_date && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Expires:</span>
+                                  <span className="font-medium">{formatDate(whoisData.expiration_date)}</span>
+                                </div>
+                              )}
+
+                              {whoisData.org && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Organization:</span>
+                                  <span className="font-medium text-right max-w-[60%]">{whoisData.org}</span>
+                                </div>
+                              )}
+
+                              {whoisData.country && (
                                 <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Email:</span>
+                                  <span className="text-gray-600">Country:</span>
                                   <div className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3 text-gray-400" />
-                                    <span className="font-medium text-xs">{whoisData.registrar.email}</span>
+                                    <MapPin className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">{whoisData.country}</span>
                                   </div>
                                 </div>
                               )}
                             </div>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center py-8 text-center">
-                        <div className="text-gray-500">
-                          <div className="text-4xl mb-3">🌐</div>
-                          <h4 className="text-lg font-semibold mb-2 text-gray-700">Domain Info Unavailable</h4>
-                          <p className="text-sm text-gray-600 mb-3">{whoisError}</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={refreshWhoisData}
-                            className="flex items-center gap-2 mx-auto"
-                            title="Retry WHOIS lookup"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                            Try Again
-                          </Button>
+
+                          {/* Registrar Information */}
+                          {whoisData.registrar && (
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                                <Building className="w-4 h-4" />
+                                Registrar
+                              </h4>
+                              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Name:</span>
+                                  <span className="font-medium text-right max-w-[60%]">{whoisData.registrar}</span>
+                                </div>
+                                
+                                {whoisData.emails && (
+                                  <div className="flex justify-between items-start">
+                                    <span className="text-gray-600">Contact:</span>
+                                    <div className="flex flex-col items-end gap-1">
+                                      {Array.isArray(whoisData.emails) ? (
+                                        whoisData.emails.map((email, idx) => (
+                                          <div key={idx} className="flex items-center gap-1">
+                                            <Mail className="w-3 h-3 text-gray-400" />
+                                            <span className="font-medium text-xs">{email}</span>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <Mail className="w-3 h-3 text-gray-400" />
+                                          <span className="font-medium text-xs">{whoisData.emails}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Name Servers */}
+                          {whoisData.name_servers && whoisData.name_servers.length > 0 && (
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                                <Server className="w-4 h-4" />
+                                Name Servers
+                              </h4>
+                              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                {whoisData.name_servers.map((ns, index) => (
+                                  <div key={index} className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                    <span className="font-mono text-xs text-gray-700">{ns.toLowerCase()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Domain Status */}
+                          {whoisData.status && (
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                                <Shield className="w-4 h-4" />
+                                Domain Status
+                              </h4>
+                              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                {Array.isArray(whoisData.status) ? (
+                                  whoisData.status.map((status, index) => (
+                                    <div key={index} className="flex items-start gap-2">
+                                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                      <span className="text-xs text-gray-700 break-all">{status}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    <span className="text-xs text-gray-700 break-all">{whoisData.status}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-center justify-center py-8 text-center">
+                          <div className="text-gray-500">
+                            <div className="text-4xl mb-3">🌐</div>
+                            <h4 className="text-lg font-semibold mb-2 text-gray-700">Domain Info Unavailable</h4>
+                            <p className="text-sm text-gray-600 mb-3">{whoisError}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={refreshWhoisData}
+                              className="flex items-center gap-2 mx-auto"
+                              title="Retry WHOIS lookup"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              Try Again
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -1332,10 +1410,12 @@ const WebsiteAnalysisContent: React.FC<{ initialWebsite: string }> = ({ initialW
 
             {/* Reviews List */}
             {reviewsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-                  <p className="text-sm text-gray-600">Loading user reviews...</p>
+              <div className="mt-8">
+                <h3 className="text-xl font-bold mb-6 text-gray-800">Recent Reviews</h3>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <SkeletonCard key={i} height="h-32" />
+                  ))}
                 </div>
               </div>
             ) : reviewsError ? (

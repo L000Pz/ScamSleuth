@@ -79,11 +79,16 @@ export interface WhoisContact {
 }
 
 export interface WhoisData {
-  domain: WhoisDomain;
-  registrar?: WhoisRegistrar;
-  registrant?: WhoisContact;
-  administrative?: WhoisContact;
-  technical?: WhoisContact;
+  domain: string;
+  registrar: string | null;
+  creation_date: string | null;
+  expiration_date: string | null;
+  name_servers: string[] | null;
+  status: string | string[] | null; 
+  emails: string | string[] | null; 
+  org: string | null;
+  country: string | null;
+  domain_age_days: number | null;
 }
 
 export interface WhoisResponse {
@@ -210,7 +215,7 @@ async function getUserInfoFromToken(token: string): Promise<UserInfo | null> {
 // NEW SERVER ACTION: Function to directly return isAdmin status for client components
 export async function getIsAdminStatus(): Promise<boolean> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
     if (!token) {
@@ -494,7 +499,7 @@ export async function getUrlComments(url: string): Promise<UrlCommentsResponse> 
 
 export async function submitUrlComment(commentData: UrlCommentSubmission): Promise<SubmitCommentResponse> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
     if (!token) {
@@ -579,7 +584,7 @@ export async function submitUrlComment(commentData: UrlCommentSubmission): Promi
 
 export async function submitAdminUrlComment(commentData: UrlCommentSubmission): Promise<SubmitCommentResponse> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
     if (!token) {
@@ -656,7 +661,7 @@ export async function submitAdminUrlComment(commentData: UrlCommentSubmission): 
 
 export async function deleteUrlComment(commentId: string): Promise<DeleteCommentResponse> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
     if (!token) {
@@ -767,19 +772,6 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
 
     const apiData: WebsiteAnalysisResponse = await response.json();
 
-    const [screenshotData, whoisData, enamadData, reviewStatsData] = await Promise.all([
-      getLatestScreenshotByDomain(cleanUrl),
-      getWhoisData(cleanUrl),
-      getEnamadData(cleanUrl),
-      getOverallUrlRatings(cleanUrl) // Fetch review stats
-    ]);
-
-    if (!screenshotData.screenshotUrl) {
-      captureScreenshot(cleanUrl).catch(error => {
-        console.warn('Background screenshot capture failed:', error);
-      });
-    }
-
     const result: AnalysisResult = {
       website: cleanUrl,
       trustScore: apiData.trustScore,
@@ -789,11 +781,10 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       description: apiData.description,
       lastChecked: 'Just now',
       technicalFlags: apiData.technicalFlags || {},
-      screenshotId: screenshotData.screenshotId,
-      screenshotUrl: screenshotData.screenshotUrl,
-      whoisData: whoisData.success ? whoisData.data : undefined,
-      enamadData: enamadData.success ? enamadData.data : undefined,
-      reviewStats: reviewStatsData.success ? reviewStatsData.data : undefined, // Assign fetched review stats
+      screenshotUrl: undefined,
+      whoisData: undefined,
+      enamadData: undefined,
+      reviewStats: undefined,
     };
 
     return { success: true, data: result };
@@ -804,6 +795,36 @@ export async function analyzeWebsite(websiteUrl: string): Promise<{
       error: error instanceof Error ? error.message : 'Failed to analyze website'
     };
   }
+}
+
+export async function loadExtraWebsiteData(websiteUrl: string): Promise<{
+  screenshotUrl?: string;
+  whoisData?: WhoisData;
+  enamadData?: EnamadData;
+  reviewStats?: ReviewStats;
+}> {
+  const cleanUrl = websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  const [screenshotData, whoisData, enamadData, reviewStatsData] = await Promise.all([
+    getLatestScreenshotByDomain(cleanUrl),
+    getWhoisData(cleanUrl),
+    getEnamadData(cleanUrl),
+    getOverallUrlRatings(cleanUrl)
+  ]);
+
+  // اگه screenshot نبود، background capture کن
+  if (!screenshotData.screenshotUrl) {
+    captureScreenshot(cleanUrl).catch(error => {
+      console.warn('Background screenshot capture failed:', error);
+    });
+  }
+
+  return {
+    screenshotUrl: screenshotData.screenshotUrl,
+    whoisData: whoisData.success ? whoisData.data : undefined,
+    enamadData: enamadData.success ? enamadData.data : undefined,
+    reviewStats: reviewStatsData.success ? reviewStatsData.data : undefined,
+  };
 }
 
 export async function quickAnalyzeWebsite(websiteUrl: string): Promise<{
