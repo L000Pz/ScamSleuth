@@ -2,10 +2,6 @@
 @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
 @import url('https://cdn.jsdelivr.net/gh/rastikerdar/iran-sans-font@v5.0/fontface.css');
 @import url('https://cdn.jsdelivr.net/gh/rastikerdar/yekan-font@v1.0/fontface.css');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
-@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
-@import url('https://cdn.jsdelivr.net/gh/rastikerdar/iran-sans-font@v5.0/fontface.css');
-@import url('https://cdn.jsdelivr.net/gh/rastikerdar/yekan-font@v1.0/fontface.css');
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +14,6 @@ body {
 .content-display {
   font-family: initial;
 }
-
 .content-display * {
   font-family: initial;
 }
@@ -35,13 +30,6 @@ body {
   }
 }
 
-.content-display {
-  font-family: initial !important;
-}
-
-.content-display * {
-  font-family: inherit !important;
-}
 /* TinyMCE prose fixes */
 .prose p,
 .prose div {

@@ -26,7 +26,7 @@ export default function AutoFont() {
         
         if (parent && text.trim()) {
           if (persianRegex.test(text)) {
-            parent.style.fontFamily = 'Vazirmatn, Tahoma, sans-serif';
+            parent.style.fontFamily = 'Vazirmatn, sans-serif';
           } else {
             parent.style.fontFamily = 'Montserrat, sans-serif';
           }
